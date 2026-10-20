@@ -31,6 +31,7 @@ export abstract class AnswersRepository {
   abstract findById(id: string): Promise<AnswerRecord | null>;
   abstract listByQuestion(sessionId: string, questionId: string): Promise<AnswerRecord[]>;
   abstract listNeedsReview(sessionId: string): Promise<AnswerRecord[]>;
+  abstract listBySession(sessionId: string): Promise<AnswerRecord[]>;
   abstract updateGrade(id: string, patch: AnswerGradePatch): Promise<AnswerRecord>;
 }
 
@@ -89,6 +90,12 @@ export class SupabaseAnswersRepository extends AnswersRepository {
       .select()
       .eq('session_id', sessionId)
       .eq('needs_review', true);
+    if (error) throw new InternalServerErrorException(error.message);
+    return (data ?? []) as AnswerRecord[];
+  }
+
+  async listBySession(sessionId: string): Promise<AnswerRecord[]> {
+    const { data, error } = await this.supabase.getClient().from('answers').select().eq('session_id', sessionId);
     if (error) throw new InternalServerErrorException(error.message);
     return (data ?? []) as AnswerRecord[];
   }

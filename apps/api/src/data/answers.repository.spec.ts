@@ -36,3 +36,12 @@ describe('SupabaseAnswersRepository', () => {
     ).resolves.toEqual(graded);
   });
 });
+
+describe('SupabaseAnswersRepository.listBySession', () => {
+  it('lists all answers for a session', async () => {
+    const supabase = fakeSupabaseService({ answers: { data: [RECORD], error: null } });
+    const repo = new SupabaseAnswersRepository(supabase);
+
+    await expect(repo.listBySession('s1')).resolves.toEqual([RECORD]);
+  });
+});

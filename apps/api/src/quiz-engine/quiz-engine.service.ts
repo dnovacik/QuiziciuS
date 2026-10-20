@@ -1,0 +1,180 @@
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
+import { AnswerRecord, AnswersRepository } from '../data/answers.repository';
+import { QuestionsRepository } from '../data/questions.repository';
+import { SessionRecord, SessionsRepository } from '../data/sessions.repository';
+import { TeamsRepository } from '../data/teams.repository';
+import { RealtimeBroadcastService } from '../realtime/realtime-broadcast.service';
+import { gradeNumericNearest } from './grading/numeric-grader';
+import { generateJoinCode } from './join-code';
+import { assertValidTransition } from './state-transitions';
+
+export interface TransitionOptions {
+  questionId?: string;
+}
+
+@Injectable()
+export class QuizEngineService {
+  constructor(
+    private readonly sessions: SessionsRepository,
+    private readonly questions: QuestionsRepository,
+    private readonly teams: TeamsRepository,
+    private readonly answers: AnswersRepository,
+    private readonly broadcast: RealtimeBroadcastService,
+  ) {}
+
+  async createSession(quizId: string, hostId: string): Promise<SessionRecord> {
+    return this.sessions.create(quizId, hostId, generateJoinCode());
+  }
+
+  async getState(sessionId: string): Promise<QuizSessionStateDto> {
+    const session = await this.requireSession(sessionId);
+    const [question, teams, answers] = await Promise.all([
+      session.current_question_id ? this.questions.findById(session.current_question_id) : Promise.resolve(null),
+      this.teams.listBySession(sessionId),
+      this.answers.listBySession(sessionId),
+    ]);
+
+    const scoreByTeam = new Map<string, number>();
+    for (const answer of answers) {
+      scoreByTeam.set(answer.team_id, (scoreByTeam.get(answer.team_id) ?? 0) + answer.score_awarded);
+    }
+
+    const revealSafe = (['QUESTION_REVEAL', 'PAUSE_BREAK', 'FINISHED'] as QuizState[]).includes(session.status);
+
+    return {
+      id: session.id,
+      joinCode: session.join_code,
+      status: session.status,
+      currentQuestion: question
+        ? {
+            id: question.id,
+            type: question.type,
+            prompt: question.prompt,
+            options: question.options ? question.options.map(({ id, label }) => ({ id, label })) : null,
+            points: question.points,
+            timeLimitSeconds: question.time_limit_seconds,
+            orderIndex: question.order_index,
+            correctOptionId: revealSafe ? (question.options?.find((o) => o.isCorrect)?.id ?? null) : null,
+            correctNumeric: revealSafe ? question.correct_numeric : null,
+            acceptedAnswers: revealSafe ? question.accepted_answers : null,
+          }
+        : null,
+      questionEndsAt: session.question_ends_at,
+      teams: teams.map((team) => ({
+        id: team.id,
+        name: team.name,
+        isActive: team.is_active,
+        score: scoreByTeam.get(team.id) ?? 0,
+        infractionCount: 0, // wired to real infractions in Task 14
+      })),
+    };
+  }
+
+  async transitionState(
+    sessionId: string,
+    hostId: string,
+    newState: QuizState,
+    options: TransitionOptions = {},
+  ): Promise<SessionRecord> {
+    const session = await this.requireOwnedSession(sessionId, hostId);
+    assertValidTransition(session.status, newState);
+
+    const patch: Parameters<SessionsRepository['updateStatus']>[1] = { status: newState };
+
+    if (newState === 'LOCK_IN_ROUND') {
+      if (!options.questionId) {
+        throw new BadRequestException('questionId is required to start a lock-in round');
+      }
+      patch.current_question_id = options.questionId;
+      if (!session.started_at) {
+        patch.started_at = new Date().toISOString();
+      }
+    }
+
+    if (newState === 'QUESTION_ACTIVE') {
+      const questionId = session.current_question_id;
+      if (!questionId) throw new BadRequestException('No question selected for this session');
+      const question = await this.questions.findById(questionId);
+      if (!question) throw new NotFoundException('Question not found');
+      patch.question_ends_at = new Date(Date.now() + question.time_limit_seconds * 1000).toISOString();
+    }
+
+    if (newState === 'FINISHED') {
+      patch.finished_at = new Date().toISOString();
+    }
+
+    const updated = await this.sessions.updateStatus(sessionId, patch);
+
+    if (newState === 'QUESTION_REVEAL' && updated.current_question_id) {
+      await this.gradeNumericAnswers(updated.id, updated.current_question_id);
+    }
+
+    await this.broadcast.publish(sessionId, 'STATE_CHANGE', {
+      status: updated.status,
+      currentQuestionId: updated.current_question_id,
+      questionEndsAt: updated.question_ends_at,
+    });
+
+    return updated;
+  }
+
+  async resolveDispute(answerId: string, hostId: string, decision: 'APPROVE' | 'REJECT'): Promise<AnswerRecord> {
+    const answer = await this.answers.findById(answerId);
+    if (!answer) throw new NotFoundException('Answer not found');
+
+    const session = await this.requireOwnedSession(answer.session_id, hostId);
+    const question = await this.questions.findById(answer.question_id);
+    if (!question) throw new NotFoundException('Question not found');
+
+    const isCorrect = decision === 'APPROVE';
+    const updated = await this.answers.updateGrade(answerId, {
+      is_correct: isCorrect,
+      needs_review: false,
+      graded_by: 'HOST',
+      score_awarded: isCorrect ? question.points : 0,
+    });
+
+    await this.broadcast.publish(session.id, 'SCORE_UPDATE', { teamId: answer.team_id, answerId: updated.id });
+    return updated;
+  }
+
+  private async gradeNumericAnswers(sessionId: string, questionId: string): Promise<void> {
+    const question = await this.questions.findById(questionId);
+    if (!question || question.type !== 'NUMERIC_NEAREST' || question.correct_numeric === null) return;
+
+    const submitted = await this.answers.listByQuestion(sessionId, questionId);
+    const numericAnswers = submitted.map((a) => ({
+      teamId: a.team_id,
+      value: Number((a.response as { value: number }).value),
+    }));
+    const graded = gradeNumericNearest(numericAnswers, question.correct_numeric);
+    const winnerCount = graded.filter((g) => g.isCorrect).length || 1;
+    const pointsPerWinner = Math.floor(question.points / winnerCount);
+
+    const byTeamId = new Map(submitted.map((a) => [a.team_id, a.id]));
+    for (const result of graded) {
+      const answerId = byTeamId.get(result.teamId);
+      if (!answerId) continue;
+      await this.answers.updateGrade(answerId, {
+        is_correct: result.isCorrect,
+        graded_by: 'AUTO',
+        score_awarded: result.isCorrect ? pointsPerWinner : 0,
+      });
+    }
+
+    await this.broadcast.publish(sessionId, 'SCORE_UPDATE', { questionId });
+  }
+
+  private async requireSession(sessionId: string): Promise<SessionRecord> {
+    const session = await this.sessions.findById(sessionId);
+    if (!session) throw new NotFoundException('Session not found');
+    return session;
+  }
+
+  private async requireOwnedSession(sessionId: string, hostId: string): Promise<SessionRecord> {
+    const session = await this.requireSession(sessionId);
+    if (session.host_id !== hostId) throw new ForbiddenException('Not your session');
+    return session;
+  }
+}
