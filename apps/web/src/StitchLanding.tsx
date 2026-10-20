@@ -6,6 +6,7 @@ import { useI18n } from './lib/i18n';
 import './stitch-landing.css';
 
 type HostMode = 'login' | 'register' | 'recover';
+type FeedbackCode = 'AUTH_SIGN_IN_FAILED' | 'AUTH_SIGN_UP_FAILED' | 'AUTH_RECOVERY_FAILED' | 'AUTH_REGISTERED' | 'AUTH_RECOVERY_SENT';
 
 export function StitchLanding() {
   const { locale, setLocale, t } = useI18n();
@@ -16,7 +17,7 @@ export function StitchLanding() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
-  const [feedback, setFeedback] = useState<{ error: boolean; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{ code: FeedbackCode; error: boolean; message: string } | null>(null);
   const [teamOpen, setTeamOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
 
@@ -37,15 +38,16 @@ export function StitchLanding() {
     if (pending) return;
     setFeedback(null);
     setPending(true);
+    const operation = hostMode;
     try {
       if (hostMode === 'recover') {
         const { error } = await supabase.auth.resetPasswordForEmail(email);
         if (error) throw error;
-        setFeedback({ error: false, message: t('stitch.auth.recoverySent') });
+        setFeedback({ code: 'AUTH_RECOVERY_SENT', error: false, message: t('stitch.auth.recoverySent') });
       } else if (hostMode === 'register') {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setFeedback({ error: false, message: t('stitch.auth.registered') });
+        setFeedback({ code: 'AUTH_REGISTERED', error: false, message: t('stitch.auth.registered') });
         if (data.session) navigate('/host');
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -53,7 +55,7 @@ export function StitchLanding() {
         navigate('/host');
       }
     } catch (error) {
-      setFeedback({ error: true, message: error instanceof Error ? error.message : t('stitch.auth.failed') });
+      setFeedback({ code: operation === 'login' ? 'AUTH_SIGN_IN_FAILED' : operation === 'register' ? 'AUTH_SIGN_UP_FAILED' : 'AUTH_RECOVERY_FAILED', error: true, message: error instanceof Error ? error.message : typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string' ? error.message : t('stitch.auth.failed') });
     } finally {
       setPending(false);
     }
@@ -113,7 +115,7 @@ export function StitchLanding() {
             <label className="block text-xs font-semibold text-slate-300">{t('stitch.auth.email')}<span className="relative mt-2 block"><Mail className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" /><input data-testid="host-email" className={glassField} type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)} /></span></label>
             {hostMode !== 'recover' && <label className="block text-xs font-semibold text-slate-300">{t('stitch.auth.password')}<span className="relative mt-2 block"><Lock className="absolute left-4 top-3.5 h-4 w-4 text-slate-400" /><input data-testid="host-password" className={glassField + ' pr-12'} type={showPassword ? 'text' : 'password'} autoComplete={hostMode === 'login' ? 'current-password' : 'new-password'} minLength={6} required value={password} onChange={e=>setPassword(e.target.value)} /><button type="button" data-testid="host-password-visibility" aria-label={t('stitch.auth.togglePassword')} className="absolute right-3 top-3 p-1 text-slate-400" onClick={() => setShowPassword(v=>!v)}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button></span></label>}
             {hostMode === 'login' && <div className="flex items-center justify-end text-xs"><button data-testid="host-forgot-password" type="button" className="text-purple-400 hover:text-purple-300" onClick={() => {setHostMode('recover');setFeedback(null);}}>{t('stitch.auth.forgot')}</button></div>}
-            {feedback && <p data-testid="host-auth-feedback" role={feedback.error ? 'alert' : 'status'} className={`rounded-lg border px-3 py-2 text-xs ${feedback.error ? 'border-red-500/40 text-red-300' : 'border-emerald-500/40 text-emerald-300'}`}>{feedback.message}</p>}
+            {feedback && <p data-testid="host-auth-feedback" data-feedback-code={feedback.code} role={feedback.error ? 'alert' : 'status'} className={`rounded-lg border px-3 py-2 text-xs ${feedback.error ? 'border-red-500/40 text-red-300' : 'border-emerald-500/40 text-emerald-300'}`}>{feedback.message}</p>}
             <button data-testid="host-auth-submit" type="submit" disabled={pending} className="stitch-primary w-full py-3 font-bold disabled:opacity-50">{pending ? t('stitch.auth.pending') : t(hostMode === 'recover' ? 'stitch.auth.recoverButton' : hostMode === 'register' ? 'stitch.auth.registerButton' : 'stitch.auth.loginButton')} →</button>
           </form>
           <div className="my-6 border-t border-white/10" />
