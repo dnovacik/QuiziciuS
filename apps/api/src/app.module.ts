@@ -6,6 +6,7 @@ import { DataModule } from './data/data.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { TeamsModule } from './teams/teams.module';
 import { AnswersModule } from './answers/answers.module';
+import { InfractionsModule } from './infractions/infractions.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { AnswersModule } from './answers/answers.module';
     RealtimeModule,
     TeamsModule,
     AnswersModule,
+    InfractionsModule,
   ],
 })
 export class AppModule {}

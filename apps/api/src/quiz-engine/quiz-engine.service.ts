@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
 import { AnswerRecord, AnswersRepository } from '../data/answers.repository';
+import { InfractionsRepository } from '../data/infractions.repository';
 import { QuestionsRepository } from '../data/questions.repository';
 import { SessionRecord, SessionsRepository } from '../data/sessions.repository';
 import { TeamsRepository } from '../data/teams.repository';
@@ -20,6 +21,7 @@ export class QuizEngineService {
     private readonly questions: QuestionsRepository,
     private readonly teams: TeamsRepository,
     private readonly answers: AnswersRepository,
+    private readonly infractions: InfractionsRepository,
     private readonly broadcast: RealtimeBroadcastService,
   ) {}
 
@@ -29,15 +31,21 @@ export class QuizEngineService {
 
   async getState(sessionId: string): Promise<QuizSessionStateDto> {
     const session = await this.requireSession(sessionId);
-    const [question, teams, answers] = await Promise.all([
+    const [question, teams, answers, infractions] = await Promise.all([
       session.current_question_id ? this.questions.findById(session.current_question_id) : Promise.resolve(null),
       this.teams.listBySession(sessionId),
       this.answers.listBySession(sessionId),
+      this.infractions.listBySession(sessionId),
     ]);
 
     const scoreByTeam = new Map<string, number>();
     for (const answer of answers) {
       scoreByTeam.set(answer.team_id, (scoreByTeam.get(answer.team_id) ?? 0) + answer.score_awarded);
+    }
+
+    const infractionCountByTeam = new Map<string, number>();
+    for (const infraction of infractions) {
+      infractionCountByTeam.set(infraction.team_id, (infractionCountByTeam.get(infraction.team_id) ?? 0) + 1);
     }
 
     const revealSafe = (['QUESTION_REVEAL', 'PAUSE_BREAK', 'FINISHED'] as QuizState[]).includes(session.status);
@@ -66,7 +74,7 @@ export class QuizEngineService {
         name: team.name,
         isActive: team.is_active,
         score: scoreByTeam.get(team.id) ?? 0,
-        infractionCount: 0, // wired to real infractions in Task 14
+        infractionCount: infractionCountByTeam.get(team.id) ?? 0,
       })),
     };
   }

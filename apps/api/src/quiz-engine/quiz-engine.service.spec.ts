@@ -1,5 +1,6 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { AnswerRecord, AnswersRepository } from '../data/answers.repository';
+import { InfractionsRepository } from '../data/infractions.repository';
 import { QuestionRecord, QuestionsRepository } from '../data/questions.repository';
 import { SessionRecord, SessionsRepository } from '../data/sessions.repository';
 import { TeamRecord, TeamsRepository } from '../data/teams.repository';
@@ -75,10 +76,14 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
       ...patch,
     })),
   };
+  const infractions: InfractionsRepository = {
+    create: jest.fn(),
+    listBySession: jest.fn().mockResolvedValue([]),
+  };
   const broadcast = { publish: jest.fn().mockResolvedValue(undefined) } as unknown as RealtimeBroadcastService;
 
-  const service = new QuizEngineService(sessions, questions, teams, answers, broadcast);
-  return { service, sessions, questions, teams, answers, broadcast, session };
+  const service = new QuizEngineService(sessions, questions, teams, answers, infractions, broadcast);
+  return { service, sessions, questions, teams, answers, infractions, broadcast, session };
 }
 
 describe('QuizEngineService.transitionState', () => {
@@ -221,6 +226,21 @@ describe('QuizEngineService.getState', () => {
     (sessions.findById as jest.Mock).mockResolvedValue(null);
 
     await expect(service.getState('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('includes each team infraction count from InfractionsRepository', async () => {
+    const { service, teams, infractions } = buildHarness({ session: { status: 'LOBBY' } });
+    (teams.listBySession as jest.Mock).mockResolvedValue([
+      { id: 't1', session_id: 's1', name: 'Team A', device_token_hash: null, joined_at: 'now', is_active: true },
+    ]);
+    (infractions.listBySession as jest.Mock).mockResolvedValue([
+      { id: 'i1', session_id: 's1', team_id: 't1', type: 'VISIBILITY_HIDDEN', detected_at: 'now', reviewed: false },
+      { id: 'i2', session_id: 's1', team_id: 't1', type: 'FULLSCREEN_EXIT', detected_at: 'now', reviewed: false },
+    ]);
+
+    const state = await service.getState('s1');
+
+    expect(state.teams[0].infractionCount).toBe(2);
   });
 });
 

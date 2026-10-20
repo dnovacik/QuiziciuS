@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { AnswersRepository, SupabaseAnswersRepository } from './answers.repository';
+import { InfractionsRepository, SupabaseInfractionsRepository } from './infractions.repository';
 import { QuestionsRepository, SupabaseQuestionsRepository } from './questions.repository';
 import { SessionsRepository, SupabaseSessionsRepository } from './sessions.repository';
 import { SupabaseTeamsRepository, TeamsRepository } from './teams.repository';
@@ -11,7 +12,8 @@ import { SupabaseTeamsRepository, TeamsRepository } from './teams.repository';
     { provide: QuestionsRepository, useClass: SupabaseQuestionsRepository },
     { provide: TeamsRepository, useClass: SupabaseTeamsRepository },
     { provide: AnswersRepository, useClass: SupabaseAnswersRepository },
+    { provide: InfractionsRepository, useClass: SupabaseInfractionsRepository },
   ],
-  exports: [SessionsRepository, QuestionsRepository, TeamsRepository, AnswersRepository],
+  exports: [SessionsRepository, QuestionsRepository, TeamsRepository, AnswersRepository, InfractionsRepository],
 })
 export class DataModule {}
