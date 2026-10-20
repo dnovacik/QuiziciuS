@@ -93,3 +93,13 @@ Verification status: authored tests, but no local environment test run by assist
 - Landing and route tests select elements using stable `data-testid` attributes (`landing-logo`, `landing-host-entry`, `landing-team-entry`, `landing-join-quiz`, `locale-sk`, `locale-en`, `landing-mobile-menu-toggle`).
 - Tests no longer match translated Slovak or English text in navigation assertions; translation coverage is tested by comparing JSON keys and the locale persistence test.
 - Prefer stable IDs or test attributes over styling classes, which may change when design is refined. Accessible labels remain for users and assistive technology.
+
+## Stitch UI port — Host authentication (2026-10-20)
+- Source: user-provided `code.html` exported from Google Stitch; React port lives in `apps/web/src/StitchLanding.tsx` and `stitch-landing.css`.
+- Host sign-in uses `supabase.auth.signInWithPassword`, registration uses `supabase.auth.signUp`, reset uses `supabase.auth.resetPasswordForEmail`; on successful session navigation returns `/host` dashboard through existing HostApp.
+- Existing `/host` unauthenticated view reuses this layout; no duplicated credential handler. Form errors are displayed (Supabase SDK messages are not yet localized).
+- Language content stored in `src/locales/sk.json` and `en.json`, accessed via typed `t()`.
+- Team button opens a modal with a link to existing `/play` joining. The six-digit PIN, table number, and persistent team registration flow from the Stitch concept are deliberately NOT claimed as implemented: team account/API work remains a separate package.
+- Omitted fake testimonial and unsupported Google/Microsoft OAuth buttons from Stitch. Original source has CSS atmospheric gradients but no embedded pub photograph; production photo assets are separate design work.
+- Test selectors are `data-testid`, not translated text. CI + local acceptance pending.
+- Local QA: `pnpm -r build`; `pnpm -r --workspace-concurrency=1 run test`; verify `/` and `/host` with Supabase configured; register, confirm email if required, log in, password reset, translate, team modal; mobile responsive layout.
