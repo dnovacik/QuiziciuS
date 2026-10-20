@@ -82,3 +82,9 @@ Verification status: authored tests, but no local environment test run by assist
 - Both host entry points route to existing `/host` auth UI, which provides login and signup. Team entry labels are explicitly disabled/coming soon until registered team auth exists; no broken routes.
 - Styled wordmark exposes a stable `aria-label="QuiziciuS"`, so tests query accessible brand identity rather than text node concatenation.
 - Responsive auth menu includes same actions and language switch.
+
+## i18n remediation on PR #2
+- Moved translation dictionaries out of TypeScript into `apps/web/src/locales/sk.json` and `en.json`.
+- `useI18n().t('key')` is required for landing and team-entry UI strings; JSON catalogs have equal key sets, verified in existing tests.
+- Slovak remains the default with saved English preference. Placeholder names/event examples are demo data, not translations.
+- Locale conversion is preliminary until CI and local visual review verify every visible string.
