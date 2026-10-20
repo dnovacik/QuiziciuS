@@ -23,7 +23,7 @@ vi.mock('./lib/supabase-client', () => ({
 describe('App', () => {
   it('renders the fallback route at an unmatched path', () => {
     render(<App />);
-    expect(screen.getByText('Quizicius')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /QuiziciuS/i })).toHaveAttribute('href', '/');
   });
 });
 
