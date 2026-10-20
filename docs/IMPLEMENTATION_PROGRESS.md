@@ -88,3 +88,8 @@ Verification status: authored tests, but no local environment test run by assist
 - `useI18n().t('key')` is required for landing and team-entry UI strings; JSON catalogs have equal key sets, verified in existing tests.
 - Slovak remains the default with saved English preference. Placeholder names/event examples are demo data, not translations.
 - Locale conversion is preliminary until CI and local visual review verify every visible string.
+
+## Language-independent UI tests
+- Landing and route tests select elements using stable `data-testid` attributes (`landing-logo`, `landing-host-entry`, `landing-team-entry`, `landing-join-quiz`, `locale-sk`, `locale-en`, `landing-mobile-menu-toggle`).
+- Tests no longer match translated Slovak or English text in navigation assertions; translation coverage is tested by comparing JSON keys and the locale persistence test.
+- Prefer stable IDs or test attributes over styling classes, which may change when design is refined. Accessible labels remain for users and assistive technology.
