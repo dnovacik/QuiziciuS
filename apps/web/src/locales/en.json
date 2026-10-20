@@ -321,5 +321,7 @@
   "live.state.LOCK_IN_ROUND": "Prepare question",
   "live.state.QUESTION_ACTIVE": "Start question",
   "live.state.QUESTION_REVEAL": "Reveal answers",
-  "live.state.PAUSE_BREAK": "Take a break"
+  "live.state.PAUSE_BREAK": "Take a break",
+  "live.resume": "Open Control Room",
+  "live.noSessions": "No quiz sessions yet. Start one from My Quizzes."
 }
