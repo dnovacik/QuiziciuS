@@ -26,11 +26,28 @@ export function TeamHub() {
  const [pub,setPub]=useState('');
  const [availability,setAvailability]=useState<'idle'|'available'|'taken'|'invalid'>('idle');
  const [checking,setChecking]=useState(false);
+ const [debouncedName,setDebouncedName]=useState('');
  const [code,setCode]=useState('');
  const [joinOpen,setJoinOpen]=useState(false);
  const [joining,setJoining]=useState(false);
  useEffect(()=>{if(!token)return;let active=true;setFetching(true);apiGet<Team[]>('/registered-teams/mine',token).then(items=>{if(active){setTeams(items);setTeam(items[0]??null)}}).catch(err=>{if(active)setError(err instanceof Error?err.message:t('hub.loadError'))}).finally(()=>{if(active)setFetching(false)});return()=>{active=false}},[token]);
- useEffect(()=>{if(!token||name.trim().length<3){setAvailability('idle');return;}let active=true;setChecking(true);const timer=setTimeout(()=>{apiGet<{available:boolean;code:string}>(`/registered-teams/availability/${encodeURIComponent(name.trim())}`,token).then(r=>{if(active)setAvailability(r.available?'available':'taken')}).catch(()=>{if(active)setAvailability('invalid')}).finally(()=>{if(active)setChecking(false)})},400);return()=>{active=false;clearTimeout(timer)}},[name,token]);
+ useEffect(()=>{
+   const normalized=name.trim().toLowerCase();
+   setAvailability('idle');
+   setChecking(Boolean(token && normalized.length>=3 && normalized.length<=30));
+   if(!token || normalized.length<3 || normalized.length>30){setDebouncedName('');return;}
+   const timer=setTimeout(()=>setDebouncedName(normalized),650);
+   return ()=>clearTimeout(timer);
+ },[name,token]);
+ useEffect(()=>{
+   if(!token || !debouncedName || debouncedName!==name.trim().toLowerCase())return;
+   let active=true;
+   apiGet<{available:boolean;code:string}>(`/registered-teams/availability/${encodeURIComponent(debouncedName)}`,token)
+     .then(result=>{if(active)setAvailability(result.available?'available':'taken')})
+     .catch(()=>{if(active)setAvailability('invalid')})
+     .finally(()=>{if(active)setChecking(false)});
+   return ()=>{active=false};
+ },[debouncedName,name,token]);
  async function joinQuiz(e:FormEvent){e.preventDefault();if(!team||joining)return;setJoining(true);setError(null);try{const session=await apiGet<{id:string}>(`/sessions/by-code/${encodeURIComponent(code.trim().toUpperCase())}`);const result=await apiPost<{teamId:string;token:string}>(`/sessions/${session.id}/teams/join`,{name:team.name});localStorage.setItem(`quizicius:team:${session.id}`,JSON.stringify({sessionId:session.id,teamId:result.teamId,token:result.token}));navigate(`/play/${session.id}`);}catch(err){setError(err instanceof Error?err.message:t('hub.joinError'))}finally{setJoining(false)}}
  async function submit(e:FormEvent){e.preventDefault();if(!token||creating)return;setCreating(true);setError(null);try{const created=await apiPost<Team>('/registered-teams',{name:name.trim(),description,badge,color,expectedMembers:count,homePub:pub},token);setTeam(created);setTeams(old=>[created,...old]);}catch(err){setError(err instanceof Error?err.message:t('hub.createError'))}finally{setCreating(false)}}
  if(loading||fetching)return <div data-testid="team-hub-loading" className="team-hub min-h-screen p-12">{t('hub.loading')}</div>;
