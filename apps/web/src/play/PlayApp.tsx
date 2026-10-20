@@ -2,8 +2,8 @@ import { useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { useSessionState } from '../lib/use-session-state';
 import { useQuizSecurity } from './use-quiz-security';
-import { JoinScreen, JoinResult } from './JoinScreen';
-import { QuestionScreen } from './QuestionScreen';
+import { StitchJoinScreen, JoinResult } from './StitchJoinScreen';
+import { StitchQuestionScreen } from './StitchQuestionScreen';
 
 const STORAGE_PREFIX = 'quizicius:team:';
 
@@ -36,7 +36,7 @@ export default function PlayApp() {
   if (!joined) {
     return (
       <div data-testid="play-app">
-        <JoinScreen initialSessionId={sessionId} onJoined={handleJoined} />
+        <StitchJoinScreen initialSessionId={sessionId} onJoined={handleJoined} />
       </div>
     );
   }
@@ -53,7 +53,7 @@ export default function PlayApp() {
         local state; without the key it is never remounted and `submitted` would stay
         true forever after the first answer, locking the team out of every later round.
       */}
-      <QuestionScreen
+      <StitchQuestionScreen
         key={state.currentQuestion?.id}
         state={state}
         teamId={joined.teamId}
