@@ -466,7 +466,7 @@ export function LandingPage() {
                 </div>
 
                 {/* Quick Buttons */}
-                <Link to="/play" className="block w-full bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-2 rounded-lg mb-2 shadow-md transition-colors">{en ? "Join a quiz" : "Pripojiť sa ku kvízu"}</Link>
+                <span className="block w-full bg-purple-600 text-white text-xs font-bold py-2 rounded-lg mb-2 shadow-md transition-colors">{en ? "Join a quiz" : "Pripojiť sa ku kvízu"}</span>
                 <span className="block w-full border border-slate-700 text-slate-400 text-xs font-semibold py-1.5 rounded-lg">{en ? "Results coming soon" : "Výsledky už čoskoro"}</span>
               </div>
             </div>
