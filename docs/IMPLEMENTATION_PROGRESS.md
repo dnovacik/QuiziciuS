@@ -69,3 +69,9 @@ Verification status: authored tests, but no local environment test run by assist
 - Mock counters do not claim actual platform uptake; sample event/team content is illustrative and not loaded from the database.
 - No backend endpoint was invented or changed as part of this landing-only PR.
 - Local QA: check desktop and mobile layouts, both locales, `/host` / `/play` routing, sample quiz selection, all visible anchor navigation and CI.
+
+## Landing navigation refinement
+- Sticky translucent header stays visible while scrolling, with overflow clipping instead of overflow-x hidden so sticky positioning can work.
+- Keep only 2 useful section links: quiz preview and audience cards. Removed duplicate/unimplemented Features, How it works, Pubs & leagues, Super-League, and Contact menu items.
+- Active section uses purple underline and `aria-current=location`; mobile navigation mirrors the same sections.
+- Review at desktop/mobile and verify header sticks and purple underline updates as sections enter view.
