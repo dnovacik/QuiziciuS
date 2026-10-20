@@ -22,6 +22,7 @@ export type SessionStatusPatch = Partial<
 export abstract class SessionsRepository {
   abstract create(quizId: string, hostId: string, joinCode: string): Promise<SessionRecord>;
   abstract findById(id: string): Promise<SessionRecord | null>;
+  abstract listByHost(hostId: string): Promise<SessionRecord[]>;
   /**
    * Resolves a spoken-aloud join code to its session. Join codes are only unique
    * among sessions that are still joinable (see the partial unique index in
@@ -46,6 +47,12 @@ export class SupabaseSessionsRepository extends SessionsRepository {
       .single();
     if (error) throw new InternalServerErrorException(error.message);
     return data as SessionRecord;
+  }
+
+  async listByHost(hostId:string):Promise<SessionRecord[]>{
+    const {data,error}=await this.supabase.getClient().from('quiz_sessions').select().eq('host_id',hostId).order('created_at',{ascending:false});
+    if(error)throw new InternalServerErrorException(error.message);
+    return (data??[]) as SessionRecord[];
   }
 
   async findById(id: string): Promise<SessionRecord | null> {
