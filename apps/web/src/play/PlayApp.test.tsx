@@ -59,7 +59,7 @@ describe('PlayApp', () => {
   it('shows the join screen when no team is stored for this session', () => {
     renderPlay();
 
-    expect(screen.getByRole('heading', { name: 'Join the quiz' })).toBeInTheDocument();
+    expect(screen.getByTestId('player-join')).toBeInTheDocument();
   });
 
   it('lets a team answer a second question after locking in an answer to the first', async () => {
@@ -71,7 +71,8 @@ describe('PlayApp', () => {
 
     const { rerender } = renderPlay();
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Paris' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'A Paris' }));
+    fireEvent.click(screen.getByTestId('player-submit-answer'));
     expect(await screen.findByText('Answer locked in!')).toBeInTheDocument();
 
     // The session advances to the next question; QuestionScreen must remount so its
@@ -86,9 +87,10 @@ describe('PlayApp', () => {
     );
 
     expect(screen.queryByText('Answer locked in!')).not.toBeInTheDocument();
-    const secondOption = await screen.findByRole('button', { name: 'Rome' });
+    const secondOption = await screen.findByRole('button', { name: 'A Rome' });
 
     fireEvent.click(secondOption);
+    fireEvent.click(screen.getByTestId('player-submit-answer'));
     expect(apiPost).toHaveBeenLastCalledWith(
       '/sessions/s1/answers',
       { questionId: 'q2', response: { optionId: 'a' } },
