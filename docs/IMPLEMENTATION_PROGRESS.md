@@ -115,3 +115,14 @@ Verification status: authored tests, but no local environment test run by assist
 - QR load accepts an image from file selection/camera capture using native BarcodeDetector when supported; valid same-origin `/play/:id` QR navigates directly, a plain 4-character QR populates the code field. Unsupported browsers show an explanatory message (not silent success).
 - Registration form sends captain signup to Supabase and stores requested team metadata; permanent team creation, unique name enforcement and member management are NOT yet implemented server-side. UI clearly notes that the team backend step is pending.
 - Tests use stable `data-testid` selectors and inspect the complete fields without language-dependent assertions. Remaining tasks: production-grade team registration service, independent account authorization and cross-browser QR scanning fallback.
+
+## PR #4 — Captain onboarding and team dashboard
+- Added Supabase migration `0008_registered_teams.sql` for permanent teams, globally unique normalized names, RLS deny-all to browser and atomic creation of a captain membership.
+- Added authenticated NestJS endpoints: `GET /api/registered-teams/mine`, `GET /api/registered-teams/availability/:name`, `POST /api/registered-teams`.
+- Ported primary onboarding/dashboard design tokens from Stitch's `stitch_cpt_onboarding.zip` and `stitch_captain_dashboard.zip`. Live preview, badge/color, description, expected members, home pub and team name availability are stateful and persisted through API.
+- Authenticated `/team` opens onboarding for captains without teams, and real dashboard for existing teams. The dashboard uses empty states for roster invitations, league, upcoming quizzes and match history instead of misleading Stitch demo metrics.
+- Join by 4-character quiz code is connected to existing session resolution / join API. This flow currently enrolls the permanent team name as a session-team, but session statistics are not yet linked to the registered-team ID. Team invitations, roster edits, league assignment and history require follow-up backend features.
+- API uses Supabase service-role exclusively; clients may not read `registered_teams` via PostgREST, and captain identity comes from verified bearer token.
+- All new UI text lives in `sk.json`/`en.json`; tests use data-test IDs instead of language strings.
+- Deployment requires executing migration `0008_registered_teams.sql` before testing team creation.
+- QA: `pnpm -r build`, `pnpm -r --workspace-concurrency=1 run test`; check name collision across separate captains, create, refresh persisted team, join quiz, sign out, narrow/mobile viewport.
