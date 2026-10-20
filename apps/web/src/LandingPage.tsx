@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from './lib/i18n';
 import { 
@@ -29,9 +29,29 @@ export function LandingPage() {
   const en = locale === 'en';
   const [selectedAnswer, setSelectedAnswer] = useState('B');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('demo');
+
+  useEffect(() => {
+    const updateActive = () => {
+      let current = 'demo';
+      for (const id of ['demo', 'pre-koho']) {
+        const section = document.getElementById(id);
+        if (section && section.getBoundingClientRect().top <= 160) current = id;
+      }
+      setActiveSection(current);
+    };
+    window.addEventListener('scroll', updateActive, { passive: true });
+    updateActive();
+    return () => window.removeEventListener('scroll', updateActive);
+  }, []);
+
+  const navItems = [
+    { id: 'demo', label: en ? 'Quiz preview' : 'Ukážka kvízu' },
+    { id: 'pre-koho', label: en ? 'For whom' : 'Pre koho' },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#060310] text-slate-100 font-sans selection:bg-[#a855f7] selection:text-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#060310] text-slate-100 font-sans selection:bg-[#a855f7] selection:text-white relative overflow-x-clip">
       {/* Background Ambient Glows */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-purple-900/30 rounded-full blur-[128px]"></div>
@@ -46,7 +66,7 @@ export function LandingPage() {
         {/* ========================================================================= */}
         {/* HEADER / NAVIGATION BAR                                                  */}
         {/* ========================================================================= */}
-        <header className="w-full flex items-center justify-between py-6 border-b border-white/5">
+        <header className="sticky top-0 z-50 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 flex items-center justify-between py-4 border-b border-purple-500/15 bg-[#080517]/95 backdrop-blur-xl shadow-lg shadow-black/20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 cursor-pointer group">
             <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-purple-600 to-indigo-600 p-0.5 shadow-lg shadow-purple-950/50 group-hover:scale-105 transition-transform">
@@ -61,16 +81,13 @@ export function LandingPage() {
             </span>
           </Link>
 
-          {/* Central Menu (Desktop) */}
-          <nav className="hidden lg:flex items-center gap-7 text-sm text-slate-300 font-medium">
-            <a href="#pre-koho" className="hover:text-purple-400 transition-colors">{en ? "Features" : "Funkcie"}</a>
-            <a href="#pre-koho" className="hover:text-purple-400 transition-colors">{en ? "For whom" : "Pre koho"}</a>
-            <a href="#demo" className="hover:text-purple-400 transition-colors">{en ? "How it works" : "Ako to funguje"}</a>
-            <a href="#puby-a-ligy" className="hover:text-purple-400 transition-colors">{en ? "Pubs & leagues" : "Puby a ligy"}</a>
-            <a href="#superliga" className="hover:text-purple-400 transition-colors flex items-center gap-1">
-              Superliga <span className="bg-gradient-to-r from-amber-500 to-purple-600 text-[10px] font-bold px-1.5 py-0.5 rounded text-white uppercase">New</span>
-            </a>
-            <a href="#kontakt" className="hover:text-purple-400 transition-colors">{en ? "Contact" : "Kontakt"}</a>
+          <nav aria-label={en ? 'Main navigation' : 'Hlavná navigácia'} className="hidden lg:flex items-center gap-8 text-sm font-medium">
+            {navItems.map(item => (
+              <a key={item.id} href={`#${item.id}`} aria-current={activeSection === item.id ? 'location' : undefined}
+                className={`relative py-3 transition-colors after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-purple-500 after:transition-transform ${activeSection === item.id ? 'text-white after:scale-x-100' : 'text-slate-300 hover:text-purple-300 after:scale-x-0'}`}>
+                {item.label}
+              </a>
+            ))}
           </nav>
 
           {/* Right Action Cluster */}
@@ -100,21 +117,17 @@ export function LandingPage() {
           </button>
         </header>
 
-        {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-[#0c0f26]/95 backdrop-blur-xl border border-purple-900/40 rounded-2xl mt-2 p-6 flex flex-col gap-4 shadow-2xl relative z-50">
-            <a href="#funkcie" className="text-slate-200 font-medium hover:text-purple-400" onClick={() => setMobileMenuOpen(false)}>{en ? "Features" : "Funkcie"}</a>
-            <a href="#pre-koho" className="text-slate-200 font-medium hover:text-purple-400" onClick={() => setMobileMenuOpen(false)}>{en ? "For whom" : "Pre koho"}</a>
-            <a href="#ako-to-funguje" className="text-slate-200 font-medium hover:text-purple-400" onClick={() => setMobileMenuOpen(false)}>{en ? "How it works" : "Ako to funguje"}</a>
-            <a href="#puby-a-ligy" className="text-slate-200 font-medium hover:text-purple-400" onClick={() => setMobileMenuOpen(false)}>{en ? "Pubs & leagues" : "Puby a ligy"}</a>
-            <a href="#superliga" className="text-slate-200 font-medium hover:text-purple-400" onClick={() => setMobileMenuOpen(false)}>{en ? "Super-League" : "Superliga"}</a>
-            <a href="#kontakt" className="text-slate-200 font-medium hover:text-purple-400" onClick={() => setMobileMenuOpen(false)}>{en ? "Contact" : "Kontakt"}</a>
-            
-            <div className="pt-4 border-t border-slate-800 flex flex-col gap-3">
-              <Link to="/host" className="w-full border border-slate-700 text-center text-slate-200 rounded-xl py-2.5 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>{en ? "Host sign in" : "Prihlásenie organizátora"}</Link>
-              <span className="w-full text-center rounded-xl border border-purple-700/40 py-2.5 text-sm text-purple-200">{en ? "Team registration soon" : "Registrácia tímov čoskoro"}</span>
+          <nav aria-label={en ? 'Mobile navigation' : 'Mobilná navigácia'} className="sticky top-[72px] z-40 rounded-b-2xl border border-purple-900/40 bg-[#0c0f26]/95 p-5 shadow-2xl backdrop-blur-xl lg:hidden">
+            <div className="flex flex-col gap-3">
+              {navItems.map(item => (
+                <a key={item.id} href={`#${item.id}`} aria-current={activeSection === item.id ? 'location' : undefined}
+                  className={`w-fit border-b-2 pb-1 font-medium ${activeSection === item.id ? 'border-purple-500 text-white' : 'border-transparent text-slate-300'}`}
+                  onClick={() => setMobileMenuOpen(false)}>{item.label}</a>
+              ))}
+              <Link to="/host" className="mt-2 rounded-xl border border-slate-700 py-2.5 text-center text-sm" onClick={() => setMobileMenuOpen(false)}>{en ? 'Host sign in' : 'Prihlásenie organizátora'}</Link>
             </div>
-          </div>
+          </nav>
         )}
 
         {/* ========================================================================= */}
