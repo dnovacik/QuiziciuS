@@ -17,7 +17,7 @@ beforeEach(()=>{vi.clearAllMocks();list.mockImplementation(async(path:string)=>p
 describe('Captain onboarding and dashboard',()=>{
  it('loads captain teams and shows onboarding when none exist',async()=>{
    renderHub();
-   await waitFor(()=>expect(list).toHaveBeenCalledWith('/api/registered-teams/mine','captain-token'));
+   await waitFor(()=>expect(list).toHaveBeenCalledWith('/registered-teams/mine','captain-token'));
    expect(await screen.findByTestId('team-create-form')).toBeInTheDocument();
  });
  it('validates a unique name and creates a team with captain token',async()=>{
@@ -26,7 +26,7 @@ describe('Captain onboarding and dashboard',()=>{
    fireEvent.change(screen.getByTestId('hub-team-name'),{target:{value:'Brainstorm'}});
    await waitFor(()=>expect(screen.getByTestId('hub-name-availability')).toHaveAttribute('data-status','available'));
    fireEvent.submit(screen.getByTestId('team-create-form'));
-   await waitFor(()=>expect(post).toHaveBeenCalledWith('/api/registered-teams',{name:'Brainstorm',description:'',badge:'shield',color:'purple',expectedMembers:4,homePub:''},'captain-token'));
+   await waitFor(()=>expect(post).toHaveBeenCalledWith('/registered-teams',{name:'Brainstorm',description:'',badge:'shield',color:'purple',expectedMembers:4,homePub:''},'captain-token'));
    expect(await screen.findByTestId('dashboard-team-name')).toBeInTheDocument();
  });
  it('shows real persisted team without fictitious roster or results',async()=>{
