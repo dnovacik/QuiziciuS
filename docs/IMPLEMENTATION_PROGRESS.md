@@ -60,3 +60,12 @@ Verification status: authored tests, but no local environment test run by assist
 - Check host links go to `/host` and team link goes to `/play` (legacy flow until team auth PR).
 - Artwork is a checked-in static SVG illustration, not a photo; it follows the mock's composition while remaining light and self-hosted.
 - No new API/backend functionality required for this screen.
+
+## Gemini landing layout review (PR #2)
+- Uploaded Gemini TSX is the layout source of truth; replaced the earlier SVG-led implementation.
+- Functional: brand -> `/`, host sign-in -> `/host` (existing Supabase-host auth), play CTA / sample team CTA -> `/play` (legacy join), locale flag buttons, mobile navigation, section scroll links, illustrative question selection.
+- Non-functional by design: create-team account (registration/auth planned in next PR), preview quiz submission, dashboard sample 'new event', historical team results (no public team account results yet), legal/policy/support links (no published pages).
+- Avoid misleading controls: the above unfinished actions are shown as static preview/coming-soon text, not working buttons.
+- Mock counters do not claim actual platform uptake; sample event/team content is illustrative and not loaded from the database.
+- No backend endpoint was invented or changed as part of this landing-only PR.
+- Local QA: check desktop and mobile layouts, both locales, `/host` / `/play` routing, sample quiz selection, all visible anchor navigation and CI.
