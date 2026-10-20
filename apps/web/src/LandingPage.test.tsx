@@ -4,21 +4,38 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { I18nProvider } from './lib/i18n';
 import { LandingPage } from './LandingPage';
 
-describe('LandingPage', () => {
+describe('LandingPage navigation', () => {
   beforeEach(() => localStorage.clear());
-  it('offers Slovak host and join links by default', () => {
+
+  function renderLanding() {
     render(<I18nProvider><MemoryRouter><LandingPage /></MemoryRouter></I18nProvider>);
-    expect(screen.getByRole('link', { name: 'Organizovať kvíz' })).toHaveAttribute('href', '/host');
-    expect(screen.getByRole('link', { name: 'Pripojiť sa ku kvízu' })).toHaveAttribute('href', '/play');
+  }
+
+  it('routes host, team and join actions correctly irrespective of translation', () => {
+    renderLanding();
+    expect(screen.getByTestId('landing-logo')).toHaveAttribute('href', '/');
+    expect(screen.getByTestId('landing-host-entry')).toHaveAttribute('href', '/host');
+    expect(screen.getByTestId('landing-team-entry')).toHaveAttribute('href', '/team');
+    expect(screen.getByTestId('landing-join-quiz')).toHaveAttribute('href', '/play');
+    expect(screen.queryByRole('navigation', { name: /main navigation/i })).not.toBeInTheDocument();
   });
-  it('switches to English and saves the preference', () => {
-    render(<I18nProvider><MemoryRouter><LandingPage /></MemoryRouter></I18nProvider>);
-    fireEvent.click(screen.getByRole('button', { name: 'English' }));
-    expect(screen.getByRole('button', { name: 'English' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('link', { name: 'Host a quiz' })).toHaveAttribute('href', '/host');
-    expect(screen.getByRole('link', { name: 'Join a quiz' })).toHaveAttribute('href', '/play');
+
+  it('persists language selection without relying on translated UI copy', () => {
+    renderLanding();
+    fireEvent.click(screen.getByTestId('locale-en'));
+    expect(screen.getByTestId('locale-en')).toHaveAttribute('aria-pressed', 'true');
     expect(localStorage.getItem('quizicius:locale')).toBe('en');
-    fireEvent.click(screen.getByRole('button', { name: 'Slovenčina' }));
-    expect(screen.getByRole('link', { name: 'Organizovať kvíz' })).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('locale-sk'));
+    expect(screen.getByTestId('locale-sk')).toHaveAttribute('aria-pressed', 'true');
+    expect(localStorage.getItem('quizicius:locale')).toBe('sk');
+  });
+
+  it('opens and closes mobile actions without depending on labels', () => {
+    renderLanding();
+    fireEvent.click(screen.getByTestId('landing-mobile-menu-toggle'));
+    expect(screen.getByTestId('landing-mobile-menu')).toBeInTheDocument();
+    expect(screen.getByTestId('landing-mobile-menu-toggle')).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByTestId('landing-mobile-menu-toggle'));
+    expect(screen.queryByTestId('landing-mobile-menu')).not.toBeInTheDocument();
   });
 });
