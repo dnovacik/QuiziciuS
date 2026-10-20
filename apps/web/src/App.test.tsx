@@ -34,8 +34,8 @@ describe('AppRoutes', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    expect(screen.getAllByRole('link', { name: /Organizovať kvíz/i })[0]).toHaveAttribute('href', '/host');
-    expect(screen.getByRole('link', { name: /Pripojiť sa ku kvízu/i })).toHaveAttribute('href', '/play');
+    expect(screen.getAllByRole('link', { name: /Prihlásenie organizátora/i })[0]).toHaveAttribute('href', '/host');
+    expect(screen.getAllByRole('link', { name: /Pripojiť sa ku kvízu/i })[0]).toHaveAttribute('href', '/play');
   });
 
   it('resolves an unknown path to the landing page too', () => {
@@ -44,7 +44,7 @@ describe('AppRoutes', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    expect(screen.getAllByRole('link', { name: /Organizovať kvíz/i })[0]).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Prihlásenie organizátora/i })[0]).toBeInTheDocument();
   });
 
   it('resolves /host/* to the host app', async () => {
