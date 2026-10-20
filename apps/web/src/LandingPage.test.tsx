@@ -13,9 +13,12 @@ describe('LandingPage', () => {
   });
   it('switches to English and saves the preference', () => {
     render(<I18nProvider><MemoryRouter><LandingPage /></MemoryRouter></I18nProvider>);
-    fireEvent.change(screen.getByRole('combobox', { name: 'Jazyk' }), { target: { value: 'en' } });
+    fireEvent.click(screen.getByRole('button', { name: 'English' }));
+    expect(screen.getByRole('button', { name: 'English' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('link', { name: 'Host a quiz' })).toHaveAttribute('href', '/host');
     expect(screen.getByRole('link', { name: 'Join a quiz' })).toHaveAttribute('href', '/play');
     expect(localStorage.getItem('quizicius:locale')).toBe('en');
+    fireEvent.click(screen.getByRole('button', { name: 'Slovenčina' }));
+    expect(screen.getByRole('link', { name: 'Organizovať kvíz' })).toBeInTheDocument();
   });
 });
