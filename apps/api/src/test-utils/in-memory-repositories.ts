@@ -3,6 +3,7 @@ import { AnswerGradePatch, AnswerRecord, AnswersRepository } from '../data/answe
 import { InfractionRecord, InfractionsRepository } from '../data/infractions.repository';
 import { QuestionRecord, QuestionsRepository } from '../data/questions.repository';
 import { QuizRecord, QuizzesRepository } from '../data/quizzes.repository';
+import { ScoreAdjustmentRecord, ScoreAdjustmentsRepository } from '../data/score-adjustments.repository';
 import { SessionRecord, SessionsRepository, SessionStatusPatch } from '../data/sessions.repository';
 import { TeamRecord, TeamsRepository } from '../data/teams.repository';
 
@@ -180,6 +181,27 @@ export class InMemoryInfractionsRepository extends InfractionsRepository {
 
   async listBySession(sessionId: string): Promise<InfractionRecord[]> {
     return this.rows.filter((i) => i.session_id === sessionId);
+  }
+}
+
+export class InMemoryScoreAdjustmentsRepository extends ScoreAdjustmentsRepository {
+  private rows: ScoreAdjustmentRecord[] = [];
+
+  async create(sessionId: string, teamId: string, points: number, reason: string | null): Promise<ScoreAdjustmentRecord> {
+    const record: ScoreAdjustmentRecord = {
+      id: randomUUID(),
+      session_id: sessionId,
+      team_id: teamId,
+      points,
+      reason,
+      created_at: new Date().toISOString(),
+    };
+    this.rows.push(record);
+    return record;
+  }
+
+  async listBySession(sessionId: string): Promise<ScoreAdjustmentRecord[]> {
+    return this.rows.filter((r) => r.session_id === sessionId);
   }
 }
 

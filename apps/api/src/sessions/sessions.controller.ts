@@ -3,6 +3,7 @@ import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator'
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { QuizzesRepository } from '../data/quizzes.repository';
 import { QuizEngineService } from '../quiz-engine/quiz-engine.service';
+import { AddPaperScoreDto } from './dto/add-paper-score.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
 import { TransitionSessionDto } from './dto/transition-session.dto';
 
@@ -45,5 +46,16 @@ export class SessionsController {
     @Body() dto: ResolveDisputeDto,
   ) {
     return this.quizEngine.resolveDispute(answerId, host.id, dto.decision);
+  }
+
+  @Post('sessions/:sessionId/teams/:teamId/paper-score')
+  @UseGuards(SupabaseAuthGuard)
+  addPaperScore(
+    @Param('sessionId') sessionId: string,
+    @Param('teamId') teamId: string,
+    @CurrentHost() host: CurrentHostPayload,
+    @Body() dto: AddPaperScoreDto,
+  ) {
+    return this.quizEngine.addPaperScore(sessionId, host.id, teamId, dto.points, dto.reason ?? null);
   }
 }

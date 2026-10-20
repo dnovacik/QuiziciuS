@@ -5,6 +5,7 @@ import { AnswersRepository } from './data/answers.repository';
 import { InfractionsRepository } from './data/infractions.repository';
 import { QuestionsRepository } from './data/questions.repository';
 import { QuizzesRepository } from './data/quizzes.repository';
+import { ScoreAdjustmentsRepository } from './data/score-adjustments.repository';
 import { SessionsRepository } from './data/sessions.repository';
 import { TeamsRepository } from './data/teams.repository';
 import { InvalidTransitionExceptionFilter } from './quiz-engine/invalid-transition.filter';
@@ -14,6 +15,7 @@ import {
   InMemoryInfractionsRepository,
   InMemoryQuestionsRepository,
   InMemoryQuizzesRepository,
+  InMemoryScoreAdjustmentsRepository,
   InMemorySessionsRepository,
   InMemoryTeamsRepository,
 } from './test-utils/in-memory-repositories';
@@ -49,6 +51,8 @@ describe('Session lifecycle (integration)', () => {
       .useValue(new InMemoryInfractionsRepository())
       .overrideProvider(QuizzesRepository)
       .useValue(quizzesRepo)
+      .overrideProvider(ScoreAdjustmentsRepository)
+      .useValue(new InMemoryScoreAdjustmentsRepository())
       .overrideGuard(SupabaseAuthGuard)
       .useValue({
         canActivate: (ctx: ExecutionContext) => {

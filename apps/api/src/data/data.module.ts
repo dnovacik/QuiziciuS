@@ -3,6 +3,7 @@ import { AnswersRepository, SupabaseAnswersRepository } from './answers.reposito
 import { InfractionsRepository, SupabaseInfractionsRepository } from './infractions.repository';
 import { QuestionsRepository, SupabaseQuestionsRepository } from './questions.repository';
 import { QuizzesRepository, SupabaseQuizzesRepository } from './quizzes.repository';
+import { ScoreAdjustmentsRepository, SupabaseScoreAdjustmentsRepository } from './score-adjustments.repository';
 import { SessionsRepository, SupabaseSessionsRepository } from './sessions.repository';
 import { SupabaseTeamsRepository, TeamsRepository } from './teams.repository';
 
@@ -15,6 +16,7 @@ import { SupabaseTeamsRepository, TeamsRepository } from './teams.repository';
     { provide: AnswersRepository, useClass: SupabaseAnswersRepository },
     { provide: InfractionsRepository, useClass: SupabaseInfractionsRepository },
     { provide: QuizzesRepository, useClass: SupabaseQuizzesRepository },
+    { provide: ScoreAdjustmentsRepository, useClass: SupabaseScoreAdjustmentsRepository },
   ],
   exports: [
     SessionsRepository,
@@ -23,6 +25,7 @@ import { SupabaseTeamsRepository, TeamsRepository } from './teams.repository';
     AnswersRepository,
     InfractionsRepository,
     QuizzesRepository,
+    ScoreAdjustmentsRepository,
   ],
 })
 export class DataModule {}

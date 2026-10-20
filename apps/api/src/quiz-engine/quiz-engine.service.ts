@@ -3,6 +3,7 @@ import { QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
 import { AnswerRecord, AnswersRepository } from '../data/answers.repository';
 import { InfractionsRepository } from '../data/infractions.repository';
 import { QuestionsRepository } from '../data/questions.repository';
+import { ScoreAdjustmentRecord, ScoreAdjustmentsRepository } from '../data/score-adjustments.repository';
 import { SessionRecord, SessionsRepository } from '../data/sessions.repository';
 import { TeamsRepository } from '../data/teams.repository';
 import { RealtimeBroadcastService } from '../realtime/realtime-broadcast.service';
@@ -22,6 +23,7 @@ export class QuizEngineService {
     private readonly teams: TeamsRepository,
     private readonly answers: AnswersRepository,
     private readonly infractions: InfractionsRepository,
+    private readonly scoreAdjustments: ScoreAdjustmentsRepository,
     private readonly broadcast: RealtimeBroadcastService,
   ) {}
 
@@ -31,16 +33,20 @@ export class QuizEngineService {
 
   async getState(sessionId: string): Promise<QuizSessionStateDto> {
     const session = await this.requireSession(sessionId);
-    const [question, teams, answers, infractions] = await Promise.all([
+    const [question, teams, answers, infractions, scoreAdjustments] = await Promise.all([
       session.current_question_id ? this.questions.findById(session.current_question_id) : Promise.resolve(null),
       this.teams.listBySession(sessionId),
       this.answers.listBySession(sessionId),
       this.infractions.listBySession(sessionId),
+      this.scoreAdjustments.listBySession(sessionId),
     ]);
 
     const scoreByTeam = new Map<string, number>();
     for (const answer of answers) {
       scoreByTeam.set(answer.team_id, (scoreByTeam.get(answer.team_id) ?? 0) + answer.score_awarded);
+    }
+    for (const adjustment of scoreAdjustments) {
+      scoreByTeam.set(adjustment.team_id, (scoreByTeam.get(adjustment.team_id) ?? 0) + adjustment.points);
     }
 
     const infractionCountByTeam = new Map<string, number>();
@@ -145,6 +151,19 @@ export class QuizEngineService {
 
     await this.broadcast.publish(session.id, 'SCORE_UPDATE', { teamId: answer.team_id, answerId: updated.id });
     return updated;
+  }
+
+  async addPaperScore(
+    sessionId: string,
+    hostId: string,
+    teamId: string,
+    points: number,
+    reason: string | null,
+  ): Promise<ScoreAdjustmentRecord> {
+    await this.requireOwnedSession(sessionId, hostId);
+    const adjustment = await this.scoreAdjustments.create(sessionId, teamId, points, reason);
+    await this.broadcast.publish(sessionId, 'SCORE_UPDATE', { teamId });
+    return adjustment;
   }
 
   private async gradeNumericAnswers(sessionId: string, questionId: string): Promise<void> {

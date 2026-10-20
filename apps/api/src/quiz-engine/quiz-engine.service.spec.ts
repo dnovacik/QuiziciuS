@@ -2,6 +2,7 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { AnswerRecord, AnswersRepository } from '../data/answers.repository';
 import { InfractionsRepository } from '../data/infractions.repository';
 import { QuestionRecord, QuestionsRepository } from '../data/questions.repository';
+import { ScoreAdjustmentsRepository } from '../data/score-adjustments.repository';
 import { SessionRecord, SessionsRepository } from '../data/sessions.repository';
 import { TeamRecord, TeamsRepository } from '../data/teams.repository';
 import { RealtimeBroadcastService } from '../realtime/realtime-broadcast.service';
@@ -80,10 +81,11 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
     create: jest.fn(),
     listBySession: jest.fn().mockResolvedValue([]),
   };
+  const scoreAdjustments: ScoreAdjustmentsRepository = { create: jest.fn(), listBySession: jest.fn().mockResolvedValue([]) };
   const broadcast = { publish: jest.fn().mockResolvedValue(undefined) } as unknown as RealtimeBroadcastService;
 
-  const service = new QuizEngineService(sessions, questions, teams, answers, infractions, broadcast);
-  return { service, sessions, questions, teams, answers, infractions, broadcast, session };
+  const service = new QuizEngineService(sessions, questions, teams, answers, infractions, scoreAdjustments, broadcast);
+  return { service, sessions, questions, teams, answers, infractions, scoreAdjustments, broadcast, session };
 }
 
 describe('QuizEngineService.transitionState', () => {
@@ -241,6 +243,38 @@ describe('QuizEngineService.getState', () => {
     const state = await service.getState('s1');
 
     expect(state.teams[0].infractionCount).toBe(2);
+  });
+
+  it('includes paper-mode score adjustments in each team total', async () => {
+    const { service, teams, scoreAdjustments } = buildHarness({ session: { status: 'LOBBY' } });
+    (teams.listBySession as jest.Mock).mockResolvedValue([
+      { id: 't1', session_id: 's1', name: 'Team A', device_token_hash: null, joined_at: 'now', is_active: true },
+    ]);
+    (scoreAdjustments.listBySession as jest.Mock).mockResolvedValue([
+      { id: 'a1', session_id: 's1', team_id: 't1', points: 3, reason: null, created_at: 'now' },
+    ]);
+
+    const state = await service.getState('s1');
+
+    expect(state.teams[0].score).toBe(3);
+  });
+});
+
+describe('QuizEngineService.addPaperScore', () => {
+  it('records a manual score adjustment for a host-owned session', async () => {
+    const { service, scoreAdjustments } = buildHarness();
+
+    await service.addPaperScore('s1', 'host1', 't1', 3, 'Paper round 2');
+
+    expect(scoreAdjustments.create).toHaveBeenCalledWith('s1', 't1', 3, 'Paper round 2');
+  });
+
+  it('rejects a host who does not own the session', async () => {
+    const { service } = buildHarness();
+
+    await expect(service.addPaperScore('s1', 'someone-else', 't1', 3, null)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
   });
 });
 
