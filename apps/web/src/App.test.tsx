@@ -23,7 +23,7 @@ vi.mock('./lib/supabase-client', () => ({
 describe('App', () => {
   it('renders the fallback route at an unmatched path', () => {
     render(<App />);
-    expect(screen.getByRole('link', { name: /QuiziciuS/i })).toHaveAttribute('href', '/');
+    expect(screen.getByTestId('landing-logo')).toHaveAttribute('href', '/');
   });
 });
 
@@ -34,8 +34,8 @@ describe('AppRoutes', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    expect(screen.getAllByRole('link', { name: /Pre hostiteľov/i })[0]).toHaveAttribute('href', '/host');
-    expect(screen.getAllByRole('link', { name: /Pripojiť sa ku kvízu/i })[0]).toHaveAttribute('href', '/play');
+    expect(screen.getByTestId('landing-host-entry')).toHaveAttribute('href', '/host');
+    expect(screen.getByTestId('landing-join-quiz')).toHaveAttribute('href', '/play');
   });
 
   it('resolves an unknown path to the landing page too', () => {
@@ -44,7 +44,7 @@ describe('AppRoutes', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    expect(screen.getAllByRole('link', { name: /Pre hostiteľov/i })[0]).toBeInTheDocument();
+    expect(screen.getByTestId('landing-host-entry')).toBeInTheDocument();
   });
 
   it('resolves /host/* to the host app', async () => {
