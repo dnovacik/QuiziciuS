@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useHostSession } from '../lib/use-host-session';
 import LoginScreen from './LoginScreen';
 import { QuizDashboard } from './QuizDashboard';
-import { SessionControlPanel } from './SessionControlPanel';
+import { SessionView } from './SessionView';
 
 export default function HostApp() {
   const { session, loading, token } = useHostSession();
@@ -22,7 +22,7 @@ export default function HostApp() {
   return (
     <div data-testid="host-app">
       {activeSessionId ? (
-        <SessionControlPanel sessionId={activeSessionId} token={token} />
+        <SessionView sessionId={activeSessionId} token={token} />
       ) : (
         <QuizDashboard token={token} onSessionCreated={setActiveSessionId} />
       )}
