@@ -47,7 +47,19 @@ export default function PlayApp() {
 
   return (
     <div data-testid="play-app">
-      <QuestionScreen state={state} teamId={joined.teamId} token={joined.token} onTapToLockIn={requestFullscreenNow} />
+      {/*
+        Keyed on the current question so React remounts QuestionScreen whenever the
+        session advances. QuestionScreen keeps `submitted`/`text`/`numericValue` in
+        local state; without the key it is never remounted and `submitted` would stay
+        true forever after the first answer, locking the team out of every later round.
+      */}
+      <QuestionScreen
+        key={state.currentQuestion?.id}
+        state={state}
+        teamId={joined.teamId}
+        token={joined.token}
+        onTapToLockIn={requestFullscreenNow}
+      />
     </div>
   );
 }
