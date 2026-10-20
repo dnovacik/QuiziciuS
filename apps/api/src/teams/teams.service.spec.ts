@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { SessionRecord, SessionsRepository } from '../data/sessions.repository';
 import { TeamRecord, TeamsRepository } from '../data/teams.repository';
+import { RealtimeBroadcastService } from '../realtime/realtime-broadcast.service';
 import { hashToken } from './hash-token';
 import { TeamTokenService } from './team-token.service';
 import { TeamsService } from './teams.service';
@@ -38,8 +39,9 @@ function buildHarness() {
     listBySession: jest.fn(),
   };
   const teamTokens = new TeamTokenService(new JwtService({ secret: 'test-secret' }));
-  const service = new TeamsService(sessions, teams, teamTokens);
-  return { service, sessions, teams, teamTokens };
+  const broadcast = { publish: jest.fn().mockResolvedValue(undefined) } as unknown as RealtimeBroadcastService;
+  const service = new TeamsService(sessions, teams, teamTokens, broadcast);
+  return { service, sessions, teams, teamTokens, broadcast };
 }
 
 describe('TeamsService.join', () => {
@@ -53,6 +55,14 @@ describe('TeamsService.join', () => {
     expect(result.name).toBe('The Quizzards');
     expect(teamTokens.verify(result.token)).toMatchObject({ sessionId: 's1', teamId: 't1' });
     expect(teams.setDeviceTokenHash).toHaveBeenCalledWith('t1', hashToken(result.token));
+  });
+
+  it('broadcasts a state change so the host live view picks up the new team', async () => {
+    const { service, broadcast } = buildHarness();
+
+    await service.join('s1', 'The Quizzards');
+
+    expect(broadcast.publish).toHaveBeenCalledWith('s1', 'STATE_CHANGE', expect.any(Object));
   });
 
   it('rejects a blank team name', async () => {
