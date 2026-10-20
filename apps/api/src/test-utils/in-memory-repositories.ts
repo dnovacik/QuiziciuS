@@ -27,6 +27,8 @@ export class InMemorySessionsRepository extends SessionsRepository {
     return record;
   }
 
+  async listByHost(hostId:string):Promise<SessionRecord[]>{return [...this.rows.values()].filter(row=>row.host_id===hostId)}
+
   async findById(id: string): Promise<SessionRecord | null> {
     return this.rows.get(id) ?? null;
   }

@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import {useNavigate,useLocation} from 'react-router-dom';
 import { useHostSession } from '../lib/use-host-session';
 import LoginScreen from './LoginScreen';
 import { StitchHostDashboard } from './StitchHostDashboard';
 import { I18nProvider } from '../lib/i18n';
-import { SessionView } from './SessionView';
+import {LiveControlRoom} from './LiveControlRoom';
 
 export default function HostApp() {
   const { session, loading, token } = useHostSession();
-  // The session-control flow needs the quiz id as well as the session id so it can
-  // list that quiz's questions for the round picker.
-  const [active, setActive] = useState<{ sessionId: string; quizId: string } | null>(null);
+  const navigate=useNavigate();
+  const location=useLocation();
+  const sessionId=location.pathname.match(/^\/host\/sessions\/([^/]+)$/)?.[1]??null;
 
   if (loading) {
     return <div data-testid="host-app">Loading…</div>;
@@ -24,14 +24,7 @@ export default function HostApp() {
 
   return (
     <div data-testid="host-app">
-      {active ? (
-        <SessionView sessionId={active.sessionId} quizId={active.quizId} token={token} />
-      ) : (
-        <I18nProvider><StitchHostDashboard
-          token={token}
-          onSessionCreated={(sessionId, quizId) => setActive({ sessionId, quizId })}
-        /></I18nProvider>
-      )}
+      <I18nProvider>{sessionId?<LiveControlRoom sessionId={sessionId} token={token} onLeave={()=>navigate('/host/sessions')}/>:<StitchHostDashboard token={token} onSessionCreated={(id)=>navigate(`/host/sessions/${id}`)}/>}</I18nProvider>
     </div>
   );
 }

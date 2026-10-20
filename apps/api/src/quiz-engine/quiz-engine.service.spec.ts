@@ -39,6 +39,7 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
   const session = { ...BASE_SESSION, ...overrides?.session };
 
   const sessions: SessionsRepository = {
+    listByHost: jest.fn(),
     create: jest.fn(),
     findById: jest.fn().mockResolvedValue(session),
     findByJoinCode: jest.fn().mockResolvedValue(session),
