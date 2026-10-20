@@ -37,5 +37,6 @@ begin
   return v_team;
 end;$$;
 revoke all on function create_registered_team(uuid,text,text,text,text,smallint,text) from public, anon, authenticated;
+grant execute on function create_registered_team(uuid,text,text,text,text,smallint,text) to service_role;
 alter table registered_teams enable row level security;
 alter table registered_team_members enable row level security;
