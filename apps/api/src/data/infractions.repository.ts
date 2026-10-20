@@ -13,7 +13,9 @@ export interface InfractionRecord {
 
 export abstract class InfractionsRepository {
   abstract create(sessionId: string, teamId: string, type: InfractionType): Promise<InfractionRecord>;
+  abstract findById(infractionId: string): Promise<InfractionRecord | null>;
   abstract listBySession(sessionId: string): Promise<InfractionRecord[]>;
+  abstract markReviewed(infractionId: string): Promise<InfractionRecord>;
 }
 
 @Injectable()
@@ -33,6 +35,17 @@ export class SupabaseInfractionsRepository extends InfractionsRepository {
     return data as InfractionRecord;
   }
 
+  async findById(infractionId: string): Promise<InfractionRecord | null> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('infractions')
+      .select()
+      .eq('id', infractionId)
+      .single();
+    if (error) return null;
+    return (data as InfractionRecord) ?? null;
+  }
+
   async listBySession(sessionId: string): Promise<InfractionRecord[]> {
     const { data, error } = await this.supabase
       .getClient()
@@ -41,5 +54,17 @@ export class SupabaseInfractionsRepository extends InfractionsRepository {
       .eq('session_id', sessionId);
     if (error) throw new InternalServerErrorException(error.message);
     return (data ?? []) as InfractionRecord[];
+  }
+
+  async markReviewed(infractionId: string): Promise<InfractionRecord> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('infractions')
+      .update({ reviewed: true })
+      .eq('id', infractionId)
+      .select()
+      .single();
+    if (error) throw new InternalServerErrorException(error.message);
+    return data as InfractionRecord;
   }
 }

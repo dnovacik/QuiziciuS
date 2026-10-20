@@ -12,6 +12,7 @@ function fluentBuilder(result: MockResult): PromiseLike<MockResult> & Record<str
     update: () => builder,
     upsert: () => builder,
     eq: () => builder,
+    neq: () => builder,
     order: () => builder,
     single: () => Promise.resolve(result),
     then: (onResolve: (value: MockResult) => unknown) => Promise.resolve(result).then(onResolve),

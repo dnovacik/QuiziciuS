@@ -16,18 +16,22 @@ const SESSION: SessionRecord = {
   finished_at: null,
 };
 
+const INFRACTION = {
+  id: 'inf1',
+  session_id: 's1',
+  team_id: 't1',
+  type: 'VISIBILITY_HIDDEN' as const,
+  detected_at: '2026-09-16T00:00:00.000Z',
+  reviewed: false,
+};
+
 function buildHarness() {
   const sessions = { findById: jest.fn().mockResolvedValue(SESSION) } as unknown as SessionsRepository;
   const infractions: InfractionsRepository = {
-    create: jest.fn().mockResolvedValue({
-      id: 'inf1',
-      session_id: 's1',
-      team_id: 't1',
-      type: 'VISIBILITY_HIDDEN',
-      detected_at: '2026-09-16T00:00:00.000Z',
-      reviewed: false,
-    }),
+    create: jest.fn().mockResolvedValue(INFRACTION),
+    findById: jest.fn().mockResolvedValue(INFRACTION),
     listBySession: jest.fn().mockResolvedValue([]),
+    markReviewed: jest.fn().mockResolvedValue({ ...INFRACTION, reviewed: true }),
   };
   const service = new InfractionsService(sessions, infractions);
   return { service, sessions, infractions };
@@ -63,5 +67,49 @@ describe('InfractionsService.listForHost', () => {
     const { service } = buildHarness();
 
     await expect(service.listForHost('s1', 'someone-else')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('omits already-reviewed infractions from the host review queue', async () => {
+    const { service, infractions } = buildHarness();
+    (infractions.listBySession as jest.Mock).mockResolvedValue([
+      INFRACTION,
+      { ...INFRACTION, id: 'inf2', reviewed: true },
+    ]);
+
+    await expect(service.listForHost('s1', 'host1')).resolves.toEqual([INFRACTION]);
+  });
+});
+
+describe('InfractionsService.markReviewed', () => {
+  it('marks an infraction reviewed for the owning host', async () => {
+    const { service, infractions } = buildHarness();
+
+    const result = await service.markReviewed('s1', 'inf1', 'host1');
+
+    expect(infractions.markReviewed).toHaveBeenCalledWith('inf1');
+    expect(result.reviewed).toBe(true);
+  });
+
+  it('rejects a host who does not own the session', async () => {
+    const { service, infractions } = buildHarness();
+
+    await expect(service.markReviewed('s1', 'inf1', 'someone-else')).rejects.toBeInstanceOf(ForbiddenException);
+    expect(infractions.markReviewed).not.toHaveBeenCalled();
+  });
+
+  it('rejects an infraction that belongs to a different session', async () => {
+    const { service, infractions } = buildHarness();
+    (infractions.findById as jest.Mock).mockResolvedValue({ ...INFRACTION, session_id: 'other-session' });
+
+    await expect(service.markReviewed('s1', 'inf1', 'host1')).rejects.toBeInstanceOf(NotFoundException);
+    expect(infractions.markReviewed).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unknown infraction', async () => {
+    const { service, infractions } = buildHarness();
+    (infractions.findById as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.markReviewed('s1', 'missing', 'host1')).rejects.toBeInstanceOf(NotFoundException);
+    expect(infractions.markReviewed).not.toHaveBeenCalled();
   });
 });

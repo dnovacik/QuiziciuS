@@ -25,4 +25,26 @@ describe('SupabaseInfractionsRepository', () => {
 
     await expect(repo.listBySession('s1')).resolves.toEqual([RECORD]);
   });
+
+  it('finds a single infraction by id', async () => {
+    const supabase = fakeSupabaseService({ infractions: { data: RECORD, error: null } });
+    const repo = new SupabaseInfractionsRepository(supabase);
+
+    await expect(repo.findById('inf1')).resolves.toEqual(RECORD);
+  });
+
+  it('returns null for an unknown infraction id', async () => {
+    const supabase = fakeSupabaseService({ infractions: { data: null, error: { message: 'no rows' } } });
+    const repo = new SupabaseInfractionsRepository(supabase);
+
+    await expect(repo.findById('missing')).resolves.toBeNull();
+  });
+
+  it('marks an infraction reviewed', async () => {
+    const reviewed = { ...RECORD, reviewed: true };
+    const supabase = fakeSupabaseService({ infractions: { data: reviewed, error: null } });
+    const repo = new SupabaseInfractionsRepository(supabase);
+
+    await expect(repo.markReviewed('inf1')).resolves.toEqual(reviewed);
+  });
 });

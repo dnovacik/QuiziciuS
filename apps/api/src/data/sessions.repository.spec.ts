@@ -31,6 +31,22 @@ describe('SupabaseSessionsRepository', () => {
     await expect(repo.findById('missing')).resolves.toBeNull();
   });
 
+  it('resolves a join code to its session', async () => {
+    const supabase = fakeSupabaseService({ quiz_sessions: { data: RECORD, error: null } });
+    const repo = new SupabaseSessionsRepository(supabase);
+
+    await expect(repo.findByJoinCode('AB12')).resolves.toEqual(RECORD);
+  });
+
+  it('returns null when no open session carries that join code', async () => {
+    const supabase = fakeSupabaseService({
+      quiz_sessions: { data: null, error: { message: 'no rows' } },
+    });
+    const repo = new SupabaseSessionsRepository(supabase);
+
+    await expect(repo.findByJoinCode('ZZZZ')).resolves.toBeNull();
+  });
+
   it('applies a status patch', async () => {
     const updated = { ...RECORD, status: 'LOCK_IN_ROUND' as const };
     const supabase = fakeSupabaseService({ quiz_sessions: { data: updated, error: null } });

@@ -2,6 +2,7 @@ import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Po
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { QuizzesRepository } from '../data/quizzes.repository';
+import { SessionsRepository } from '../data/sessions.repository';
 import { QuizEngineService } from '../quiz-engine/quiz-engine.service';
 import { AddPaperScoreDto } from './dto/add-paper-score.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
@@ -12,6 +13,7 @@ export class SessionsController {
   constructor(
     private readonly quizEngine: QuizEngineService,
     private readonly quizzes: QuizzesRepository,
+    private readonly sessions: SessionsRepository,
   ) {}
 
   @Post('quizzes/:quizId/sessions')
@@ -21,6 +23,16 @@ export class SessionsController {
     if (!quiz) throw new NotFoundException('Quiz not found');
     if (quiz.host_id !== host.id) throw new ForbiddenException('Not your quiz');
     return this.quizEngine.createSession(quizId, host.id);
+  }
+
+  // Public, like GET /sessions/:sessionId/state: players type the spoken-aloud join
+  // code before they have any credentials. Returns only the session id — everything
+  // else still has to be fetched through the normal (also public) state endpoint.
+  @Get('sessions/by-code/:code')
+  async findByJoinCode(@Param('code') code: string): Promise<{ id: string }> {
+    const session = await this.sessions.findByJoinCode(code.trim().toUpperCase());
+    if (!session) throw new NotFoundException('No open session with that join code');
+    return { id: session.id };
   }
 
   @Get('sessions/:sessionId/state')

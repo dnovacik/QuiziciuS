@@ -123,6 +123,53 @@ describe('Session lifecycle (integration)', () => {
     expect(stateRes.body.teams).toEqual([expect.objectContaining({ name: 'The Quizzards', score: 5 })]);
   });
 
+  it('lets the host dismiss an infraction, draining it from the review queue', async () => {
+    const server = app.getHttpServer();
+    const createRes = await request(server).post(`/quizzes/${quizId}/sessions`).send({});
+    const sessionId: string = createRes.body.id;
+    const joinRes = await request(server).post(`/sessions/${sessionId}/teams/join`).send({ name: 'Flaggers' });
+    const teamToken: string = joinRes.body.token;
+
+    await request(server)
+      .post('/api/infractions/report')
+      .set('Authorization', `Bearer ${teamToken}`)
+      .send({ type: 'VISIBILITY_HIDDEN' })
+      .expect(201);
+
+    const listed = await request(server).get(`/sessions/${sessionId}/infractions`);
+    expect(listed.status).toBe(200);
+    expect(listed.body).toHaveLength(1);
+    const infractionId: string = listed.body[0].id;
+
+    const reviewRes = await request(server).patch(
+      `/sessions/${sessionId}/infractions/${infractionId}/review`,
+    );
+    expect(reviewRes.status).toBe(200);
+    expect(reviewRes.body.reviewed).toBe(true);
+
+    const afterReview = await request(server).get(`/sessions/${sessionId}/infractions`);
+    expect(afterReview.body).toEqual([]);
+  });
+
+  it('resolves a join code to its session id without any credentials', async () => {
+    const server = app.getHttpServer();
+    const createRes = await request(server).post(`/quizzes/${quizId}/sessions`).send({});
+    const sessionId: string = createRes.body.id;
+    const joinCode: string = createRes.body.join_code;
+
+    const res = await request(server).get(`/sessions/by-code/${joinCode.toLowerCase()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ id: sessionId });
+  });
+
+  it('returns 404 for a join code with no open session', async () => {
+    // 'I' is excluded from the join-code alphabet, so no generated code can collide.
+    const res = await request(app.getHttpServer()).get('/sessions/by-code/IIII');
+
+    expect(res.status).toBe(404);
+  });
+
   it('rejects an illegal transition with 409 and the current state', async () => {
     const server = app.getHttpServer();
     const createRes = await request(server).post(`/quizzes/${quizId}/sessions`).send({});

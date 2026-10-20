@@ -31,6 +31,10 @@ export class InMemorySessionsRepository extends SessionsRepository {
     return this.rows.get(id) ?? null;
   }
 
+  async findByJoinCode(joinCode: string): Promise<SessionRecord | null> {
+    return [...this.rows.values()].find((s) => s.join_code === joinCode && s.status !== 'FINISHED') ?? null;
+  }
+
   async updateStatus(id: string, patch: SessionStatusPatch): Promise<SessionRecord> {
     const existing = this.rows.get(id);
     if (!existing) throw new Error('session not found');
@@ -179,8 +183,20 @@ export class InMemoryInfractionsRepository extends InfractionsRepository {
     return record;
   }
 
+  async findById(infractionId: string): Promise<InfractionRecord | null> {
+    return this.rows.find((i) => i.id === infractionId) ?? null;
+  }
+
   async listBySession(sessionId: string): Promise<InfractionRecord[]> {
     return this.rows.filter((i) => i.session_id === sessionId);
+  }
+
+  async markReviewed(infractionId: string): Promise<InfractionRecord> {
+    const index = this.rows.findIndex((i) => i.id === infractionId);
+    if (index === -1) throw new Error('infraction not found');
+    const updated = { ...this.rows[index], reviewed: true };
+    this.rows[index] = updated;
+    return updated;
   }
 }
 
