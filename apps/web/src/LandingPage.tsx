@@ -25,8 +25,7 @@ import {
 } from 'lucide-react';
 
 export function LandingPage() {
-  const { locale, setLocale } = useI18n();
-  const en = locale === 'en';
+  const { locale, setLocale, t } = useI18n();
   const [selectedAnswer, setSelectedAnswer] = useState('B');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
@@ -65,10 +64,10 @@ export function LandingPage() {
               <button type="button" aria-label="Slovenčina" aria-pressed={locale === 'sk'} onClick={() => setLocale('sk')} className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold ${locale === 'sk' ? 'border border-purple-500/30 bg-purple-600/30 text-purple-200' : 'text-slate-400 hover:text-white'}`}>🇸🇰 SK</button>
               <button type="button" aria-label="English" aria-pressed={locale === 'en'} onClick={() => setLocale('en')} className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold ${locale === 'en' ? 'border border-purple-500/30 bg-purple-600/30 text-purple-200' : 'text-slate-400 hover:text-white'}`}>🇬🇧 EN</button>
             </div>
-            <Link to="/host" className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-purple-500">{en ? 'For hosts' : 'Pre hostiteľov'}</Link>
-            <Link to="/team" className="rounded-lg bg-gradient-to-r from-purple-700 to-purple-500 px-4 py-2 text-sm font-semibold text-white hover:from-purple-600 hover:to-purple-400">{en ? 'For teams' : 'Pre tímy'}</Link>
+            <Link to="/host" className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-purple-500">{t('landing.copy.01')}</Link>
+            <Link to="/team" className="rounded-lg bg-gradient-to-r from-purple-700 to-purple-500 px-4 py-2 text-sm font-semibold text-white hover:from-purple-600 hover:to-purple-400">{t('landing.copy.02')}</Link>
           </div>
-          <button type="button" aria-label={mobileMenuOpen ? (en ? 'Close menu' : 'Zavrieť menu') : (en ? 'Open menu' : 'Otvoriť menu')} aria-expanded={mobileMenuOpen} aria-controls="landing-auth-menu" className="p-2 text-slate-300 hover:text-white lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button type="button" aria-label={mobileMenuOpen ? (t('landing.copy.03')) : (t('landing.copy.04'))} aria-expanded={mobileMenuOpen} aria-controls="landing-auth-menu" className="p-2 text-slate-300 hover:text-white lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </header>
@@ -80,8 +79,8 @@ export function LandingPage() {
               <button type="button" aria-label="English" aria-pressed={locale === 'en'} onClick={() => setLocale('en')} className={`rounded-lg border px-3 py-2 ${locale === 'en' ? 'border-purple-400 bg-purple-700/30' : 'border-slate-700'}`}>🇬🇧 EN</button>
             </div>
             <div className="flex flex-col gap-3 text-center text-sm">
-              <Link to="/host" className="rounded-xl border border-slate-700 py-2.5" onClick={() => setMobileMenuOpen(false)}>{en ? 'For hosts' : 'Pre hostiteľov'}</Link>
-              <Link to="/team" className="rounded-xl bg-purple-700 py-2.5" onClick={() => setMobileMenuOpen(false)}>{en ? 'For teams' : 'Pre tímy'}</Link>
+              <Link to="/host" className="rounded-xl border border-slate-700 py-2.5" onClick={() => setMobileMenuOpen(false)}>{t('landing.copy.01')}</Link>
+              <Link to="/team" className="rounded-xl bg-purple-700 py-2.5" onClick={() => setMobileMenuOpen(false)}>{t('landing.copy.02')}</Link>
             </div>
           </div>
         )}
@@ -97,23 +96,23 @@ export function LandingPage() {
             {/* Pill Badge */}
             <div className="inline-flex items-center gap-2 bg-[#7c3aed]/15 text-[#c084fc] border border-[#7c3aed]/40 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-6 shadow-inner">
               <Trophy size={14} className="text-amber-400 fill-amber-400/20" />
-              <span>{en ? "PUB QUIZ PLATFORM & LEAGUES" : "PUB QUIZ PLATFORMA A LIGY"}</span>
+              <span>{t('landing.copy.05')}</span>
             </div>
 
             {/* Main Display Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-[1.1] tracking-tight mb-6">
-              {en ? "Quiz nights to " : "Kvízové večery, na ktoré sa "}<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#a855f7] via-[#c084fc] to-[#d8b4fe] drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">{en ? "remember." : "nezabúda."}</span>
+              {t('landing.copy.06')}<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#a855f7] via-[#c084fc] to-[#d8b4fe] drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">{t('landing.copy.07')}</span>
             </h1>
 
             {/* Description Paragraph */}
             <p className="text-lg text-slate-300 max-w-xl leading-relaxed mb-8 font-normal">
-              {en ? "Create quizzes, invite teams and compete at your pub, in a league or in the Super-League. Easy hosting, live scores and an unforgettable atmosphere." : "Vytvorte kvíz, pozvite tímy, súťažte vo svojej krčme, lige alebo Superlige. Jednoduché ovládanie, živé skóre a nezabudnuteľná atmosféra."}
+              {t('landing.copy.08')}
             </p>
 
             {/* Primary Action Buttons */}
             <div className="flex flex-wrap items-center gap-4 mb-12 w-full sm:w-auto">
               <Link to="/play" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#7c3aed] to-[#a855f7] hover:from-[#6d28d9] hover:to-[#9333ea] text-white rounded-xl px-7 py-3.5 font-semibold text-base shadow-xl shadow-purple-950/60 hover:shadow-purple-600/40 hover:-translate-y-0.5 transition-all">
-                <span>{en ? 'Join a quiz' : 'Pripojiť sa ku kvízu'}</span>
+                <span>{t('landing.copy.09')}</span>
                 <ArrowRight size={18} />
               </Link>
 
@@ -121,7 +120,7 @@ export function LandingPage() {
                 <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-300">
                   <Play size={12} fill="currentColor" className="ml-0.5" />
                 </div>
-                <span>{en ? 'See preview' : 'Pozrieť ukážku'}</span>
+                <span>{t('landing.copy.10')}</span>
               </a>
             </div>
 
@@ -134,8 +133,8 @@ export function LandingPage() {
                   <Beer size={20} />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white mb-0.5">{en ? "For pubs" : "Pre puby"}</h4>
-                  <p className="text-xs text-slate-400 leading-snug">{en ? "Host quiz nights at your pub" : "Organizujte kvízové večery vo svojej krčme"}</p>
+                  <h4 className="text-sm font-bold text-white mb-0.5">{t('landing.copy.11')}</h4>
+                  <p className="text-xs text-slate-400 leading-snug">{t('landing.copy.12')}</p>
                 </div>
               </div>
 
@@ -145,8 +144,8 @@ export function LandingPage() {
                   <Users size={20} />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white mb-0.5">{en ? "For teams" : "Pre tímy"}</h4>
-                  <p className="text-xs text-slate-400 leading-snug">{en ? "Play, track results and climb the leagues" : "Hrajte, sledujte výsledky a postupujte v ligách"}</p>
+                  <h4 className="text-sm font-bold text-white mb-0.5">{t('landing.copy.02')}</h4>
+                  <p className="text-xs text-slate-400 leading-snug">{t('landing.copy.13')}</p>
                 </div>
               </div>
 
@@ -156,8 +155,8 @@ export function LandingPage() {
                   <Trophy size={20} />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-white mb-0.5">{en ? "For everyone" : "Pre všetkých"}</h4>
-                  <p className="text-xs text-slate-400 leading-snug">{en ? "Local leagues and Super-League finals" : "Lokálne ligy aj Superliga finále"}</p>
+                  <h4 className="text-sm font-bold text-white mb-0.5">{t('landing.copy.14')}</h4>
+                  <p className="text-xs text-slate-400 leading-snug">{t('landing.copy.15')}</p>
                 </div>
               </div>
 
@@ -189,30 +188,30 @@ export function LandingPage() {
                   </div>
                   <div className="flex items-center gap-1 text-[10px] text-slate-400">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>{en ? "Live" : "Živé vysielanie"}</span>
+                    <span>{t('landing.copy.16')}</span>
                   </div>
                 </div>
 
                 {/* Question Info Box */}
                 <div className="bg-[#120d2c] border border-purple-900/40 rounded-2xl p-3 mb-3">
                   <div className="flex justify-between items-center text-[11px] text-slate-400 mb-2">
-                    <span className="font-semibold text-purple-300">{en ? "Question 3 of 10" : "Otázka 3 z 10"}</span>
+                    <span className="font-semibold text-purple-300">{t('landing.copy.17')}</span>
                     <span className="px-2 py-0.5 rounded-full bg-purple-950 border border-purple-700/50 text-amber-300 font-mono font-bold text-[10px]">
                       26s
                     </span>
                   </div>
                   <p className="text-xs font-extrabold text-white leading-snug">
-                    Ktorá planéta je známa ako Červená planéta?
+                    {t('landing.static.46')}
                   </p>
                 </div>
 
                 {/* Multiple Choice Options */}
                 <div className="space-y-2 mb-4">
                   {[
-                    { id: 'A', label: 'Zem' },
+                    { id: 'A', label: t('landing.static.55') },
                     { id: 'B', label: 'Mars' },
                     { id: 'C', label: 'Jupiter' },
-                    { id: 'D', label: 'Venuša' }
+                    { id: 'D', label: t('landing.static.56') }
                   ].map((option) => {
                     const isSelected = selectedAnswer === option.id;
                     return (
@@ -238,7 +237,7 @@ export function LandingPage() {
                 </div>
 
                 {/* Submit Action Button */}
-                <div className="w-full bg-gradient-to-r from-[#7c3aed] to-[#a855f7] text-white py-2.5 rounded-xl text-center font-bold text-xs shadow-lg shadow-purple-900/50">{en ? "Illustrative preview" : "Ilustračná ukážka"}</div>
+                <div className="w-full bg-gradient-to-r from-[#7c3aed] to-[#a855f7] text-white py-2.5 rounded-xl text-center font-bold text-xs shadow-lg shadow-purple-900/50">{t('landing.copy.18')}</div>
               </div>
 
               {/* REALISTIC HIGH-CONTRAST GOLDEN TROPHY GRAPHIC */}
@@ -312,9 +311,9 @@ export function LandingPage() {
               {/* Pub Sign Mini Graphic (Background Right) */}
               <div className="absolute -left-8 top-12 z-10 hidden sm:block bg-[#16122c]/90 border border-amber-500/30 p-3 rounded-2xl shadow-xl backdrop-blur-md transform -rotate-6">
                 <div className="text-center font-serif text-amber-200 text-xs font-bold tracking-widest border border-amber-500/20 p-2 rounded-xl bg-black/40">
-                  <div>{en ? "GOOD QUIZ" : "DOBRÝ KVÍZ"}</div>
+                  <div>{t('landing.copy.19')}</div>
                   <div className="text-[10px] text-amber-400/80 my-0.5">♥</div>
-                  <div>{en ? "GOOD PEOPLE" : "DOBRÍ ĽUDIA"}</div>
+                  <div>{t('landing.copy.20')}</div>
                 </div>
               </div>
 
@@ -332,10 +331,10 @@ export function LandingPage() {
           {/* Header Area */}
           <div className="text-center mb-12 sm:mb-16 max-w-3xl mx-auto">
             <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
-              Jedna platforma. Tri spôsoby, ako zažiť kvíz.
+              {t('landing.static.47')}
             </h2>
             <p className="text-base sm:text-lg text-slate-400 font-normal">
-              Organizujte, hrajte a súťažte – od lokálnych pubov až po veľké finále Superligy.
+              {t('landing.static.48')}
             </p>
           </div>
 
@@ -352,9 +351,9 @@ export function LandingPage() {
                   <Beer size={28} />
                 </div>
 
-                <h3 className="text-xl font-bold text-white mb-2">{en ? "For hosts" : "Pre organizátorov"}</h3>
+                <h3 className="text-xl font-bold text-white mb-2">{t('landing.copy.21')}</h3>
                 <p className="text-sm text-slate-400 leading-relaxed mb-6">
-                  Vytvorte kvízy, organizujte večery, spravujte ligy a sledujte, ako vaša komunita rastie.
+                  {t('landing.static.49')}
                 </p>
               </div>
 
@@ -368,7 +367,7 @@ export function LandingPage() {
                   </div>
                   <span className="bg-purple-600/50 text-white text-[10px] font-bold px-2.5 py-1 rounded-md flex items-center gap-1">
                     <Plus size={12} />
-                    <span>Nové podujatie</span>
+                    <span>{t('landing.static.50')}</span>
                   </span>
                 </div>
 
@@ -380,11 +379,11 @@ export function LandingPage() {
                         🏆
                       </div>
                       <div>
-                        <div className="text-[11px] font-bold text-white">{en ? "Weekly quiz" : "Týždenný kvíz"}</div>
+                        <div className="text-[11px] font-bold text-white">{t('landing.copy.22')}</div>
                         <div className="text-[9px] text-slate-400">The Crown Inn</div>
                       </div>
                     </div>
-                    <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded">Živo</span>
+                    <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded">{t('landing.static.51')}</span>
                   </div>
 
                   <div className="flex items-center justify-between bg-[#0e1233]/60 p-2 rounded-lg border border-slate-800/40">
@@ -393,7 +392,7 @@ export function LandingPage() {
                         🎵
                       </div>
                       <div>
-                        <div className="text-[11px] font-bold text-white">{en ? "Music special" : "Hudobný špeciál"}</div>
+                        <div className="text-[11px] font-bold text-white">{t('landing.copy.23')}</div>
                         <div className="text-[9px] text-slate-400">The Red Lion</div>
                       </div>
                     </div>
@@ -406,11 +405,11 @@ export function LandingPage() {
                         🎄
                       </div>
                       <div>
-                        <div className="text-[11px] font-bold text-white">{en ? "Christmas quiz" : "Vianočný kvíz"}</div>
+                        <div className="text-[11px] font-bold text-white">{t('landing.copy.24')}</div>
                         <div className="text-[9px] text-slate-400">Crown Inn</div>
                       </div>
                     </div>
-                    <span className="text-[9px] font-medium bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded">{en ? "Upcoming" : "Pripravuje sa"}</span>
+                    <span className="text-[9px] font-medium bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded">{t('landing.copy.25')}</span>
                   </div>
                 </div>
               </div>
@@ -426,9 +425,9 @@ export function LandingPage() {
                   <Users size={28} />
                 </div>
 
-                <h3 className="text-xl font-bold text-white mb-2">{en ? "For teams" : "Pre tímy"}</h3>
+                <h3 className="text-xl font-bold text-white mb-2">{t('landing.copy.02')}</h3>
                 <p className="text-sm text-slate-400 leading-relaxed mb-6">
-                  Zaregistrujte svoj tím, hrajte naživo, sledujte výsledky a postupujte v rebríčkoch.
+                  {t('landing.static.52')}
                 </p>
               </div>
 
@@ -443,27 +442,27 @@ export function LandingPage() {
                 </div>
 
                 <h4 className="text-sm font-black text-white">The Brainiacs</h4>
-                <p className="text-[10px] text-purple-300 font-medium mb-4">Lokálna liga Pub Quiz</p>
+                <p className="text-[10px] text-purple-300 font-medium mb-4">{t('landing.static.53')}</p>
 
                 {/* Team Metrics Grid */}
                 <div className="grid grid-cols-3 gap-2 w-full bg-[#0e112d] p-2.5 rounded-xl border border-purple-900/30 mb-4 text-center">
                   <div>
                     <div className="text-sm font-black text-white">12</div>
-                    <div className="text-[9px] text-slate-400">{en ? "Played" : "Odohraných"}</div>
+                    <div className="text-[9px] text-slate-400">{t('landing.copy.26')}</div>
                   </div>
                   <div>
                     <div className="text-sm font-black text-amber-400">3</div>
-                    <div className="text-[9px] text-slate-400">{en ? "Wins" : "Víťazstvá"}</div>
+                    <div className="text-[9px] text-slate-400">{t('landing.copy.27')}</div>
                   </div>
                   <div>
                     <div className="text-sm font-black text-purple-300">5.</div>
-                    <div className="text-[9px] text-slate-400">{en ? "League rank" : "Pozícia v lige"}</div>
+                    <div className="text-[9px] text-slate-400">{t('landing.copy.28')}</div>
                   </div>
                 </div>
 
                 {/* Quick Buttons */}
-                <span className="block w-full bg-purple-600 text-white text-xs font-bold py-2 rounded-lg mb-2 shadow-md transition-colors">{en ? "Join a quiz" : "Pripojiť sa ku kvízu"}</span>
-                <span className="block w-full border border-slate-700 text-slate-400 text-xs font-semibold py-1.5 rounded-lg">{en ? "Results coming soon" : "Výsledky už čoskoro"}</span>
+                <span className="block w-full bg-purple-600 text-white text-xs font-bold py-2 rounded-lg mb-2 shadow-md transition-colors">{t('landing.copy.09')}</span>
+                <span className="block w-full border border-slate-700 text-slate-400 text-xs font-semibold py-1.5 rounded-lg">{t('landing.copy.29')}</span>
               </div>
             </div>
 
@@ -477,9 +476,9 @@ export function LandingPage() {
                   <Award size={28} />
                 </div>
 
-                <h3 className="text-xl font-bold text-white mb-2">{en ? "For leagues and the Super-League" : "Pre ligy a Superligu"}</h3>
+                <h3 className="text-xl font-bold text-white mb-2">{t('landing.copy.30')}</h3>
                 <p className="text-sm text-slate-400 leading-relaxed mb-6">
-                  Budujte lokálne ligy, kvalifikujte sa do Superligy a zažite veľké finále s najlepšími tímami.
+                  {t('landing.static.54')}
                 </p>
               </div>
 
@@ -496,7 +495,7 @@ export function LandingPage() {
                     <div className="w-12 h-14 bg-gradient-to-b from-amber-600 to-amber-800 rounded-b-xl border border-amber-400 flex items-center justify-center shadow-lg">
                       <Beer size={20} className="text-amber-200" />
                     </div>
-                    <span className="text-[10px] font-black text-amber-300 tracking-wider mt-1">{en ? "PUB LEAGUES" : "PUB LIGY"}</span>
+                    <span className="text-[10px] font-black text-amber-300 tracking-wider mt-1">{t('landing.copy.31')}</span>
                   </div>
 
                   {/* Transition Arrow */}
@@ -509,7 +508,7 @@ export function LandingPage() {
                     <div className="w-14 h-16 bg-gradient-to-b from-purple-600 via-indigo-700 to-purple-900 rounded-b-xl border-2 border-amber-400 flex flex-col items-center justify-center shadow-xl shadow-purple-900/60">
                       <CrownIcon className="w-6 h-6 text-amber-400 mb-0.5" />
                     </div>
-                    <span className="text-[10px] font-black text-purple-200 tracking-wider mt-1">{en ? "SUPER-LEAGUE" : "SUPERLIGA"}</span>
+                    <span className="text-[10px] font-black text-purple-200 tracking-wider mt-1">{t('landing.copy.32')}</span>
                   </div>
                 </div>
 
@@ -517,15 +516,15 @@ export function LandingPage() {
                 <div className="grid grid-cols-3 text-center pt-2">
                   <div className="border-r border-slate-800/80 pr-2">
                     <div className="text-xl font-black text-white">🍻</div>
-                    <div className="text-[10px] text-slate-400 font-medium">{en ? "Local pubs" : "Pubs v systéme"}</div>
+                    <div className="text-[10px] text-slate-400 font-medium">{t('landing.copy.33')}</div>
                   </div>
                   <div className="border-r border-slate-800/80 px-2">
                     <div className="text-xl font-black text-purple-300">👥</div>
-                    <div className="text-[10px] text-slate-400 font-medium">{en ? "Teams" : "Aktívnych tímov"}</div>
+                    <div className="text-[10px] text-slate-400 font-medium">{t('landing.copy.34')}</div>
                   </div>
                   <div className="pl-2">
                     <div className="text-xl font-black text-amber-400">🏆</div>
-                    <div className="text-[10px] text-slate-400 font-medium">{en ? "Grand final" : "Veľké finále"}</div>
+                    <div className="text-[10px] text-slate-400 font-medium">{t('landing.copy.35')}</div>
                   </div>
                 </div>
 
@@ -546,9 +545,9 @@ export function LandingPage() {
           </div>
 
           <div className="flex items-center gap-6">
-            <span>{en ? "Privacy policy forthcoming" : "Ochrana osobných údajov – pripravujeme"}</span>
-            <span>{en ? "Terms forthcoming" : "Podmienky používania – pripravujeme"}</span>
-            <span>{en ? "Support forthcoming" : "Podpora – pripravujeme"}</span>
+            <span>{t('landing.copy.36')}</span>
+            <span>{t('landing.copy.37')}</span>
+            <span>{t('landing.copy.38')}</span>
           </div>
         </footer>
 
