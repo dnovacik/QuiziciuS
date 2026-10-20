@@ -192,5 +192,16 @@
   "stitch.team.loginButton": "Prihlásiť sa do tímu",
   "stitch.team.confirmEmail": "Potvrďte účet kapitána cez e-mail a potom sa tu prihláste.",
   "stitch.team.forgotPassword": "Zabudli ste heslo?",
-  "stitch.team.resetSent": "Ak e-mail existuje, dostanete odkaz na obnovu hesla."
+  "stitch.team.resetSent": "Ak e-mail existuje, dostanete odkaz na obnovu hesla.",
+  "management.players": "Hráči tímu",
+  "management.editTeam": "Upraviť tím",
+  "management.save": "Uložiť zmeny",
+  "management.cancel": "Zrušiť",
+  "management.rename": "Premenovať",
+  "management.remove": "Odstrániť",
+  "management.add": "Pridať hráča",
+  "management.empty": "Zatiaľ nemáte pridaných hráčov.",
+  "management.playerPlaceholder": "Meno hráča",
+  "management.color": "Farba tímu",
+  "management.error": "Zmeny tímu sa nepodarilo uložiť."
 }
