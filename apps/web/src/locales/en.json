@@ -324,5 +324,8 @@
   "live.state.PAUSE_BREAK": "Take a break",
   "live.resume": "Open Control Room",
   "live.noSessions": "No quiz sessions yet. Start one from My Quizzes.",
-  "live.projector": "Projector view"
+  "live.projector": "Projector view",
+  "live.quizDetails": "Quiz details",
+  "live.totalPoints": "Total points",
+  "live.quizUnavailable": "Quiz title unavailable"
 }
