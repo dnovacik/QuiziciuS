@@ -18,23 +18,30 @@ function QuestionForm({ quizId, token, onCreated }: QuestionFormProps) {
   const [optionB, setOptionB] = useState('');
   const [correct, setCorrect] = useState<'a' | 'b'>('a');
   const [points, setPoints] = useState(1);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
-    await apiPost(
-      `/quizzes/${quizId}/questions`,
-      {
-        type: 'MULTIPLE_CHOICE',
-        prompt,
-        options: [
-          { id: 'a', label: optionA, isCorrect: correct === 'a' },
-          { id: 'b', label: optionB, isCorrect: correct === 'b' },
-        ],
-        points,
-        orderIndex: 0,
-      },
-      token,
-    );
+    setError(null);
+    try {
+      await apiPost(
+        `/quizzes/${quizId}/questions`,
+        {
+          type: 'MULTIPLE_CHOICE',
+          prompt,
+          options: [
+            { id: 'a', label: optionA, isCorrect: correct === 'a' },
+            { id: 'b', label: optionB, isCorrect: correct === 'b' },
+          ],
+          points,
+          orderIndex: 0,
+        },
+        token,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add question');
+      return;
+    }
     setPrompt('');
     setOptionA('');
     setOptionB('');
@@ -81,6 +88,7 @@ function QuestionForm({ quizId, token, onCreated }: QuestionFormProps) {
           className="w-16 rounded border px-2 py-1"
         />
       </div>
+      {error && <p className="text-sm text-red-600">{error}</p>}
       <button type="submit" className="rounded bg-slate-700 px-3 py-1 text-sm text-white">
         Add question
       </button>
@@ -93,27 +101,48 @@ export function QuizDashboard({
   onSessionCreated,
 }: {
   token: string;
-  onSessionCreated: (sessionId: string) => void;
+  onSessionCreated: (sessionId: string, quizId: string) => void;
 }) {
   const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
   const [title, setTitle] = useState('');
   const [questionCounts, setQuestionCounts] = useState<Record<string, number>>({});
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    apiGet<QuizSummary[]>('/quizzes', token).then(setQuizzes);
+    let cancelled = false;
+    apiGet<QuizSummary[]>('/quizzes', token)
+      .then((rows) => {
+        if (!cancelled) setQuizzes(rows);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load quizzes');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   async function handleCreateQuiz(event: FormEvent): Promise<void> {
     event.preventDefault();
     if (!title.trim()) return;
-    const quiz = await apiPost<QuizSummary>('/quizzes', { title }, token);
-    setQuizzes((prev) => [...prev, quiz]);
-    setTitle('');
+    setError(null);
+    try {
+      const quiz = await apiPost<QuizSummary>('/quizzes', { title }, token);
+      setQuizzes((prev) => [...prev, quiz]);
+      setTitle('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create quiz');
+    }
   }
 
   async function handleCreateSession(quizId: string): Promise<void> {
-    const session = await apiPost<{ id: string; join_code: string }>(`/quizzes/${quizId}/sessions`, {}, token);
-    onSessionCreated(session.id);
+    setError(null);
+    try {
+      const session = await apiPost<{ id: string; join_code: string }>(`/quizzes/${quizId}/sessions`, {}, token);
+      onSessionCreated(session.id, quizId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start session');
+    }
   }
 
   return (
@@ -130,6 +159,7 @@ export function QuizDashboard({
           Create quiz
         </button>
       </form>
+      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
       <ul className="space-y-4">
         {quizzes.map((quiz) => (
           <li key={quiz.id} className="rounded border p-3">

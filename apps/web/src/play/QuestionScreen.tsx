@@ -16,13 +16,23 @@ export function QuestionScreen({
   const [submitted, setSubmitted] = useState(false);
   const [text, setText] = useState('');
   const [numericValue, setNumericValue] = useState('');
+  const [error, setError] = useState<string | null>(null);
   void teamId; // the team is identified server-side by the bearer token, not this prop
 
   async function submit(response: Record<string, unknown>): Promise<void> {
     if (!state.currentQuestion) return;
-    await apiPost(`/sessions/${state.id}/answers`, { questionId: state.currentQuestion.id, response }, token);
+    setError(null);
+    try {
+      await apiPost(`/sessions/${state.id}/answers`, { questionId: state.currentQuestion.id, response }, token);
+    } catch (err) {
+      // Leave `submitted` false so the team can try again before the timer runs out.
+      setError(err instanceof Error ? err.message : 'Failed to submit your answer');
+      return;
+    }
     setSubmitted(true);
   }
+
+  const errorBanner = error ? <p className="mb-4 text-sm text-red-600">{error}</p> : null;
 
   if (state.status === 'LOBBY') {
     return (
@@ -52,6 +62,7 @@ export function QuestionScreen({
       return (
         <div className="mx-auto max-w-md p-6">
           <h1 className="mb-6 text-2xl font-bold">{question.prompt}</h1>
+          {errorBanner}
           <div className="flex flex-col gap-3">
             {question.options?.map((option) => (
               <button
@@ -77,6 +88,7 @@ export function QuestionScreen({
           className="mx-auto max-w-md p-6"
         >
           <h1 className="mb-6 text-2xl font-bold">{question.prompt}</h1>
+          {errorBanner}
           <input value={text} onChange={(e) => setText(e.target.value)} className="w-full rounded border px-3 py-2" />
           <button type="submit" className="mt-4 w-full rounded bg-slate-900 px-4 py-3 text-white">
             Submit
@@ -94,6 +106,7 @@ export function QuestionScreen({
         className="mx-auto max-w-md p-6"
       >
         <h1 className="mb-6 text-2xl font-bold">{question.prompt}</h1>
+        {errorBanner}
         <input
           type="number"
           value={numericValue}

@@ -4,8 +4,15 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    /**
+     * The parsed error body, when the response carried one. The API's
+     * InvalidTransitionExceptionFilter returns `{ statusCode, message, currentState }`
+     * on a 409, and callers need `currentState` to resync their view.
+     */
+    public readonly body: Record<string, unknown> = {},
   ) {
     super(message);
+    this.name = 'ApiError';
   }
 }
 
@@ -20,7 +27,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
-    throw new ApiError(res.status, body.message ?? 'Request failed');
+    throw new ApiError(res.status, body.message ?? 'Request failed', body);
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -32,4 +39,8 @@ export function apiGet<T>(path: string, token?: string): Promise<T> {
 
 export function apiPost<T>(path: string, body: unknown, token?: string): Promise<T> {
   return request<T>(path, { method: 'POST', body: JSON.stringify(body), headers: authHeader(token) });
+}
+
+export function apiPatch<T>(path: string, body: unknown, token?: string): Promise<T> {
+  return request<T>(path, { method: 'PATCH', body: JSON.stringify(body), headers: authHeader(token) });
 }

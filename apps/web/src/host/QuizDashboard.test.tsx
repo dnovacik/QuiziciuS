@@ -34,6 +34,26 @@ describe('QuizDashboard', () => {
     render(<QuizDashboard token="host-token" onSessionCreated={onSessionCreated} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Start session' }));
 
-    await waitFor(() => expect(onSessionCreated).toHaveBeenCalledWith('session-1'));
+    await waitFor(() => expect(onSessionCreated).toHaveBeenCalledWith('session-1', 'q1'));
+  });
+
+  it('surfaces a failed session start instead of swallowing it', async () => {
+    (apiGet as ReturnType<typeof vi.fn>).mockResolvedValue([{ id: 'q1', title: 'Existing Quiz' }]);
+    (apiPost as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Quiz not found'));
+    const onSessionCreated = vi.fn();
+
+    render(<QuizDashboard token="host-token" onSessionCreated={onSessionCreated} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Start session' }));
+
+    expect(await screen.findByText('Quiz not found')).toBeInTheDocument();
+    expect(onSessionCreated).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a failed quiz list load', async () => {
+    (apiGet as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Session expired'));
+
+    render(<QuizDashboard token="host-token" onSessionCreated={vi.fn()} />);
+
+    expect(await screen.findByText('Session expired')).toBeInTheDocument();
   });
 });

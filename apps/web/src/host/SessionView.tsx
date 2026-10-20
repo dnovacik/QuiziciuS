@@ -6,7 +6,15 @@ import { SessionControlPanel } from './SessionControlPanel';
 type Tab = 'controls' | 'disputes' | 'paper';
 const TABS: Tab[] = ['controls', 'disputes', 'paper'];
 
-export function SessionView({ sessionId, token }: { sessionId: string; token: string }) {
+export function SessionView({
+  sessionId,
+  quizId,
+  token,
+}: {
+  sessionId: string;
+  quizId: string;
+  token: string;
+}) {
   const [tab, setTab] = useState<Tab>('controls');
 
   return (
@@ -22,7 +30,7 @@ export function SessionView({ sessionId, token }: { sessionId: string; token: st
           </button>
         ))}
       </nav>
-      {tab === 'controls' && <SessionControlPanel sessionId={sessionId} token={token} />}
+      {tab === 'controls' && <SessionControlPanel sessionId={sessionId} quizId={quizId} token={token} />}
       {tab === 'disputes' && <DisputeQueue sessionId={sessionId} token={token} />}
       {tab === 'paper' && <PaperModeGrid sessionId={sessionId} token={token} />}
     </div>

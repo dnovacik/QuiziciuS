@@ -6,11 +6,18 @@ export function PaperModeGrid({ sessionId, token }: { sessionId: string; token: 
   const { state } = useSessionState(sessionId);
   const [points, setPoints] = useState<Record<string, string>>({});
   const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   async function award(teamId: string): Promise<void> {
     const value = Number(points[teamId] ?? 0);
     if (!value) return;
-    await apiPost(`/sessions/${sessionId}/teams/${teamId}/paper-score`, { points: value, reason: reason || undefined }, token);
+    setError(null);
+    try {
+      await apiPost(`/sessions/${sessionId}/teams/${teamId}/paper-score`, { points: value, reason: reason || undefined }, token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to award points');
+      return;
+    }
     setPoints((prev) => ({ ...prev, [teamId]: '' }));
   }
 
@@ -23,6 +30,7 @@ export function PaperModeGrid({ sessionId, token }: { sessionId: string; token: 
         placeholder="Round reason (optional)"
         className="mb-3 w-full rounded border px-3 py-2"
       />
+      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
       <ul className="space-y-2">
         {(state?.teams ?? []).map((team) => (
           <li key={team.id} className="flex items-center justify-between gap-2 rounded border p-3">

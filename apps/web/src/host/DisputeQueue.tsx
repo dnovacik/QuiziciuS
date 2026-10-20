@@ -1,6 +1,6 @@
 import { AnswerSummaryDto } from '@quizicius/shared-types';
 import { useEffect, useState } from 'react';
-import { apiGet, apiPost } from '../lib/api-client';
+import { apiGet, apiPatch, apiPost } from '../lib/api-client';
 
 interface InfractionSummary {
   id: string;
@@ -11,14 +11,20 @@ interface InfractionSummary {
 export function DisputeQueue({ sessionId, token }: { sessionId: string; token: string }) {
   const [disputes, setDisputes] = useState<AnswerSummaryDto[]>([]);
   const [infractions, setInfractions] = useState<InfractionSummary[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   async function load(): Promise<void> {
-    const [disputeRows, infractionRows] = await Promise.all([
-      apiGet<AnswerSummaryDto[]>(`/sessions/${sessionId}/disputes`, token),
-      apiGet<InfractionSummary[]>(`/sessions/${sessionId}/infractions`, token),
-    ]);
-    setDisputes(disputeRows);
-    setInfractions(infractionRows);
+    try {
+      const [disputeRows, infractionRows] = await Promise.all([
+        apiGet<AnswerSummaryDto[]>(`/sessions/${sessionId}/disputes`, token),
+        apiGet<InfractionSummary[]>(`/sessions/${sessionId}/infractions`, token),
+      ]);
+      setDisputes(disputeRows);
+      setInfractions(infractionRows);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load the review queue');
+    }
   }
 
   useEffect(() => {
@@ -27,13 +33,29 @@ export function DisputeQueue({ sessionId, token }: { sessionId: string; token: s
   }, [sessionId, token]);
 
   async function resolve(answerId: string, decision: 'APPROVE' | 'REJECT'): Promise<void> {
-    await apiPost(`/answers/${answerId}/resolve-dispute`, { decision }, token);
+    try {
+      await apiPost(`/answers/${answerId}/resolve-dispute`, { decision }, token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to resolve the dispute');
+      return;
+    }
+    load();
+  }
+
+  async function dismissInfraction(infractionId: string): Promise<void> {
+    try {
+      await apiPatch(`/sessions/${sessionId}/infractions/${infractionId}/review`, {}, token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to dismiss the infraction');
+      return;
+    }
     load();
   }
 
   return (
     <div className="mx-auto max-w-2xl p-6">
       <h2 className="mb-2 text-xl font-semibold">Dispute queue</h2>
+      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
       {disputes.length === 0 ? (
         <p className="text-sm text-slate-500">No free-text answers need review.</p>
       ) : (
@@ -69,8 +91,19 @@ export function DisputeQueue({ sessionId, token }: { sessionId: string; token: s
       ) : (
         <ul className="space-y-1">
           {infractions.map((infraction) => (
-            <li key={infraction.id} className="rounded border px-3 py-2 text-sm">
-              Team {infraction.team_id} — {infraction.type}
+            <li
+              key={infraction.id}
+              className="flex items-center justify-between rounded border px-3 py-2 text-sm"
+            >
+              <span>
+                Team {infraction.team_id} — {infraction.type}
+              </span>
+              <button
+                onClick={() => dismissInfraction(infraction.id)}
+                className="rounded bg-slate-700 px-3 py-1 text-sm text-white"
+              >
+                Dismiss
+              </button>
             </li>
           ))}
         </ul>

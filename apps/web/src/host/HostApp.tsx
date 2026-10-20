@@ -6,7 +6,9 @@ import { SessionView } from './SessionView';
 
 export default function HostApp() {
   const { session, loading, token } = useHostSession();
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  // The session-control flow needs the quiz id as well as the session id so it can
+  // list that quiz's questions for the round picker.
+  const [active, setActive] = useState<{ sessionId: string; quizId: string } | null>(null);
 
   if (loading) {
     return <div data-testid="host-app">Loading…</div>;
@@ -21,10 +23,13 @@ export default function HostApp() {
 
   return (
     <div data-testid="host-app">
-      {activeSessionId ? (
-        <SessionView sessionId={activeSessionId} token={token} />
+      {active ? (
+        <SessionView sessionId={active.sessionId} quizId={active.quizId} token={token} />
       ) : (
-        <QuizDashboard token={token} onSessionCreated={setActiveSessionId} />
+        <QuizDashboard
+          token={token}
+          onSessionCreated={(sessionId, quizId) => setActive({ sessionId, quizId })}
+        />
       )}
     </div>
   );

@@ -30,4 +30,24 @@ describe('PaperModeGrid', () => {
       'host-token',
     );
   });
+
+  it('surfaces a failed award instead of swallowing it', async () => {
+    (apiGet as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 's1',
+      joinCode: 'AB12',
+      status: 'PAUSE_BREAK',
+      currentQuestion: null,
+      questionEndsAt: null,
+      teams: [{ id: 't1', name: 'The Quizzards', isActive: true, score: 0, infractionCount: 0 }],
+    });
+    (apiPost as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Not your session'));
+
+    render(<PaperModeGrid sessionId="s1" token="host-token" />);
+
+    fireEvent.change(await screen.findByRole('spinbutton'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Award' }));
+
+    expect(await screen.findByText('Not your session')).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton')).toHaveValue(3);
+  });
 });

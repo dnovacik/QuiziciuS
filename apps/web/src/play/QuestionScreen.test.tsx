@@ -44,6 +44,17 @@ describe('QuestionScreen', () => {
     expect(await screen.findByText('Answer locked in!')).toBeInTheDocument();
   });
 
+  it('surfaces a failed submission and keeps the question answerable', async () => {
+    (apiPost as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Question is closed'));
+    render(<QuestionScreen state={MC_STATE} teamId="t1" token="team-token" onTapToLockIn={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Paris' }));
+
+    expect(await screen.findByText('Question is closed')).toBeInTheDocument();
+    expect(screen.queryByText('Answer locked in!')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Paris' })).toBeInTheDocument();
+  });
+
   it('calls onTapToLockIn when the LOCK_IN_ROUND overlay is tapped', () => {
     const onTapToLockIn = vi.fn();
     render(
