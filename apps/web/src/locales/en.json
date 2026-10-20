@@ -192,5 +192,16 @@
   "stitch.team.loginButton": "Sign in to team",
   "stitch.team.confirmEmail": "Check your email to confirm your captain account, then return here and sign in.",
   "stitch.team.forgotPassword": "Forgot password?",
-  "stitch.team.resetSent": "If this email exists, you will receive a password reset link."
+  "stitch.team.resetSent": "If this email exists, you will receive a password reset link.",
+  "management.players": "Team players",
+  "management.editTeam": "Edit team",
+  "management.save": "Save changes",
+  "management.cancel": "Cancel",
+  "management.rename": "Rename",
+  "management.remove": "Remove",
+  "management.add": "Add player",
+  "management.empty": "No players added yet.",
+  "management.playerPlaceholder": "Player name",
+  "management.color": "Team color",
+  "management.error": "Could not save team changes."
 }
