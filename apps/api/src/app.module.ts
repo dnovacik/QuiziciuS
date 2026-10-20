@@ -4,6 +4,7 @@ import { validateEnv } from './config/env.validation';
 import { SupabaseModule } from './supabase/supabase.module';
 import { DataModule } from './data/data.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { TeamsModule } from './teams/teams.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { RealtimeModule } from './realtime/realtime.module';
     SupabaseModule,
     DataModule,
     RealtimeModule,
+    TeamsModule,
   ],
 })
 export class AppModule {}
