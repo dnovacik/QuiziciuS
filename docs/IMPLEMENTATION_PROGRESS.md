@@ -108,3 +108,10 @@ Verification status: authored tests, but no local environment test run by assist
 - Supabase auth outcomes expose stable `data-feedback-code` values on the feedback element; tests assert these codes, never UI language or error message text.
 - For thrown plain-object SDK error responses, display their `message` when present; otherwise use the localized fallback. Tests remain independent of both.
 - Codes: `AUTH_SIGN_IN_FAILED`, `AUTH_SIGN_UP_FAILED`, `AUTH_RECOVERY_FAILED`, `AUTH_REGISTERED`, `AUTH_RECOVERY_SENT`.
+
+## Stitch team dialog full port
+- Replaced temporary team modal with `TeamDialog.tsx` porting Stitch's quick join and registration forms (code, team name, optional table, captain email, team password, member count) and preserving the source design's SVG path geometry.
+- Quick join accepts exactly 4 alphanumeric characters, calls `/sessions/by-code/:code` and `/sessions/:id/teams/join`, persists the guest session token and navigates to `/play/:sessionId`. Table number is retained as a UI field but isn't accepted by the existing join endpoint.
+- QR load accepts an image from file selection/camera capture using native BarcodeDetector when supported; valid same-origin `/play/:id` QR navigates directly, a plain 4-character QR populates the code field. Unsupported browsers show an explanatory message (not silent success).
+- Registration form sends captain signup to Supabase and stores requested team metadata; permanent team creation, unique name enforcement and member management are NOT yet implemented server-side. UI clearly notes that the team backend step is pending.
+- Tests use stable `data-testid` selectors and inspect the complete fields without language-dependent assertions. Remaining tasks: production-grade team registration service, independent account authorization and cross-browser QR scanning fallback.
