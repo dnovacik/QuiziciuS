@@ -14,7 +14,7 @@ Updated: 2026-10-20
 ## Work packages
 | PR/work package | State | User verification |
 |---|---|---|
-| 01 — i18n foundation + tracker | IN PROGRESS | Homepage defaults to SK, language switch persists EN/SK; tests/build |
+| 01 — i18n foundation + tracker | PR OPEN — AWAITING CI / LOCAL TEST | Homepage defaults to SK, language switch persists EN/SK; tests/build |
 | 02 — team identity specification + auth migrations | TODO | Register, log in, reserved-name conflict, recovery |
 | 03 — team screens + authenticated joining | TODO | Login and join session, one active device |
 | 04 — engine integrity + reconnection | TODO | Concurrent answers, stale transitions, reconnection |
@@ -40,3 +40,13 @@ Projector: lobby; question/reveal; leaderboard/winner.
 
 ## Working agreement
 PR branches are based on master; review + local verification before merge. Update this document in every PR with state, affected views, test command, and manual test instructions.
+
+## PR 01 — local verification
+1. `pnpm install --frozen-lockfile`
+2. `pnpm -r build`
+3. `pnpm -r --workspace-concurrency=1 run test`
+4. `pnpm --filter web dev` and visit `/`.
+5. Check Slovak default, switch to English, refresh, then switch back; check `/host` and `/play` links.
+6. Ensure this is only the i18n foundation: existing host, player, and projector screens are not yet translated.
+
+Verification status: authored tests, but no local environment test run by assistant; GitHub CI must complete.
