@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useHostSession } from '../lib/use-host-session';
 import LoginScreen from './LoginScreen';
-import { QuizDashboard } from './QuizDashboard';
+import { StitchHostDashboard } from './StitchHostDashboard';
 import { SessionView } from './SessionView';
 
 export default function HostApp() {
@@ -26,7 +26,7 @@ export default function HostApp() {
       {active ? (
         <SessionView sessionId={active.sessionId} quizId={active.quizId} token={token} />
       ) : (
-        <QuizDashboard
+        <StitchHostDashboard
           token={token}
           onSessionCreated={(sessionId, quizId) => setActive({ sessionId, quizId })}
         />
