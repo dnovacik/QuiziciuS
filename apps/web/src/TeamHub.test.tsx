@@ -8,7 +8,7 @@ import { apiGet, apiPost } from './lib/api-client';
 vi.mock('./lib/use-host-session',()=>({
   useHostSession:()=>({loading:false,token:'captain-token',session:{user:{id:'captain-id',email:'captain@example.com'}}})
 }));
-vi.mock('./lib/api-client',()=>({apiGet:vi.fn(),apiPost:vi.fn()}));
+vi.mock('./lib/api-client',()=>({apiGet:vi.fn(),apiPost:vi.fn(),apiPatch:vi.fn(),apiDelete:vi.fn()}));
 const list=vi.mocked(apiGet);
 const post=vi.mocked(apiPost);
 function renderHub(){return render(<MemoryRouter><I18nProvider><TeamHub /></I18nProvider></MemoryRouter>)}
