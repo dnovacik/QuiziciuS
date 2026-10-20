@@ -324,5 +324,8 @@
   "live.state.PAUSE_BREAK": "Prestávka",
   "live.resume": "Otvoriť ovládacie centrum",
   "live.noSessions": "Zatiaľ žiadne kvízové relácie. Spustite jednu z Mojich kvízov.",
-  "live.projector": "Projekcia"
+  "live.projector": "Projekcia",
+  "live.quizDetails": "Detaily kvízu",
+  "live.totalPoints": "Celkom bodov",
+  "live.quizUnavailable": "Názov kvízu sa nepodarilo načítať"
 }
