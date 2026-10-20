@@ -41,6 +41,7 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
   const sessions: SessionsRepository = {
     create: jest.fn(),
     findById: jest.fn().mockResolvedValue(session),
+    findByJoinCode: jest.fn().mockResolvedValue(session),
     updateStatus: jest.fn().mockImplementation(async (_id: string, patch) => ({ ...session, ...patch })),
   };
   const questions: QuestionsRepository = {
@@ -79,7 +80,9 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
   };
   const infractions: InfractionsRepository = {
     create: jest.fn(),
+    findById: jest.fn(),
     listBySession: jest.fn().mockResolvedValue([]),
+    markReviewed: jest.fn(),
   };
   const scoreAdjustments: ScoreAdjustmentsRepository = { create: jest.fn(), listBySession: jest.fn().mockResolvedValue([]) };
   const broadcast = { publish: jest.fn().mockResolvedValue(undefined) } as unknown as RealtimeBroadcastService;
@@ -160,6 +163,65 @@ describe('QuizEngineService.transitionState', () => {
 
     await expect(service.transitionState('s1', 'host1', 'LOCK_IN_ROUND')).rejects.toThrow(
       'questionId is required',
+    );
+  });
+
+  it('rejects a LOCK_IN_ROUND question that belongs to another quiz', async () => {
+    const { service, sessions, questions, broadcast } = buildHarness({ session: { status: 'LOBBY' } });
+    (questions.findById as jest.Mock).mockResolvedValue({ ...NUMERIC_QUESTION, id: 'q-foreign', quiz_id: 'other-quiz' });
+
+    await expect(
+      service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'q-foreign' }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(sessions.updateStatus).not.toHaveBeenCalled();
+    expect(broadcast.publish).not.toHaveBeenCalled();
+  });
+
+  it('throws NotFoundException when the LOCK_IN_ROUND questionId does not exist', async () => {
+    const { service, sessions, questions } = buildHarness({ session: { status: 'LOBBY' } });
+    (questions.findById as jest.Mock).mockResolvedValue(null);
+
+    await expect(
+      service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'missing' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(sessions.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('accepts a LOCK_IN_ROUND question that belongs to the session quiz', async () => {
+    const { service, sessions } = buildHarness({ session: { status: 'LOBBY' } });
+
+    await service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'q1' });
+
+    expect(sessions.updateStatus).toHaveBeenCalledWith(
+      's1',
+      expect.objectContaining({ status: 'LOCK_IN_ROUND', current_question_id: 'q1' }),
+    );
+  });
+
+  it('grades a malformed numeric answer as incorrect without poisoning the rest of the round', async () => {
+    const { service, answers } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q1' },
+    });
+    (answers.listByQuestion as jest.Mock).mockResolvedValue([
+      { id: 'a1', team_id: 't1', response: { value: 5.5 } },
+      { id: 'a2', team_id: 't2', response: { value: 'not-a-number' } },
+      { id: 'a3', team_id: 't3', response: {} },
+    ]);
+
+    await service.transitionState('s1', 'host1', 'QUESTION_REVEAL');
+
+    // The one valid answer is still the nearest and takes the full 4 points.
+    expect(answers.updateGrade).toHaveBeenCalledWith(
+      'a1',
+      expect.objectContaining({ is_correct: true, graded_by: 'AUTO', score_awarded: 4 }),
+    );
+    expect(answers.updateGrade).toHaveBeenCalledWith(
+      'a2',
+      expect.objectContaining({ is_correct: false, graded_by: 'AUTO', score_awarded: 0 }),
+    );
+    expect(answers.updateGrade).toHaveBeenCalledWith(
+      'a3',
+      expect.objectContaining({ is_correct: false, graded_by: 'AUTO', score_awarded: 0 }),
     );
   });
 });

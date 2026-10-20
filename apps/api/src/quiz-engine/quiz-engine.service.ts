@@ -100,6 +100,13 @@ export class QuizEngineService {
       if (!options.questionId) {
         throw new BadRequestException('questionId is required to start a lock-in round');
       }
+      // Without this check an authenticated host could point their own session at
+      // another tenant's question and read its answer back at QUESTION_REVEAL.
+      const question = await this.questions.findById(options.questionId);
+      if (!question) throw new NotFoundException('Question not found');
+      if (question.quiz_id !== session.quiz_id) {
+        throw new ForbiddenException('Question does not belong to this session quiz');
+      }
       patch.current_question_id = options.questionId;
       if (!session.started_at) {
         patch.started_at = new Date().toISOString();
@@ -176,15 +183,26 @@ export class QuizEngineService {
     if (!question || question.type !== 'NUMERIC_NEAREST' || question.correct_numeric === null) return;
 
     const submitted = await this.answers.listByQuestion(sessionId, questionId);
-    const numericAnswers = submitted.map((a) => ({
-      teamId: a.team_id,
-      value: Number((a.response as { value: number }).value),
+
+    // A malformed submission parses to NaN, and a single NaN poisons Math.min() in the
+    // nearest-value ranking, making `distance === minDistance` false for every team —
+    // one bad answer would otherwise zero the whole round. Grade those as plain
+    // incorrect answers and keep them out of the ranking entirely.
+    const parsed = submitted.map((a) => ({
+      answer: a,
+      value: Number((a.response as { value?: unknown } | null)?.value),
     }));
-    const graded = gradeNumericNearest(numericAnswers, question.correct_numeric);
+    const rankable = parsed.filter((p) => Number.isFinite(p.value));
+    const malformed = parsed.filter((p) => !Number.isFinite(p.value));
+
+    const graded = gradeNumericNearest(
+      rankable.map((p) => ({ teamId: p.answer.team_id, value: p.value })),
+      question.correct_numeric,
+    );
     const winnerCount = graded.filter((g) => g.isCorrect).length || 1;
     const pointsPerWinner = Math.floor(question.points / winnerCount);
 
-    const byTeamId = new Map(submitted.map((a) => [a.team_id, a.id]));
+    const byTeamId = new Map(rankable.map((p) => [p.answer.team_id, p.answer.id]));
     for (const result of graded) {
       const answerId = byTeamId.get(result.teamId);
       if (!answerId) continue;
@@ -192,6 +210,14 @@ export class QuizEngineService {
         is_correct: result.isCorrect,
         graded_by: 'AUTO',
         score_awarded: result.isCorrect ? pointsPerWinner : 0,
+      });
+    }
+
+    for (const { answer } of malformed) {
+      await this.answers.updateGrade(answer.id, {
+        is_correct: false,
+        graded_by: 'AUTO',
+        score_awarded: 0,
       });
     }
 
