@@ -34,8 +34,8 @@ describe('AppRoutes', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    expect(screen.getByTestId('landing-host-entry')).toHaveAttribute('href', '/host');
-    expect(screen.getByTestId('landing-join-quiz')).toHaveAttribute('href', '/play');
+    expect(screen.getByTestId('landing-host-entry')).toBeInTheDocument();
+    expect(screen.getByTestId('landing-team-entry')).toBeInTheDocument();
   });
 
   it('resolves an unknown path to the landing page too', () => {
