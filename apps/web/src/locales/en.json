@@ -185,5 +185,7 @@
   "hub.nextQuiz": "Upcoming quiz",
   "hub.noUpcoming": "No upcoming quizzes yet.",
   "hub.history": "Match history",
-  "hub.noHistory": "You haven't played a match yet."
+  "hub.noHistory": "You haven't played a match yet.",
+  "hub.joining": "Joining…",
+  "hub.joinError": "Could not join the quiz."
 }
