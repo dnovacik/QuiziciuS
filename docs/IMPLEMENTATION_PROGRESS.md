@@ -103,3 +103,8 @@ Verification status: authored tests, but no local environment test run by assist
 - Omitted fake testimonial and unsupported Google/Microsoft OAuth buttons from Stitch. Original source has CSS atmospheric gradients but no embedded pub photograph; production photo assets are separate design work.
 - Test selectors are `data-testid`, not translated text. CI + local acceptance pending.
 - Local QA: `pnpm -r build`; `pnpm -r --workspace-concurrency=1 run test`; verify `/` and `/host` with Supabase configured; register, confirm email if required, log in, password reset, translate, team modal; mobile responsive layout.
+
+## Auth test stability correction
+- Supabase auth outcomes expose stable `data-feedback-code` values on the feedback element; tests assert these codes, never UI language or error message text.
+- For thrown plain-object SDK error responses, display their `message` when present; otherwise use the localized fallback. Tests remain independent of both.
+- Codes: `AUTH_SIGN_IN_FAILED`, `AUTH_SIGN_UP_FAILED`, `AUTH_RECOVERY_FAILED`, `AUTH_REGISTERED`, `AUTH_RECOVERY_SENT`.
