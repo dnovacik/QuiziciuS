@@ -185,5 +185,7 @@
   "hub.nextQuiz": "Najbližší kvíz",
   "hub.noUpcoming": "Zatiaľ žiadne naplánované kvízy.",
   "hub.history": "História zápasov",
-  "hub.noHistory": "Zatiaľ nemáte odohrané zápasy."
+  "hub.noHistory": "Zatiaľ nemáte odohrané zápasy.",
+  "hub.joining": "Pripájam…",
+  "hub.joinError": "Nepodarilo sa pripojiť ku kvízu."
 }
