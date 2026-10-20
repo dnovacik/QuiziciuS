@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, createElement, useContext, useEffect, useState, type ReactNode } from 'react';
 
 export type Locale = 'sk' | 'en';
 export const DEFAULT_LOCALE: Locale = 'sk';
@@ -55,7 +55,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = locale;
     try { localStorage.setItem(STORAGE_KEY, locale); } catch { /* storage can be disabled */ }
   }, [locale]);
-  return <I18nContext.Provider value={{ locale, setLocale, t: (key) => translate(locale, key) }}>{children}</I18nContext.Provider>;
+  return createElement(I18nContext.Provider, { value: { locale, setLocale, t: (key) => translate(locale, key) } }, children);
 }
 export function useI18n(): I18nContextValue {
   const value = useContext(I18nContext);
