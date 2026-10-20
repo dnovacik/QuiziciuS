@@ -62,6 +62,18 @@ export class InMemoryQuestionsRepository extends QuestionsRepository {
     this.rows.set(record.id, record);
     return record;
   }
+  async update(quizId:string,id:string,input:Omit<QuestionRecord,'id'|'quiz_id'>):Promise<QuestionRecord|null>{
+    const record=this.rows.get(id);
+    if(!record||record.quiz_id!==quizId)return null;
+    const updated={...record,...input};
+    this.rows.set(id,updated);
+    return updated;
+  }
+  async remove(quizId:string,id:string):Promise<boolean>{
+    const record=this.rows.get(id);
+    if(!record||record.quiz_id!==quizId)return false;
+    return this.rows.delete(id);
+  }
 }
 
 export class InMemoryTeamsRepository extends TeamsRepository {
