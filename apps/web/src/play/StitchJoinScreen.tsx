@@ -3,7 +3,7 @@ import {apiGet,apiPost} from '../lib/api-client';
 import {useI18n} from '../lib/i18n';
 import './stitch-player.css';
 export interface JoinResult {sessionId:string;teamId:string;token:string}
-export function JoinScreen({initialSessionId,onJoined}:{initialSessionId?:string;onJoined:(result:JoinResult)=>void}){
+export function StitchJoinScreen({initialSessionId,onJoined}:{initialSessionId?:string;onJoined:(result:JoinResult)=>void}){
  const {t,locale,setLocale}=useI18n();
  const [code,setCode]=useState('');const [name,setName]=useState('');const [busy,setBusy]=useState(false);const [error,setError]=useState<string|null>(null);
  async function join(e:FormEvent){e.preventDefault();if(busy)return;setBusy(true);setError(null);try{const sessionId=initialSessionId||(await apiGet<{id:string}>(`/sessions/by-code/${encodeURIComponent(code.trim().toUpperCase())}`)).id;const result=await apiPost<{teamId:string;token:string}>(`/sessions/${sessionId}/teams/join`,{name:name.trim()});onJoined({sessionId,teamId:result.teamId,token:result.token})}catch(err){setError(err instanceof Error?err.message:t('player.joinFailed'))}finally{setBusy(false)}}
