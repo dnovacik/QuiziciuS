@@ -1,0 +1,38 @@
+import { fakeSupabaseService } from '../test-utils/supabase-mock';
+import { SupabaseAnswersRepository, AnswerRecord } from './answers.repository';
+
+const RECORD: AnswerRecord = {
+  id: 'a1',
+  session_id: 's1',
+  question_id: 'q1',
+  team_id: 't1',
+  response: { optionId: 'a' },
+  is_correct: null,
+  confidence: null,
+  needs_review: false,
+  graded_by: null,
+  graded_at: null,
+  submitted_at: '2026-09-16T00:00:00.000Z',
+  score_awarded: 0,
+};
+
+describe('SupabaseAnswersRepository', () => {
+  it('upserts a submission idempotently', async () => {
+    const supabase = fakeSupabaseService({ answers: { data: RECORD, error: null } });
+    const repo = new SupabaseAnswersRepository(supabase);
+
+    await expect(
+      repo.upsertSubmission({ sessionId: 's1', questionId: 'q1', teamId: 't1', response: { optionId: 'a' } }),
+    ).resolves.toEqual(RECORD);
+  });
+
+  it('applies a grade patch', async () => {
+    const graded = { ...RECORD, is_correct: true, graded_by: 'AUTO' as const, score_awarded: 1 };
+    const supabase = fakeSupabaseService({ answers: { data: graded, error: null } });
+    const repo = new SupabaseAnswersRepository(supabase);
+
+    await expect(
+      repo.updateGrade('a1', { is_correct: true, graded_by: 'AUTO', score_awarded: 1 }),
+    ).resolves.toEqual(graded);
+  });
+});
