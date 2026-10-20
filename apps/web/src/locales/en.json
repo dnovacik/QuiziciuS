@@ -187,5 +187,10 @@
   "hub.history": "Match history",
   "hub.noHistory": "You haven't played a match yet.",
   "hub.joining": "Joining…",
-  "hub.joinError": "Could not join the quiz."
+  "hub.joinError": "Could not join the quiz.",
+  "stitch.team.tabLogin": "Sign in",
+  "stitch.team.loginButton": "Sign in to team",
+  "stitch.team.confirmEmail": "Check your email to confirm your captain account, then return here and sign in.",
+  "stitch.team.forgotPassword": "Forgot password?",
+  "stitch.team.resetSent": "If this email exists, you will receive a password reset link."
 }
