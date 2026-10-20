@@ -1,7 +1,24 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import App, { AppRoutes } from './App';
+
+// Every sibling suite mocks these two modules; without them this file's lazy-route
+// tests reach the network from inside jsdom (supabase.auth.getSession(), a fetch to
+// the API base URL, and a real WebSocket connection attempt), which is what made the
+// waitFor assertions below flake intermittently.
+vi.mock('./lib/api-client', () => ({ apiGet: vi.fn(() => new Promise(() => {})), apiPost: vi.fn() }));
+vi.mock('./lib/supabase-client', () => ({
+  subscribeToSession: vi.fn(() => vi.fn()),
+  supabase: {
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: null } }),
+      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+      signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
+      signUp: vi.fn().mockResolvedValue({ error: null }),
+    },
+  },
+}));
 
 describe('App', () => {
   it('renders the fallback route at an unmatched path', () => {

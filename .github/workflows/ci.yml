@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # packages/shared-types resolves through dist/, which is gitignored. Its
+      # `prepare` script rebuilds it here, so the API and web packages can resolve
+      # @quizicius/shared-types straight after a fresh clone.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm -r build
+
+      # Serialised on purpose: the suites are cheap, and running them one package at
+      # a time keeps CI deterministic on constrained runners.
+      - name: Run tests
+        run: pnpm -r --workspace-concurrency=1 run test
