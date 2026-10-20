@@ -25,6 +25,21 @@ export class SessionsController {
     return this.quizEngine.createSession(quizId, host.id);
   }
 
+  @Get('host/sessions')
+  @UseGuards(SupabaseAuthGuard)
+  listHostSessions(@CurrentHost() host:CurrentHostPayload){
+    return this.sessions.listByHost(host.id);
+  }
+
+  @Get('host/sessions/:sessionId')
+  @UseGuards(SupabaseAuthGuard)
+  async hostSession(@Param('sessionId') sessionId:string,@CurrentHost() host:CurrentHostPayload){
+    const session=await this.sessions.findById(sessionId);
+    if(!session)throw new NotFoundException('Session not found');
+    if(session.host_id!==host.id)throw new ForbiddenException('Not your session');
+    return session;
+  }
+
   // Public, like GET /sessions/:sessionId/state: players type the spoken-aloud join
   // code before they have any credentials. Returns only the session id — everything
   // else still has to be fetched through the normal (also public) state endpoint.
