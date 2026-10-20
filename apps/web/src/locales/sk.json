@@ -187,5 +187,10 @@
   "hub.history": "História zápasov",
   "hub.noHistory": "Zatiaľ nemáte odohrané zápasy.",
   "hub.joining": "Pripájam…",
-  "hub.joinError": "Nepodarilo sa pripojiť ku kvízu."
+  "hub.joinError": "Nepodarilo sa pripojiť ku kvízu.",
+  "stitch.team.tabLogin": "Prihlásenie",
+  "stitch.team.loginButton": "Prihlásiť sa do tímu",
+  "stitch.team.confirmEmail": "Potvrďte účet kapitána cez e-mail a potom sa tu prihláste.",
+  "stitch.team.forgotPassword": "Zabudli ste heslo?",
+  "stitch.team.resetSent": "Ak e-mail existuje, dostanete odkaz na obnovu hesla."
 }
