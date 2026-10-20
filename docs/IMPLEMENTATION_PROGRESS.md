@@ -46,7 +46,8 @@ PR branches are based on master; review + local verification before merge. Updat
 2. `pnpm -r build`
 3. `pnpm -r --workspace-concurrency=1 run test`
 4. `pnpm --filter web dev` and visit `/`.
-5. Check Slovak default, switch to English, refresh, then switch back; check `/host` and `/play` links.
+5. Check Slovak default, select 🇬🇧 English, refresh, then select 🇸🇰 Slovak; check `/host` and `/play` links.
+7. Check responsive illustrated hero on mobile and desktop. This is a CSS prototype; a finalized branded image asset can replace it later.
 6. Ensure this is only the i18n foundation: existing host, player, and projector screens are not yet translated.
 
 Verification status: authored tests, but no local environment test run by assistant; GitHub CI must complete.
