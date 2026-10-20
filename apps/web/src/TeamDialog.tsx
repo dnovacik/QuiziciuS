@@ -4,7 +4,7 @@ import { apiGet, apiPost } from './lib/api-client';
 import { supabase } from './lib/supabase-client';
 import { useI18n } from './lib/i18n';
 
-type Tab = 'quick' | 'register';
+type Tab = 'quick' | 'register' | 'login';
 type IconName = 'close' | 'users' | 'bolt' | 'plusUser' | 'mail' | 'lock' | 'table' | 'arrow';
 const paths: Record<IconName, string> = {
   close: 'M6 18L18 6M6 6l12 12',
@@ -62,10 +62,19 @@ export function TeamDialog({onClose,onHost}:{onClose:()=>void;onHost:()=>void}) 
   }catch(err){setResultCode('TEAM_JOIN_FAILED');setError(err instanceof Error?err.message:t('stitch.auth.failed'))}finally{setPending(false)}
  }
  async function register(e:FormEvent){e.preventDefault();if(pending)return;setPending(true);setError(null);setResultCode(null);
-  try {const {error:signupError}=await supabase.auth.signUp({email,password,options:{data:{team_name:name.trim(),members_count:Number(members)}}});
+  try {const {data,error:signupError}=await supabase.auth.signUp({email,password,options:{data:{team_name:name.trim(),members_count:Number(members)}}});
    if(signupError)throw signupError;
-   setResultCode('TEAM_ACCOUNT_PENDING');setError(t('stitch.team.registerPending'));
+   if(data.session){navigate('/team');onClose();return;}
+   setResultCode('TEAM_EMAIL_CONFIRMATION_REQUIRED');setError(t('stitch.team.confirmEmail'));
   }catch(err){setResultCode('TEAM_REGISTER_FAILED');setError(err instanceof Error?err.message:t('stitch.auth.failed'))}finally{setPending(false)}
+ }
+ async function login(e:FormEvent){e.preventDefault();if(pending)return;setPending(true);setError(null);setResultCode(null);
+  try{const {error:loginError}=await supabase.auth.signInWithPassword({email,password});if(loginError)throw loginError;navigate('/team');onClose();}
+  catch(err){setResultCode('TEAM_LOGIN_FAILED');setError(err instanceof Error?err.message:t('stitch.auth.failed'))}finally{setPending(false)}
+ }
+ async function resetPassword(){if(!email||pending)return;setPending(true);setError(null);setResultCode(null);
+  try{const {error:resetError}=await supabase.auth.resetPasswordForEmail(email);if(resetError)throw resetError;setResultCode('TEAM_PASSWORD_RESET_SENT');setError(t('stitch.team.resetSent'));}
+  catch(err){setResultCode('TEAM_PASSWORD_RESET_FAILED');setError(err instanceof Error?err.message:t('stitch.auth.failed'))}finally{setPending(false)}
  }
  return <div data-testid="stitch-team-modal" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}>
    <section role="dialog" aria-modal="true" aria-labelledby="teamModalTitle" className="stitch-card relative w-full max-w-[500px] max-h-[92vh] overflow-y-auto rounded-3xl border border-white/20 p-6 shadow-2xl sm:p-8">
@@ -77,9 +86,10 @@ export function TeamDialog({onClose,onHost}:{onClose:()=>void;onHost:()=>void}) 
        <h2 className="text-2xl font-extrabold text-white" id="teamModalTitle">{t('stitch.team.title')}</h2>
        <p className="mx-auto mt-1 max-w-sm text-xs text-slate-400 sm:text-sm">{t('stitch.team.description')}</p>
      </div>
-     <div className="mb-6 grid grid-cols-2 rounded-2xl border border-white/10 bg-[#06080f]/80 p-1">
+     <div className="mb-6 grid grid-cols-3 rounded-2xl border border-white/10 bg-[#06080f]/80 p-1">
        <button data-testid="team-tab-quick" type="button" onClick={()=>{setTab('quick');setError(null)}} className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs sm:text-sm ${tab==='quick'?'bg-purple-600 font-bold text-white shadow-md':'font-semibold text-slate-400 hover:text-white'}`}><StitchIcon name="bolt"/>{t('stitch.team.tabQuick')}</button>
        <button data-testid="team-tab-register" type="button" onClick={()=>{setTab('register');setError(null)}} className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs sm:text-sm ${tab==='register'?'bg-purple-600 font-bold text-white shadow-md':'font-semibold text-slate-400 hover:text-white'}`}><StitchIcon name="plusUser"/>{t('stitch.team.tabRegister')}</button>
+       <button data-testid="team-tab-login" type="button" onClick={()=>{setTab('login');setError(null);setResultCode(null)}} className={`flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs sm:text-sm ${tab==='login'?'bg-purple-600 font-bold text-white shadow-md':'font-semibold text-slate-400 hover:text-white'}`}><StitchIcon name="lock"/>{t('stitch.team.tabLogin')}</button>
      </div>
      {tab==='quick' ? <form data-testid="team-quick-form" onSubmit={quickJoin} className="space-y-4">
        <label className="block text-xs font-semibold text-slate-300"><span className="mb-1.5 flex justify-between"><span>{t('stitch.team.codeLabel')}</span><span className="font-medium text-purple-400">{t('stitch.team.pinHint')}</span></span>
@@ -90,14 +100,19 @@ export function TeamDialog({onClose,onHost}:{onClose:()=>void;onHost:()=>void}) 
        <label className="block text-xs font-semibold text-slate-300">{t('stitch.team.teamName')}<span className="relative mt-1.5 block">{iconField('users')}<input data-testid="team-name" value={name} onChange={e=>setName(e.target.value)} className={field+' py-2.5 pl-10 pr-4'} required placeholder={t('stitch.team.nameExample')}/></span></label>
        <label className="block text-xs font-semibold text-slate-300"><span className="flex justify-between">{t('stitch.team.tableNumber')}<span className="text-[11px] font-normal text-slate-400">{t('stitch.team.optional')}</span></span><span className="relative mt-1.5 block">{iconField('table')}<input data-testid="team-table" value={table} onChange={e=>setTable(e.target.value)} className={field+' py-2.5 pl-10 pr-4'} placeholder={t('stitch.team.tableExample')}/></span></label>
        <button data-testid="team-join-submit" disabled={pending} type="submit" className={submit}>{t('stitch.team.joinButton')}<StitchIcon name="arrow"/></button>
-     </form> : <form data-testid="team-register-form" className="space-y-3.5" onSubmit={register}>
+     </form> : tab==='register' ? <form data-testid="team-register-form" className="space-y-3.5" onSubmit={register}>
        <label className="block text-xs font-semibold text-slate-300">{t('stitch.team.teamName')}<span className="relative mt-1 block">{iconField('users')}<input data-testid="team-register-name" value={name} onChange={e=>setName(e.target.value)} className={field+' py-2 pl-10 pr-4'} placeholder={t('stitch.team.nameExample')} required/></span></label>
        <label className="block text-xs font-semibold text-slate-300">{t('stitch.team.captainEmail')}<span className="relative mt-1 block">{iconField('mail')}<input data-testid="team-register-email" value={email} onChange={e=>setEmail(e.target.value)} className={field+' py-2 pl-10 pr-4'} type="email" required/></span></label>
        <label className="block text-xs font-semibold text-slate-300">{t('stitch.team.teamPassword')}<span className="relative mt-1 block">{iconField('lock')}<input data-testid="team-register-password" value={password} onChange={e=>setPassword(e.target.value)} className={field+' py-2 pl-10 pr-4'} type="password" minLength={6} required/></span></label>
        <label className="block text-xs font-semibold text-slate-300">{t('stitch.team.membersCount')}<span className="relative mt-1 block">{iconField('users')}<select data-testid="team-register-members" value={members} onChange={e=>setMembers(e.target.value)} className={field+' cursor-pointer bg-[#0b0d17] py-2 pl-10 pr-4'}>{[2,3,4,5,6].map(n=><option key={n} value={n}>{n}</option>)}</select></span></label>
        <button data-testid="team-register-submit" disabled={pending} type="submit" className={submit}>{t('stitch.team.registerButton')}<StitchIcon name="arrow"/></button>
+     </form> : <form data-testid="team-login-form" className="space-y-4" onSubmit={login}>
+       <label className="block text-xs font-semibold text-slate-300">{t('stitch.team.captainEmail')}<span className="relative mt-1.5 block">{iconField('mail')}<input data-testid="team-login-email" type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)} className={field+' py-2.5 pl-10 pr-4'}/></span></label>
+       <label className="block text-xs font-semibold text-slate-300">{t('stitch.team.teamPassword')}<span className="relative mt-1.5 block">{iconField('lock')}<input data-testid="team-login-password" type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)} className={field+' py-2.5 pl-10 pr-4'}/></span></label>
+       <button data-testid="team-login-submit" disabled={pending} className={submit} type="submit">{t('stitch.team.loginButton')}<StitchIcon name="arrow"/></button>
+       <button data-testid="team-forgot-password" disabled={pending||!email} onClick={()=>void resetPassword()} className="block w-full text-center text-xs text-purple-300 disabled:opacity-50" type="button">{t('stitch.team.forgotPassword')}</button>
      </form>}
-     {error && <p data-testid="team-feedback" data-feedback-code={resultCode??''} role={resultCode==='TEAM_ACCOUNT_PENDING'?'status':'alert'} className="mt-4 rounded-lg border border-purple-500/30 p-3 text-xs text-slate-200">{error}</p>}
+     {error && <p data-testid="team-feedback" data-feedback-code={resultCode??''} role={resultCode==='TEAM_EMAIL_CONFIRMATION_REQUIRED'||resultCode==='TEAM_PASSWORD_RESET_SENT'?'status':'alert'} className="mt-4 rounded-lg border border-purple-500/30 p-3 text-xs text-slate-200">{error}</p>}
      <div className="mt-5 border-t border-white/10 pt-4 text-center"><button type="button" data-testid="team-switch-host" onClick={onHost} className="text-xs font-medium text-slate-400 hover:text-purple-300">{t('stitch.team.switchHost')} <span className="text-amber-400">→</span></button></div>
    </section>
  </div>;
