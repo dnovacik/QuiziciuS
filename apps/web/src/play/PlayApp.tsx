@@ -1,3 +1,4 @@
+import { I18nProvider } from '../lib/i18n';
 import { useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { useSessionState } from '../lib/use-session-state';
@@ -36,7 +37,7 @@ export default function PlayApp() {
   if (!joined) {
     return (
       <div data-testid="play-app">
-        <StitchJoinScreen initialSessionId={sessionId} onJoined={handleJoined} />
+        <I18nProvider><StitchJoinScreen initialSessionId={sessionId} onJoined={handleJoined} /></I18nProvider>
       </div>
     );
   }
@@ -53,13 +54,13 @@ export default function PlayApp() {
         local state; without the key it is never remounted and `submitted` would stay
         true forever after the first answer, locking the team out of every later round.
       */}
-      <StitchQuestionScreen
+      <I18nProvider><StitchQuestionScreen
         key={state.currentQuestion?.id}
         state={state}
         teamId={joined.teamId}
         token={joined.token}
         onTapToLockIn={requestFullscreenNow}
-      />
+      /></I18nProvider>
     </div>
   );
 }
