@@ -67,7 +67,7 @@ describe('Session lifecycle (integration)', () => {
     app.useGlobalFilters(new InvalidTransitionExceptionFilter());
     await app.init();
 
-    const quiz = await quizzesRepo.create('host1', 'Integration Quiz');
+    const quiz = await quizzesRepo.create('host1', 'Integration Quiz', null);
     quizId = quiz.id;
     const question = await questionsRepo.create(quizId, {
       type: 'MULTIPLE_CHOICE',

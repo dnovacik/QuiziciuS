@@ -5,12 +5,13 @@ export interface QuizRecord {
   id: string;
   host_id: string;
   league_id: string | null;
+  category_id: string | null;
   title: string;
   created_at: string;
 }
 
 export abstract class QuizzesRepository {
-  abstract create(hostId: string, title: string): Promise<QuizRecord>;
+  abstract create(hostId: string, title: string, categoryId: string | null): Promise<QuizRecord>;
   abstract findById(id: string): Promise<QuizRecord | null>;
   abstract listByHost(hostId: string): Promise<QuizRecord[]>;
 }
@@ -21,11 +22,11 @@ export class SupabaseQuizzesRepository extends QuizzesRepository {
     super();
   }
 
-  async create(hostId: string, title: string): Promise<QuizRecord> {
+  async create(hostId: string, title: string, categoryId: string | null): Promise<QuizRecord> {
     const { data, error } = await this.supabase
       .getClient()
       .from('quizzes')
-      .insert({ host_id: hostId, title })
+      .insert({ host_id: hostId, title, category_id: categoryId })
       .select()
       .single();
     if (error) throw new InternalServerErrorException(error.message);

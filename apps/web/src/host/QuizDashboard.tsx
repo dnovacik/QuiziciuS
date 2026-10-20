@@ -4,6 +4,12 @@ import { apiGet, apiPost } from '../lib/api-client';
 interface QuizSummary {
   id: string;
   title: string;
+  category_id: string | null;
+}
+
+interface CategorySummary {
+  id: string;
+  name: string;
 }
 
 interface QuestionFormProps {
@@ -104,15 +110,20 @@ export function QuizDashboard({
   onSessionCreated: (sessionId: string, quizId: string) => void;
 }) {
   const [quizzes, setQuizzes] = useState<QuizSummary[]>([]);
+  const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [title, setTitle] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [questionCounts, setQuestionCounts] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    apiGet<QuizSummary[]>('/quizzes', token)
-      .then((rows) => {
-        if (!cancelled) setQuizzes(rows);
+    Promise.all([apiGet<QuizSummary[]>('/quizzes', token), apiGet<CategorySummary[]>('/categories', token)])
+      .then(([quizRows, categoryRows]) => {
+        if (!cancelled) {
+          setQuizzes(quizRows);
+          setCategories(categoryRows);
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load quizzes');
@@ -122,14 +133,17 @@ export function QuizDashboard({
     };
   }, [token]);
 
+  const categoryNameById = new Map(categories.map((category) => [category.id, category.name]));
+
   async function handleCreateQuiz(event: FormEvent): Promise<void> {
     event.preventDefault();
     if (!title.trim()) return;
     setError(null);
     try {
-      const quiz = await apiPost<QuizSummary>('/quizzes', { title }, token);
+      const quiz = await apiPost<QuizSummary>('/quizzes', { title, categoryId: categoryId || undefined }, token);
       setQuizzes((prev) => [...prev, quiz]);
       setTitle('');
+      setCategoryId('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create quiz');
     }
@@ -155,6 +169,22 @@ export function QuizDashboard({
           placeholder="New quiz title"
           className="flex-1 rounded border px-3 py-2"
         />
+        <label>
+          <span className="sr-only">Category</span>
+          <select
+            aria-label="Category"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            className="rounded border px-3 py-2"
+          >
+            <option value="">No category</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <button type="submit" className="rounded bg-slate-900 px-4 py-2 text-white">
           Create quiz
         </button>
@@ -165,7 +195,13 @@ export function QuizDashboard({
           <li key={quiz.id} className="rounded border p-3">
             <div className="flex items-center justify-between">
               <span>
-                <span>{quiz.title}</span> ({questionCounts[quiz.id] ?? 0} questions added)
+                <span>{quiz.title}</span>
+                {quiz.category_id && categoryNameById.has(quiz.category_id) && (
+                  <span className="ml-2 rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                    {categoryNameById.get(quiz.category_id)}
+                  </span>
+                )}{' '}
+                ({questionCounts[quiz.id] ?? 0} questions added)
               </span>
               <button
                 onClick={() => handleCreateSession(quiz.id)}

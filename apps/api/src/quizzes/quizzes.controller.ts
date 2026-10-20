@@ -11,7 +11,7 @@ export class QuizzesController {
 
   @Post()
   create(@CurrentHost() host: CurrentHostPayload, @Body() dto: CreateQuizDto) {
-    return this.quizzes.create(host.id, dto.title);
+    return this.quizzes.create(host.id, dto.title, dto.categoryId ?? null);
   }
 
   @Get()

@@ -224,11 +224,12 @@ export class InMemoryScoreAdjustmentsRepository extends ScoreAdjustmentsReposito
 export class InMemoryQuizzesRepository extends QuizzesRepository {
   private rows = new Map<string, QuizRecord>();
 
-  async create(hostId: string, title: string): Promise<QuizRecord> {
+  async create(hostId: string, title: string, categoryId: string | null): Promise<QuizRecord> {
     const record: QuizRecord = {
       id: randomUUID(),
       host_id: hostId,
       league_id: null,
+      category_id: categoryId,
       title,
       created_at: new Date().toISOString(),
     };
