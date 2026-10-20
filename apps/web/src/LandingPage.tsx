@@ -65,10 +65,8 @@ export function LandingPage() {
               <button type="button" aria-label="Slovenčina" aria-pressed={locale === 'sk'} onClick={() => setLocale('sk')} className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold ${locale === 'sk' ? 'border border-purple-500/30 bg-purple-600/30 text-purple-200' : 'text-slate-400 hover:text-white'}`}>🇸🇰 SK</button>
               <button type="button" aria-label="English" aria-pressed={locale === 'en'} onClick={() => setLocale('en')} className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold ${locale === 'en' ? 'border border-purple-500/30 bg-purple-600/30 text-purple-200' : 'text-slate-400 hover:text-white'}`}>🇬🇧 EN</button>
             </div>
-            <Link to="/host" className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:border-purple-500">{en ? 'Host login' : 'Prihlásenie hostiteľa'}</Link>
-            <Link to="/host" className="rounded-lg border border-purple-500/60 px-3 py-2 text-sm text-purple-200 hover:bg-purple-950/30">{en ? 'Host registration' : 'Registrácia hostiteľa'}</Link>
-            <span aria-disabled="true" title={en ? 'Team accounts are coming soon' : 'Tímové účty pripravujeme'} className="rounded-lg border border-slate-700/60 px-3 py-2 text-sm text-slate-400">{en ? 'Team login (soon)' : 'Prihlásenie tímu (čoskoro)'}</span>
-            <span aria-disabled="true" title={en ? 'Team accounts are coming soon' : 'Tímové účty pripravujeme'} className="rounded-lg bg-purple-900/35 px-3 py-2 text-sm text-purple-200">{en ? 'Team registration (soon)' : 'Registrácia tímu (čoskoro)'}</span>
+            <Link to="/host" className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-purple-500">{en ? 'For hosts' : 'Pre hostiteľov'}</Link>
+            <Link to="/team" className="rounded-lg bg-gradient-to-r from-purple-700 to-purple-500 px-4 py-2 text-sm font-semibold text-white hover:from-purple-600 hover:to-purple-400">{en ? 'For teams' : 'Pre tímy'}</Link>
           </div>
           <button type="button" aria-label={mobileMenuOpen ? (en ? 'Close menu' : 'Zavrieť menu') : (en ? 'Open menu' : 'Otvoriť menu')} aria-expanded={mobileMenuOpen} aria-controls="landing-auth-menu" className="p-2 text-slate-300 hover:text-white lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -82,10 +80,8 @@ export function LandingPage() {
               <button type="button" aria-label="English" aria-pressed={locale === 'en'} onClick={() => setLocale('en')} className={`rounded-lg border px-3 py-2 ${locale === 'en' ? 'border-purple-400 bg-purple-700/30' : 'border-slate-700'}`}>🇬🇧 EN</button>
             </div>
             <div className="flex flex-col gap-3 text-center text-sm">
-              <Link to="/host" className="rounded-xl border border-slate-700 py-2.5" onClick={() => setMobileMenuOpen(false)}>{en ? 'Host login' : 'Prihlásenie hostiteľa'}</Link>
-              <Link to="/host" className="rounded-xl border border-purple-500/60 py-2.5" onClick={() => setMobileMenuOpen(false)}>{en ? 'Host registration' : 'Registrácia hostiteľa'}</Link>
-              <span aria-disabled="true" className="rounded-xl border border-slate-700/60 py-2.5 text-slate-400">{en ? 'Team login (soon)' : 'Prihlásenie tímu (čoskoro)'}</span>
-              <span aria-disabled="true" className="rounded-xl bg-purple-900/35 py-2.5 text-purple-200">{en ? 'Team registration (soon)' : 'Registrácia tímu (čoskoro)'}</span>
+              <Link to="/host" className="rounded-xl border border-slate-700 py-2.5" onClick={() => setMobileMenuOpen(false)}>{en ? 'For hosts' : 'Pre hostiteľov'}</Link>
+              <Link to="/team" className="rounded-xl bg-purple-700 py-2.5" onClick={() => setMobileMenuOpen(false)}>{en ? 'For teams' : 'Pre tímy'}</Link>
             </div>
           </div>
         )}
