@@ -1,8 +1,8 @@
 import { BadRequestException, ConflictException, Controller, Get, Param, Post, Body, UseGuards } from '@nestjs/common';
 import { IsIn, IsInt, IsOptional, IsString, Length, Max, Min } from 'class-validator';
-import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
-import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
-import { SupabaseService } from '../supabase/supabase.service';
+import { CurrentHost, CurrentHostPayload } from './auth/current-host.decorator';
+import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
+import { SupabaseService } from './supabase/supabase.service';
 
 class RegisterTeamDto {
  @IsString() @Length(3,30) name!:string;
