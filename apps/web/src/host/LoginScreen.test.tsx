@@ -48,7 +48,7 @@ describe('LoginScreen', () => {
     renderLogin();
     fillCredentials();
     fireEvent.submit(screen.getByTestId('host-auth-form'));
-    expect(await screen.findByTestId('host-auth-feedback')).toHaveTextContent('Invalid credentials');
+    expect(await screen.findByTestId('host-auth-feedback')).toHaveAttribute('data-feedback-code', 'AUTH_SIGN_IN_FAILED');
   });
 
   it('registers hosts via signup mode', async () => {
@@ -58,7 +58,7 @@ describe('LoginScreen', () => {
     fireEvent.submit(screen.getByTestId('host-auth-form'));
     await waitFor(() => expect(signUp).toHaveBeenCalledWith({ email: 'new@example.com', password: 'hunter2' }));
     expect(signIn).not.toHaveBeenCalled();
-    expect(await screen.findByTestId('host-auth-feedback')).toBeInTheDocument();
+    expect(await screen.findByTestId('host-auth-feedback')).toHaveAttribute('data-feedback-code', 'AUTH_REGISTERED');
   });
 
   it('shows signup errors', async () => {
@@ -67,7 +67,7 @@ describe('LoginScreen', () => {
     fireEvent.click(screen.getByTestId('host-register-tab'));
     fillCredentials();
     fireEvent.submit(screen.getByTestId('host-auth-form'));
-    expect(await screen.findByTestId('host-auth-feedback')).toHaveTextContent('Email already registered');
+    expect(await screen.findByTestId('host-auth-feedback')).toHaveAttribute('data-feedback-code', 'AUTH_SIGN_UP_FAILED');
   });
 
   it('sends password reset email', async () => {
