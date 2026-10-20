@@ -13,7 +13,7 @@ export function StitchHostDashboard({token,onSessionCreated}:{token:string;onSes
  const routerNavigate=useNavigate();
  const location=useLocation();
  const view:View=location.pathname.startsWith('/host/quizzes')?'quizzes':location.pathname.startsWith('/host/sessions')?'sessions':location.pathname.startsWith('/host/leagues')?'leagues':location.pathname.startsWith('/host/settings')?'settings':'dashboard';
- const editingQuiz=location.pathname.match(/^\/quizzes\/edit\/([^/]+)$/)?.[1]??null;
+ const editingQuiz=location.pathname.match(/^\/host\/quizzes\/edit\/([^/]+)$/)?.[1]??null;
  const [quizzes,setQuizzes]=useState<Quiz[]>([]);
  const [questionCounts,setQuestionCounts]=useState<Record<string,number>>({});
  const [categories,setCategories]=useState<Category[]>([]);
@@ -40,7 +40,7 @@ export function StitchHostDashboard({token,onSessionCreated}:{token:string;onSes
  },[quizzes,token]);
  const visible=useMemo(()=>quizzes.filter(q=>(!category||q.category_id===category)&&q.title.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())).sort((a,b)=>sort==='az'?a.title.localeCompare(b.title):sort==='recent'?(b.created_at??'').localeCompare(a.created_at??''):(a.created_at??'').localeCompare(b.created_at??'')),[quizzes,search,category,sort]);
  const categoryName=(id:string|null)=>categories.find(c=>c.id===id)?.name??t('hostDash.uncategorized');
- async function createQuiz(e:FormEvent){e.preventDefault();if(!title.trim()||busy)return;setBusy(true);setError(null);try{const created=await apiPost<Quiz>('/host/quizzes',{title:title.trim(),categoryId:categoryId||undefined},token);setQuizzes(prev=>[created,...prev]);setTitle('');setCategoryId('');setCreateOpen(false);routerNavigate(`/host/quizzes/edit/${created.id}`)}catch(err){setError(err instanceof Error?err.message:t('hostDash.createFailed'))}finally{setBusy(false)}}
+ async function createQuiz(e:FormEvent){e.preventDefault();if(!title.trim()||busy)return;setBusy(true);setError(null);try{const created=await apiPost<Quiz>('/quizzes',{title:title.trim(),categoryId:categoryId||undefined},token);setQuizzes(prev=>[created,...prev]);setTitle('');setCategoryId('');setCreateOpen(false);routerNavigate(`/host/quizzes/edit/${created.id}`)}catch(err){setError(err instanceof Error?err.message:t('hostDash.createFailed'))}finally{setBusy(false)}}
  async function launch(){if(!dialog||busy)return;setBusy(true);setError(null);try{const session=await apiPost<{id:string;join_code:string}>(`/quizzes/${dialog.id}/sessions`,{},token);setDialog(null);onSessionCreated(session.id,dialog.id)}catch(err){setError(err instanceof Error?err.message:t('hostDash.launchFailed'))}finally{setBusy(false)}}
  const symbol=(name:string,cl='')=><span aria-hidden="true" className={`material-symbols-outlined ${cl}`}>{name}</span>;
  const nav=[{key:'dashboard',icon:'dashboard',label:'hostDash.dashboard'},{key:'editor',icon:'quiz',label:'hostDash.quizzes'},{key:'new',icon:'add_circle',label:'hostDash.createQuiz'},{key:'sessions',icon:'sensors',label:'hostDash.sessions'},{key:'leagues',icon:'emoji_events',label:'hostDash.leagues'},{key:'settings',icon:'settings',label:'hostDash.settings'}] as const;
