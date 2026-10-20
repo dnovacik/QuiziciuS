@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from './lib/i18n';
 import { 
@@ -29,27 +29,6 @@ export function LandingPage() {
   const en = locale === 'en';
   const [selectedAnswer, setSelectedAnswer] = useState('B');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('demo');
-
-  useEffect(() => {
-    const updateActive = () => {
-      let current = 'demo';
-      for (const id of ['demo', 'pre-koho']) {
-        const section = document.getElementById(id);
-        if (section && section.getBoundingClientRect().top <= 160) current = id;
-      }
-      setActiveSection(current);
-    };
-    window.addEventListener('scroll', updateActive, { passive: true });
-    updateActive();
-    return () => window.removeEventListener('scroll', updateActive);
-  }, []);
-
-  const navItems = [
-    { id: 'demo', label: en ? 'Quiz preview' : 'Ukážka kvízu' },
-    { id: 'pre-koho', label: en ? 'For whom' : 'Pre koho' },
-  ];
-
   return (
     <div className="min-h-screen bg-[#060310] text-slate-100 font-sans selection:bg-[#a855f7] selection:text-white relative overflow-x-clip">
       {/* Background Ambient Glows */}
@@ -68,7 +47,7 @@ export function LandingPage() {
         {/* ========================================================================= */}
         <header className="sticky top-0 z-50 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 flex items-center justify-between py-4 border-b border-purple-500/15 bg-[#080517]/95 backdrop-blur-xl shadow-lg shadow-black/20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 cursor-pointer group">
+          <Link to="/" aria-label="QuiziciuS" className="flex items-center gap-2 cursor-pointer group">
             <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-purple-600 to-indigo-600 p-0.5 shadow-lg shadow-purple-950/50 group-hover:scale-105 transition-transform">
               <div className="w-full h-full bg-[#0b071b] rounded-[10px] flex items-center justify-center">
                 <svg className="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
@@ -81,53 +60,34 @@ export function LandingPage() {
             </span>
           </Link>
 
-          <nav aria-label={en ? 'Main navigation' : 'Hlavná navigácia'} className="hidden lg:flex items-center gap-8 text-sm font-medium">
-            {navItems.map(item => (
-              <a key={item.id} href={`#${item.id}`} aria-current={activeSection === item.id ? 'location' : undefined}
-                className={`relative py-3 transition-colors after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-purple-500 after:transition-transform ${activeSection === item.id ? 'text-white after:scale-x-100' : 'text-slate-300 hover:text-purple-300 after:scale-x-0'}`}>
-                {item.label}
-              </a>
-            ))}
-          </nav>
-
-          {/* Right Action Cluster */}
-          <div className="hidden md:flex items-center gap-4">
-            {/* Language Selector */}
-            <div className="flex items-center gap-1.5 bg-[#120e2e]/80 border border-slate-800 rounded-lg p-1">
-              <button type="button" aria-label="Slovenčina" aria-pressed={locale === "sk"} onClick={() => setLocale("sk")} className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1.5 ${locale === "sk" ? "bg-purple-600/30 text-purple-200 border border-purple-500/30" : "text-slate-400"}`}>
-                <span className="text-base leading-none">🇸🇰</span> SK
-              </button>
-              <button type="button" aria-label="English" aria-pressed={locale === "en"} onClick={() => setLocale("en")} className={`px-2 py-1 rounded text-xs font-semibold flex items-center gap-1.5 ${locale === "en" ? "bg-purple-600/30 text-purple-200 border border-purple-500/30" : "text-slate-400"}`}>
-                <span className="text-base leading-none">🇬🇧</span> EN
-              </button>
+          <div className="hidden items-center gap-2 lg:flex">
+            <div className="mr-3 flex items-center gap-1.5 rounded-lg border border-slate-800 bg-[#120e2e]/80 p-1">
+              <button type="button" aria-label="Slovenčina" aria-pressed={locale === 'sk'} onClick={() => setLocale('sk')} className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold ${locale === 'sk' ? 'border border-purple-500/30 bg-purple-600/30 text-purple-200' : 'text-slate-400 hover:text-white'}`}>🇸🇰 SK</button>
+              <button type="button" aria-label="English" aria-pressed={locale === 'en'} onClick={() => setLocale('en')} className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold ${locale === 'en' ? 'border border-purple-500/30 bg-purple-600/30 text-purple-200' : 'text-slate-400 hover:text-white'}`}>🇬🇧 EN</button>
             </div>
-
-            {/* Ghost Login Button */}
-            <Link to="/host" className="border border-slate-700/80 hover:border-purple-500/60 bg-[#0c0f26]/40 hover:bg-purple-950/20 text-slate-200 rounded-xl px-4 py-2 text-sm font-medium transition-all">{en ? "Host sign in" : "Prihlásenie organizátora"}</Link>
-
-            {/* Primary Action Button */}
-            <span title={en ? "Team registration is coming soon" : "Registrácia tímov už čoskoro"} className="rounded-xl border border-purple-700/40 px-5 py-2 text-sm text-purple-200">{en ? "Team registration soon" : "Registrácia tímov čoskoro"}</span>
+            <Link to="/host" className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:border-purple-500">{en ? 'Host login' : 'Prihlásenie hostiteľa'}</Link>
+            <Link to="/host" className="rounded-lg border border-purple-500/60 px-3 py-2 text-sm text-purple-200 hover:bg-purple-950/30">{en ? 'Host registration' : 'Registrácia hostiteľa'}</Link>
+            <span aria-disabled="true" title={en ? 'Team accounts are coming soon' : 'Tímové účty pripravujeme'} className="rounded-lg border border-slate-700/60 px-3 py-2 text-sm text-slate-400">{en ? 'Team login (soon)' : 'Prihlásenie tímu (čoskoro)'}</span>
+            <span aria-disabled="true" title={en ? 'Team accounts are coming soon' : 'Tímové účty pripravujeme'} className="rounded-lg bg-purple-900/35 px-3 py-2 text-sm text-purple-200">{en ? 'Team registration (soon)' : 'Registrácia tímu (čoskoro)'}</span>
           </div>
-
-          {/* Mobile Menu Toggle Button */}
-          <button aria-label={mobileMenuOpen ? (en ? "Close menu" : "Zavrieť menu") : (en ? "Open menu" : "Otvoriť menu")} aria-expanded={mobileMenuOpen} className="lg:hidden p-2 text-slate-300 hover:text-white"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
+          <button type="button" aria-label={mobileMenuOpen ? (en ? 'Close menu' : 'Zavrieť menu') : (en ? 'Open menu' : 'Otvoriť menu')} aria-expanded={mobileMenuOpen} aria-controls="landing-auth-menu" className="p-2 text-slate-300 hover:text-white lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </header>
 
         {mobileMenuOpen && (
-          <nav aria-label={en ? 'Mobile navigation' : 'Mobilná navigácia'} className="sticky top-[72px] z-40 rounded-b-2xl border border-purple-900/40 bg-[#0c0f26]/95 p-5 shadow-2xl backdrop-blur-xl lg:hidden">
-            <div className="flex flex-col gap-3">
-              {navItems.map(item => (
-                <a key={item.id} href={`#${item.id}`} aria-current={activeSection === item.id ? 'location' : undefined}
-                  className={`w-fit border-b-2 pb-1 font-medium ${activeSection === item.id ? 'border-purple-500 text-white' : 'border-transparent text-slate-300'}`}
-                  onClick={() => setMobileMenuOpen(false)}>{item.label}</a>
-              ))}
-              <Link to="/host" className="mt-2 rounded-xl border border-slate-700 py-2.5 text-center text-sm" onClick={() => setMobileMenuOpen(false)}>{en ? 'Host sign in' : 'Prihlásenie organizátora'}</Link>
+          <div id="landing-auth-menu" className="sticky top-[72px] z-40 rounded-b-2xl border border-purple-900/40 bg-[#0c0f26]/95 p-5 shadow-2xl backdrop-blur-xl lg:hidden">
+            <div className="mb-4 flex gap-2">
+              <button type="button" aria-label="Slovenčina" aria-pressed={locale === 'sk'} onClick={() => setLocale('sk')} className={`rounded-lg border px-3 py-2 ${locale === 'sk' ? 'border-purple-400 bg-purple-700/30' : 'border-slate-700'}`}>🇸🇰 SK</button>
+              <button type="button" aria-label="English" aria-pressed={locale === 'en'} onClick={() => setLocale('en')} className={`rounded-lg border px-3 py-2 ${locale === 'en' ? 'border-purple-400 bg-purple-700/30' : 'border-slate-700'}`}>🇬🇧 EN</button>
             </div>
-          </nav>
+            <div className="flex flex-col gap-3 text-center text-sm">
+              <Link to="/host" className="rounded-xl border border-slate-700 py-2.5" onClick={() => setMobileMenuOpen(false)}>{en ? 'Host login' : 'Prihlásenie hostiteľa'}</Link>
+              <Link to="/host" className="rounded-xl border border-purple-500/60 py-2.5" onClick={() => setMobileMenuOpen(false)}>{en ? 'Host registration' : 'Registrácia hostiteľa'}</Link>
+              <span aria-disabled="true" className="rounded-xl border border-slate-700/60 py-2.5 text-slate-400">{en ? 'Team login (soon)' : 'Prihlásenie tímu (čoskoro)'}</span>
+              <span aria-disabled="true" className="rounded-xl bg-purple-900/35 py-2.5 text-purple-200">{en ? 'Team registration (soon)' : 'Registrácia tímu (čoskoro)'}</span>
+            </div>
+          </div>
         )}
 
         {/* ========================================================================= */}
