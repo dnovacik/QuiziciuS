@@ -1,0 +1,72 @@
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useHostSession } from './lib/use-host-session';
+import { apiGet, apiPost } from './lib/api-client';
+import { useI18n } from './lib/i18n';
+import './team-hub.css';
+
+type Team={id:string;name:string;description:string|null;badge:string;badge_color:string;expected_members:number;home_pub:string|null;created_at:string};
+const badges=['shield','crown','bolt','star','brain','trophy'] as const;
+const colors=['purple','amber','cyan','green','pink'] as const;
+const initials=(name:string)=>name.trim().slice(0,2).toUpperCase();
+export function TeamHub() {
+ const {session,token,loading}=useHostSession();
+ const navigate=useNavigate();
+ const {t,locale,setLocale}=useI18n();
+ const [teams,setTeams]=useState<Team[]>([]);
+ const [team,setTeam]=useState<Team|null>(null);
+ const [fetching,setFetching]=useState(false);
+ const [error,setError]=useState<string|null>(null);
+ const [creating,setCreating]=useState(false);
+ const [name,setName]=useState('');
+ const [description,setDescription]=useState('');
+ const [badge,setBadge]=useState<string>('shield');
+ const [color,setColor]=useState<string>('purple');
+ const [count,setCount]=useState(4);
+ const [pub,setPub]=useState('');
+ const [availability,setAvailability]=useState<'idle'|'available'|'taken'|'invalid'>('idle');
+ const [checking,setChecking]=useState(false);
+ const [debouncedName,setDebouncedName]=useState('');
+ const [code,setCode]=useState('');
+ const [joinOpen,setJoinOpen]=useState(false);
+ const [joining,setJoining]=useState(false);
+ useEffect(()=>{if(!token)return;let active=true;setFetching(true);apiGet<Team[]>('/registered-teams/mine',token).then(items=>{if(active){setTeams(items);setTeam(items[0]??null)}}).catch(err=>{if(active)setError(err instanceof Error?err.message:t('hub.loadError'))}).finally(()=>{if(active)setFetching(false)});return()=>{active=false}},[token]);
+ useEffect(()=>{
+   const normalized=name.trim().toLowerCase();
+   setAvailability('idle');
+   setChecking(Boolean(token && normalized.length>=3 && normalized.length<=30));
+   if(!token || normalized.length<3 || normalized.length>30){setDebouncedName('');return;}
+   const timer=setTimeout(()=>setDebouncedName(normalized),650);
+   return ()=>clearTimeout(timer);
+ },[name,token]);
+ useEffect(()=>{
+   if(!token || !debouncedName || debouncedName!==name.trim().toLowerCase())return;
+   let active=true;
+   apiGet<{available:boolean;code:string}>(`/registered-teams/availability/${encodeURIComponent(debouncedName)}`,token)
+     .then(result=>{if(active)setAvailability(result.available?'available':'taken')})
+     .catch(()=>{if(active)setAvailability('invalid')})
+     .finally(()=>{if(active)setChecking(false)});
+   return ()=>{active=false};
+ },[debouncedName,name,token]);
+ async function joinQuiz(e:FormEvent){e.preventDefault();if(!team||joining)return;setJoining(true);setError(null);try{const session=await apiGet<{id:string}>(`/sessions/by-code/${encodeURIComponent(code.trim().toUpperCase())}`);const result=await apiPost<{teamId:string;token:string}>(`/sessions/${session.id}/teams/join`,{name:team.name});localStorage.setItem(`quizicius:team:${session.id}`,JSON.stringify({sessionId:session.id,teamId:result.teamId,token:result.token}));navigate(`/play/${session.id}`);}catch(err){setError(err instanceof Error?err.message:t('hub.joinError'))}finally{setJoining(false)}}
+ async function submit(e:FormEvent){e.preventDefault();if(!token||creating)return;setCreating(true);setError(null);try{const created=await apiPost<Team>('/registered-teams',{name:name.trim(),description,badge,color,expectedMembers:count,homePub:pub},token);setTeam(created);setTeams(old=>[created,...old]);}catch(err){setError(err instanceof Error?err.message:t('hub.createError'))}finally{setCreating(false)}}
+ if(loading||fetching)return <div data-testid="team-hub-loading" className="team-hub min-h-screen p-12">{t('hub.loading')}</div>;
+ if(!session||!token)return <div data-testid="team-hub-auth" className="team-hub flex min-h-screen items-center justify-center p-5"><div className="hub-card max-w-lg p-8 text-center"><h1 className="text-2xl font-bold">{t('hub.loginTitle')}</h1><p className="my-4 text-slate-300">{t('hub.loginHint')}</p><Link to="/" className="hub-primary inline-flex px-6 py-3">{t('hub.backLogin')}</Link></div></div>;
+ const appearance=(value:string)=>value==='amber'?'#ffb95f':value==='cyan'?'#45d8f5':value==='green'?'#4edea3':value==='pink'?'#f5a4d0':'#a078ff';
+ return <div data-testid="team-hub" className="team-hub min-h-screen">
+ <header className="hub-header sticky top-0 z-20"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-4"><Link to="/" className="text-2xl font-extrabold">♛ Quiziciu<span className="text-[#a078ff]">S</span></Link><div className="flex items-center gap-3"><div className="rounded-xl bg-[#191b23] p-1"><button data-testid="hub-lang-sk" type="button" aria-pressed={locale==='sk'} onClick={()=>setLocale('sk')} className="px-2 py-1 text-sm">SK</button><button data-testid="hub-lang-en" type="button" aria-pressed={locale==='en'} onClick={()=>setLocale('en')} className="px-2 py-1 text-sm">EN</button></div><span className="rounded-full bg-[#282a31] px-3 py-2 text-xs">{session.user.email}</span><button data-testid="hub-logout" onClick={()=>void import('./lib/supabase-client').then(({supabase})=>supabase.auth.signOut())} className="hub-outline px-3 py-2 text-xs">{t('hub.logout')}</button></div></div></header>
+ {!team?<main className="mx-auto grid max-w-7xl gap-8 px-5 py-10 lg:grid-cols-[1.3fr_0.7fr]">
+ <section><div className="mb-7"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#ffb95f]">{t('hub.onboardTag')}</p><h1 className="mt-3 text-4xl font-extrabold">{t('hub.onboardTitle')}</h1><p className="mt-3 text-slate-400">{t('hub.onboardDesc')}</p></div>
+ <form data-testid="team-create-form" onSubmit={submit} className="space-y-6">
+ <div className="hub-card p-6"><h2 className="mb-5 text-xl font-bold">{t('hub.identity')}</h2><label className="block text-sm font-semibold">{t('hub.teamName')}<input data-testid="hub-team-name" className="hub-input mt-2" value={name} maxLength={30} minLength={3} required onChange={e=>setName(e.target.value)} placeholder={t('hub.namePlaceholder')}/></label><p data-testid="hub-name-availability" data-status={availability} className="mt-2 text-xs text-[#d0bcff]">{checking?t('hub.checking'):t(availability==='available'?'hub.available':availability==='taken'?'hub.taken':availability==='invalid'?'hub.checkFailed':'hub.uniqueHint')}</p>
+ <label className="mt-5 block text-sm font-semibold">{t('hub.description')}<textarea data-testid="hub-description" className="hub-input mt-2" rows={3} maxLength={160} value={description} onChange={e=>setDescription(e.target.value)}/></label></div>
+ <div className="hub-card p-6"><h2 className="mb-5 text-xl font-bold">{t('hub.badgeHeading')}</h2><div className="grid grid-cols-3 gap-3 sm:grid-cols-6">{badges.map(v=><button data-testid={`badge-${v}`} type="button" key={v} aria-pressed={badge===v} onClick={()=>setBadge(v)} className={`hub-choice ${badge===v?'hub-selected':''}`}><span className="material-symbols-outlined text-3xl">{v==='shield'?'shield':v==='crown'?'workspace_premium':v==='bolt'?'bolt':v==='star'?'star':v==='brain'?'psychology':'emoji_events'}</span></button>)}</div><div className="mt-5 flex flex-wrap gap-3">{colors.map(v=><button type="button" data-testid={`color-${v}`} key={v} aria-label={v} aria-pressed={color===v} onClick={()=>setColor(v)} className={`h-9 w-9 rounded-full ${color===v?'ring-2 ring-white ring-offset-2 ring-offset-[#191b23]':''}`} style={{background:appearance(v)}}/>)}</div></div>
+ <div className="hub-card grid gap-5 p-6 sm:grid-cols-2"><label className="text-sm font-semibold">{t('hub.memberCount')}<select data-testid="hub-member-count" className="hub-input mt-2" value={count} onChange={e=>setCount(Number(e.target.value))}>{[2,3,4,5,6].map(n=><option value={n} key={n}>{n}</option>)}</select></label><label className="text-sm font-semibold">{t('hub.homePub')}<input data-testid="hub-home-pub" value={pub} maxLength={100} onChange={e=>setPub(e.target.value)} className="hub-input mt-2"/></label></div>
+ {error&&<p role="alert" data-testid="hub-error" className="text-rose-300">{error}</p>}
+ <button data-testid="hub-create-submit" disabled={creating||checking||availability!=='available'} type="submit" className="hub-primary w-full py-4 font-bold disabled:opacity-50">{creating?t('hub.creating'):t('hub.create')}</button>
+ </form></section><aside className="lg:pt-24"><div className="hub-card sticky top-28 p-7"><p className="text-xs uppercase tracking-widest text-slate-400">{t('hub.preview')}</p><div className="mt-8 flex flex-col items-center text-center"><div data-testid="hub-badge-preview" className="flex h-24 w-24 items-center justify-center rounded-3xl text-5xl" style={{background:appearance(color)+'30',color:appearance(color)}}><span className="material-symbols-outlined text-6xl">{badge==='shield'?'shield':badge==='crown'?'workspace_premium':badge==='bolt'?'bolt':badge==='star'?'star':badge==='brain'?'psychology':'emoji_events'}</span></div><h2 data-testid="hub-name-preview" className="mt-6 break-all text-2xl font-extrabold">{name||t('hub.unnamed')}</h2><p className="mt-3 text-sm text-slate-400">{description||t('hub.previewDesc')}</p><p className="mt-6 text-xs text-[#ffb95f]">{t('hub.captain')}</p><p className="mt-1 text-sm">{session.user.email}</p><p className="mt-5 text-sm">{count} {t('hub.members')}</p></div></div></aside></main>:
+ <main className="mx-auto max-w-7xl px-5 py-10"><div className="hub-card flex flex-wrap items-center justify-between gap-6 p-7"><div className="flex items-center gap-5"><div className="flex h-20 w-20 items-center justify-center rounded-2xl text-4xl" style={{background:appearance(team.badge_color)+'30',color:appearance(team.badge_color)}}><span className="material-symbols-outlined text-5xl">{team.badge==='shield'?'shield':team.badge==='crown'?'workspace_premium':team.badge==='bolt'?'bolt':team.badge==='star'?'star':team.badge==='brain'?'psychology':'emoji_events'}</span></div><div><p className="text-xs uppercase tracking-widest text-[#ffb95f]">{t('hub.teamProfile')}</p><h1 data-testid="dashboard-team-name" className="mt-1 text-3xl font-extrabold">{team.name}</h1><p className="mt-2 text-sm text-slate-400">{team.description||t('hub.noDescription')}</p></div></div><button data-testid="dashboard-join-toggle" className="hub-primary px-6 py-3 font-bold" onClick={()=>setJoinOpen(v=>!v)}>{t('hub.joinQuiz')}</button></div>
+ {joinOpen&&<form data-testid="dashboard-join-form" onSubmit={joinQuiz} className="hub-card mt-6 p-6"><h2 className="font-bold">{t('hub.joinHeading')}</h2><div className="mt-4 flex flex-wrap gap-3"><input data-testid="dashboard-join-code" className="hub-input max-w-48 uppercase" maxLength={4} minLength={4} pattern="[A-Za-z0-9]{4}" required value={code} onChange={e=>setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4))} placeholder="A7F3"/><button data-testid="dashboard-join-submit" disabled={joining} type="submit" className="hub-primary px-6 py-3">{joining?t('hub.joining'):t('hub.continue')}</button></div><p className="mt-2 text-xs text-slate-400">{t('hub.joinHint')}</p>{error&&<p role="alert" data-testid="dashboard-join-error" className="mt-3 text-sm text-rose-300">{error}</p>}</form>}
+ <div className="mt-7 grid gap-6 lg:grid-cols-3"><section className="hub-card p-6"><h2 className="mb-4 text-xl font-bold">{t('hub.roster')}</h2><div className="rounded-xl bg-[#11131a] p-4"><p className="text-sm font-semibold">{session.user.email}</p><p className="mt-1 text-xs text-[#ffb95f]">{t('hub.captain')}</p></div><p className="mt-5 text-sm text-slate-400">{t('hub.invitesPending')}</p></section><section className="hub-card p-6"><h2 className="mb-4 text-xl font-bold">{t('hub.league')}</h2><p className="text-slate-400">{t('hub.noLeague')}</p></section><section className="hub-card p-6"><h2 className="mb-4 text-xl font-bold">{t('hub.nextQuiz')}</h2><p className="text-slate-400">{t('hub.noUpcoming')}</p></section></div><section className="hub-card mt-6 p-6"><h2 className="mb-4 text-xl font-bold">{t('hub.history')}</h2><p className="text-slate-400">{t('hub.noHistory')}</p></section>
+ </main>}</div>;
+}

@@ -56,4 +56,25 @@ describe('StitchLanding', () => {
     await waitFor(() => expect(supabase.auth.signUp).toHaveBeenCalledWith({ email: 'captain@example.com', password: 'long-password' }));
     expect(await screen.findByTestId('host-auth-feedback')).toBeInTheDocument();
   });
+  it('signs in returning captains from the team dialog without checking translated messages', async () => {
+    const { supabase } = await import('./lib/supabase-client');
+    setup();
+    fireEvent.click(screen.getByTestId('landing-team-entry'));
+    fireEvent.click(screen.getByTestId('team-tab-login'));
+    fireEvent.change(screen.getByTestId('team-login-email'), { target: { value: 'captain@example.com' } });
+    fireEvent.change(screen.getByTestId('team-login-password'), { target: { value: 'long-password' } });
+    fireEvent.submit(screen.getByTestId('team-login-form'));
+    await waitFor(() => expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({ email: 'captain@example.com', password: 'long-password' }));
+    await waitFor(() => expect(screen.queryByTestId('stitch-team-modal')).not.toBeInTheDocument());
+  });
+  it('shows an explicit email confirmation status if signup provides no session', async () => {
+    setup();
+    fireEvent.click(screen.getByTestId('landing-team-entry'));
+    fireEvent.click(screen.getByTestId('team-tab-register'));
+    fireEvent.change(screen.getByTestId('team-register-name'), { target: { value: 'Brainstorm' } });
+    fireEvent.change(screen.getByTestId('team-register-email'), { target: { value: 'captain@example.com' } });
+    fireEvent.change(screen.getByTestId('team-register-password'), { target: { value: 'long-password' } });
+    fireEvent.submit(screen.getByTestId('team-register-form'));
+    expect(await screen.findByTestId('team-feedback')).toHaveAttribute('data-feedback-code', 'TEAM_EMAIL_CONFIRMATION_REQUIRED');
+  });
 });
