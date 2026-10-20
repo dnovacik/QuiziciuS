@@ -24,7 +24,14 @@ describe('StitchLanding', () => {
     expect(screen.getByTestId('landing-logo')).toHaveAttribute('href', '/');
     fireEvent.click(screen.getByTestId('landing-team-entry'));
     expect(screen.getByTestId('stitch-team-modal')).toBeInTheDocument();
-    expect(screen.getByTestId('stitch-team-quickjoin')).toHaveAttribute('href', '/play');
+    expect(screen.getByTestId('team-code')).toHaveAttribute('maxLength', '4');
+    expect(screen.getByTestId('team-name')).toBeInTheDocument();
+    expect(screen.getByTestId('team-table')).toBeInTheDocument();
+    expect(screen.getByTestId('team-load-qr')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('team-tab-register'));
+    expect(screen.getByTestId('team-register-email')).toBeInTheDocument();
+    expect(screen.getByTestId('team-register-password')).toBeInTheDocument();
+    expect(screen.getByTestId('team-register-members')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('stitch-team-close'));
     expect(screen.queryByTestId('stitch-team-modal')).not.toBeInTheDocument();
   });
