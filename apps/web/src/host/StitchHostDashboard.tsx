@@ -28,7 +28,7 @@ export function StitchHostDashboard({token,onSessionCreated}:{token:string;onSes
  const [title,setTitle]=useState('');
  const [categoryId,setCategoryId]=useState('');
  const [mobileNav,setMobileNav]=useState(false);
- useEffect(()=>{let live=true;setLoading(true);Promise.all([apiGet<Quiz[]>('/host/quizzes',token),apiGet<Category[]>('/categories',token)]).then(([q,c])=>{if(live){setQuizzes(q);setCategories(c)}}).catch(err=>{if(live)setError(err instanceof Error?err.message:t('hostDash.loadFailed'))}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[token]);
+ useEffect(()=>{let live=true;setLoading(true);Promise.all([apiGet<Quiz[]>('/quizzes',token),apiGet<Category[]>('/categories',token)]).then(([q,c])=>{if(live){setQuizzes(q);setCategories(c)}}).catch(err=>{if(live)setError(err instanceof Error?err.message:t('hostDash.loadFailed'))}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[token]);
  useEffect(()=>{
    if(!quizzes.length){setQuestionCounts({});return;}
    let active=true;
