@@ -15,6 +15,7 @@ export function AppRoutes() {
         <Route path="/" element={<I18nProvider><LandingPage /></I18nProvider>} />
         <Route path="/team" element={<I18nProvider><TeamHub /></I18nProvider>} />
         <Route path="/host/*" element={<HostApp />} />
+        <Route path="/myquizzes/*" element={<HostApp />} />
         <Route path="/projector/:sessionId" element={<ProjectorApp />} />
         <Route path="/play/:sessionId?" element={<PlayApp />} />
         <Route path="*" element={<I18nProvider><LandingPage /></I18nProvider>} />
