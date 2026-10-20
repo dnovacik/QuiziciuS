@@ -126,3 +126,10 @@ Verification status: authored tests, but no local environment test run by assist
 - All new UI text lives in `sk.json`/`en.json`; tests use data-test IDs instead of language strings.
 - Deployment requires executing migration `0008_registered_teams.sql` before testing team creation.
 - QA: `pnpm -r build`, `pnpm -r --workspace-concurrency=1 run test`; check name collision across separate captains, create, refresh persisted team, join quiz, sign out, narrow/mobile viewport.
+
+## PR #5 — Captain-managed named player roster
+- Migration `0009_registered_team_players.sql` creates independent player-name rows with no Supabase user accounts. An atomic locked database function enforces a hard six-player limit on concurrent adds and unique case-insensitive player names per team.
+- All CRUD and profile update endpoints are authenticated; captain ownership is verified against `registered_teams.captain_id` before any read/write. RLS remains deny-all to direct clients.
+- The dashboard now includes name-only roster management (add, rename, remove) and editable team name, motto/description, badge, color, expected member count and home pub. Player names are not invitations and are not linked to login identities.
+- Names and test identifiers are locale-neutral; visible UI copy is in `sk.json` / `en.json`.
+- Database migration 0009 must be applied before local testing. No further registration flows or teammate accounts are introduced.
