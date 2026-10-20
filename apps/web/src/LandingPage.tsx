@@ -46,7 +46,7 @@ export function LandingPage() {
         {/* ========================================================================= */}
         <header className="sticky top-0 z-50 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 flex items-center justify-between py-4 border-b border-purple-500/15 bg-[#080517]/95 backdrop-blur-xl shadow-lg shadow-black/20">
           {/* Logo */}
-          <Link to="/" aria-label="QuiziciuS" className="flex items-center gap-2 cursor-pointer group">
+          <Link data-testid="landing-logo" to="/" aria-label="QuiziciuS" className="flex items-center gap-2 cursor-pointer group">
             <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-purple-600 to-indigo-600 p-0.5 shadow-lg shadow-purple-950/50 group-hover:scale-105 transition-transform">
               <div className="w-full h-full bg-[#0b071b] rounded-[10px] flex items-center justify-center">
                 <svg className="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
@@ -61,19 +61,19 @@ export function LandingPage() {
 
           <div className="hidden items-center gap-2 lg:flex">
             <div className="mr-3 flex items-center gap-1.5 rounded-lg border border-slate-800 bg-[#120e2e]/80 p-1">
-              <button type="button" aria-label="Slovenčina" aria-pressed={locale === 'sk'} onClick={() => setLocale('sk')} className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold ${locale === 'sk' ? 'border border-purple-500/30 bg-purple-600/30 text-purple-200' : 'text-slate-400 hover:text-white'}`}>🇸🇰 SK</button>
-              <button type="button" aria-label="English" aria-pressed={locale === 'en'} onClick={() => setLocale('en')} className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold ${locale === 'en' ? 'border border-purple-500/30 bg-purple-600/30 text-purple-200' : 'text-slate-400 hover:text-white'}`}>🇬🇧 EN</button>
+              <button data-testid="locale-sk" type="button" aria-label="Slovenčina" aria-pressed={locale === 'sk'} onClick={() => setLocale('sk')} className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold ${locale === 'sk' ? 'border border-purple-500/30 bg-purple-600/30 text-purple-200' : 'text-slate-400 hover:text-white'}`}>🇸🇰 SK</button>
+              <button data-testid="locale-en" type="button" aria-label="English" aria-pressed={locale === 'en'} onClick={() => setLocale('en')} className={`flex items-center gap-1.5 rounded px-2 py-1 text-xs font-semibold ${locale === 'en' ? 'border border-purple-500/30 bg-purple-600/30 text-purple-200' : 'text-slate-400 hover:text-white'}`}>🇬🇧 EN</button>
             </div>
-            <Link to="/host" className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-purple-500">{t('landing.copy.01')}</Link>
-            <Link to="/team" className="rounded-lg bg-gradient-to-r from-purple-700 to-purple-500 px-4 py-2 text-sm font-semibold text-white hover:from-purple-600 hover:to-purple-400">{t('landing.copy.02')}</Link>
+            <Link data-testid="landing-host-entry" to="/host" className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:border-purple-500">{t('landing.copy.01')}</Link>
+            <Link data-testid="landing-team-entry" to="/team" className="rounded-lg bg-gradient-to-r from-purple-700 to-purple-500 px-4 py-2 text-sm font-semibold text-white hover:from-purple-600 hover:to-purple-400">{t('landing.copy.02')}</Link>
           </div>
-          <button type="button" aria-label={mobileMenuOpen ? (t('landing.copy.03')) : (t('landing.copy.04'))} aria-expanded={mobileMenuOpen} aria-controls="landing-auth-menu" className="p-2 text-slate-300 hover:text-white lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button data-testid="landing-mobile-menu-toggle" type="button" aria-label={mobileMenuOpen ? (t('landing.copy.03')) : (t('landing.copy.04'))} aria-expanded={mobileMenuOpen} aria-controls="landing-auth-menu" className="p-2 text-slate-300 hover:text-white lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </header>
 
         {mobileMenuOpen && (
-          <div id="landing-auth-menu" className="sticky top-[72px] z-40 rounded-b-2xl border border-purple-900/40 bg-[#0c0f26]/95 p-5 shadow-2xl backdrop-blur-xl lg:hidden">
+          <div data-testid="landing-mobile-menu" id="landing-auth-menu" className="sticky top-[72px] z-40 rounded-b-2xl border border-purple-900/40 bg-[#0c0f26]/95 p-5 shadow-2xl backdrop-blur-xl lg:hidden">
             <div className="mb-4 flex gap-2">
               <button type="button" aria-label="Slovenčina" aria-pressed={locale === 'sk'} onClick={() => setLocale('sk')} className={`rounded-lg border px-3 py-2 ${locale === 'sk' ? 'border-purple-400 bg-purple-700/30' : 'border-slate-700'}`}>🇸🇰 SK</button>
               <button type="button" aria-label="English" aria-pressed={locale === 'en'} onClick={() => setLocale('en')} className={`rounded-lg border px-3 py-2 ${locale === 'en' ? 'border-purple-400 bg-purple-700/30' : 'border-slate-700'}`}>🇬🇧 EN</button>
@@ -111,7 +111,7 @@ export function LandingPage() {
 
             {/* Primary Action Buttons */}
             <div className="flex flex-wrap items-center gap-4 mb-12 w-full sm:w-auto">
-              <Link to="/play" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#7c3aed] to-[#a855f7] hover:from-[#6d28d9] hover:to-[#9333ea] text-white rounded-xl px-7 py-3.5 font-semibold text-base shadow-xl shadow-purple-950/60 hover:shadow-purple-600/40 hover:-translate-y-0.5 transition-all">
+              <Link data-testid="landing-join-quiz" to="/play" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#7c3aed] to-[#a855f7] hover:from-[#6d28d9] hover:to-[#9333ea] text-white rounded-xl px-7 py-3.5 font-semibold text-base shadow-xl shadow-purple-950/60 hover:shadow-purple-600/40 hover:-translate-y-0.5 transition-all">
                 <span>{t('landing.copy.09')}</span>
                 <ArrowRight size={18} />
               </Link>
