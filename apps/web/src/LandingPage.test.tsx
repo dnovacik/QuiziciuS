@@ -15,6 +15,10 @@ describe('Gemini landing layout', () => {
     expect(screen.getAllByRole('link', { name: /Prihlásenie organizátora/ })[0]).toHaveAttribute('href', '/host');
     expect(screen.getByRole('heading', { name: /Jedna platforma/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Vytvoriť tím' })).not.toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: 'Hlavná navigácia' });
+    expect(nav.querySelectorAll('a')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: 'Ukážka kvízu' })).toHaveAttribute('aria-current', 'location');
+    expect(screen.getByRole('link', { name: 'Pre koho' })).toHaveAttribute('href', '#pre-koho');
   });
   it('changes language with the flags and persists it', () => {
     renderLanding();
