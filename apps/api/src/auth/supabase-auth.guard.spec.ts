@@ -41,6 +41,6 @@ describe('SupabaseAuthGuard', () => {
     const context = { switchToHttp: () => ({ getRequest: () => req }) } as unknown as ExecutionContext;
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect(req.host).toEqual({ id: 'host-1' });
+    expect(req.authHost).toEqual({ id: 'host-1' });
   });
 });

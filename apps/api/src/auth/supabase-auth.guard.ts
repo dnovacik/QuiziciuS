@@ -18,7 +18,10 @@ export class SupabaseAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid host session');
     }
 
-    req.host = { id: data.user.id };
+    // `authHost`, not `host` — Express's real Request already defines a
+    // getter-only `req.host` (deprecated alias for req.hostname), and
+    // assigning to it throws on a real request object.
+    req.authHost = { id: data.user.id };
     return true;
   }
 }
