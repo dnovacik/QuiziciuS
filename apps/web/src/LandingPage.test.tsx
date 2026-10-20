@@ -1,41 +1,52 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from './lib/i18n';
 import { LandingPage } from './LandingPage';
 
-describe('LandingPage navigation', () => {
-  beforeEach(() => localStorage.clear());
+vi.mock('./lib/supabase-client', () => ({
+  supabase: { auth: {
+    signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
+    signUp: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    resetPasswordForEmail: vi.fn().mockResolvedValue({ error: null }),
+  } },
+}));
 
-  function renderLanding() {
+describe('StitchLanding', () => {
+  beforeEach(() => localStorage.clear());
+  function setup() {
     render(<I18nProvider><MemoryRouter><LandingPage /></MemoryRouter></I18nProvider>);
   }
-
-  it('routes host, team and join actions correctly irrespective of translation', () => {
-    renderLanding();
+  it('renders host auth and a team entry without depending on translation', () => {
+    setup();
+    expect(screen.getByTestId('stitch-landing')).toBeInTheDocument();
+    expect(screen.getByTestId('host-auth-form')).toBeInTheDocument();
     expect(screen.getByTestId('landing-logo')).toHaveAttribute('href', '/');
-    expect(screen.getByTestId('landing-host-entry')).toHaveAttribute('href', '/host');
-    expect(screen.getByTestId('landing-team-entry')).toHaveAttribute('href', '/team');
-    expect(screen.getByTestId('landing-join-quiz')).toHaveAttribute('href', '/play');
-    expect(screen.queryByRole('navigation', { name: /main navigation/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('landing-team-entry'));
+    expect(screen.getByTestId('stitch-team-modal')).toBeInTheDocument();
+    expect(screen.getByTestId('stitch-team-quickjoin')).toHaveAttribute('href', '/play');
+    fireEvent.click(screen.getByTestId('stitch-team-close'));
+    expect(screen.queryByTestId('stitch-team-modal')).not.toBeInTheDocument();
   });
-
-  it('persists language selection without relying on translated UI copy', () => {
-    renderLanding();
+  it('switches registration and sign in and persists locale', () => {
+    setup();
+    fireEvent.click(screen.getByTestId('host-register-tab'));
+    expect(screen.getByTestId('host-auth-submit')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('stitch-language-toggle'));
     fireEvent.click(screen.getByTestId('locale-en'));
-    expect(screen.getByTestId('locale-en')).toHaveAttribute('aria-pressed', 'true');
     expect(localStorage.getItem('quizicius:locale')).toBe('en');
-    fireEvent.click(screen.getByTestId('locale-sk'));
-    expect(screen.getByTestId('locale-sk')).toHaveAttribute('aria-pressed', 'true');
-    expect(localStorage.getItem('quizicius:locale')).toBe('sk');
+    fireEvent.click(screen.getByTestId('host-login-tab'));
+    fireEvent.click(screen.getByTestId('host-forgot-password'));
+    expect(screen.queryByTestId('host-password')).not.toBeInTheDocument();
   });
-
-  it('opens and closes mobile actions without depending on labels', () => {
-    renderLanding();
-    fireEvent.click(screen.getByTestId('landing-mobile-menu-toggle'));
-    expect(screen.getByTestId('landing-mobile-menu')).toBeInTheDocument();
-    expect(screen.getByTestId('landing-mobile-menu-toggle')).toHaveAttribute('aria-expanded', 'true');
-    fireEvent.click(screen.getByTestId('landing-mobile-menu-toggle'));
-    expect(screen.queryByTestId('landing-mobile-menu')).not.toBeInTheDocument();
+  it('submits host signup to Supabase and displays confirmation', async () => {
+    const { supabase } = await import('./lib/supabase-client');
+    setup();
+    fireEvent.click(screen.getByTestId('host-register-tab'));
+    fireEvent.change(screen.getByTestId('host-email'), { target: { value: 'captain@example.com' } });
+    fireEvent.change(screen.getByTestId('host-password'), { target: { value: 'long-password' } });
+    fireEvent.submit(screen.getByTestId('host-auth-form'));
+    await waitFor(() => expect(supabase.auth.signUp).toHaveBeenCalledWith({ email: 'captain@example.com', password: 'long-password' }));
+    expect(await screen.findByTestId('host-auth-feedback')).toBeInTheDocument();
   });
 });
