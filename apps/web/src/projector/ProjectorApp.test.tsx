@@ -21,7 +21,7 @@ describe('ProjectorApp', () => {
   it('shows a waiting message before the session loads', () => {
     (apiGet as ReturnType<typeof vi.fn>).mockReturnValue(new Promise(() => {}));
     renderAt('s1');
-    expect(screen.getByText('Waiting for session…')).toBeInTheDocument();
+    expect(screen.getByTestId('projector-loading')).toBeInTheDocument();
   });
 
   it('shows the countdown ring and prompt during QUESTION_ACTIVE', async () => {
@@ -47,7 +47,7 @@ describe('ProjectorApp', () => {
 
     renderAt('s1');
     expect(await screen.findByText('Capital of France?')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /seconds remaining/ })).toBeInTheDocument();
+    expect(screen.getByTestId('projector-timer')).toBeInTheDocument();
   });
 
   it('reveals the correct option label during QUESTION_REVEAL', async () => {
