@@ -215,6 +215,13 @@ describe('QuizEngineService.getState', () => {
 
     expect(state.teams).toEqual([{ id: 't1', name: 'Team A', isActive: true, score: 3, infractionCount: 0 }]);
   });
+
+  it('throws NotFoundException for an unknown session', async () => {
+    const { service, sessions } = buildHarness();
+    (sessions.findById as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.getState('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
 });
 
 describe('QuizEngineService.resolveDispute', () => {
@@ -255,5 +262,41 @@ describe('QuizEngineService.resolveDispute', () => {
       'a1',
       expect.objectContaining({ is_correct: false, score_awarded: 0 }),
     );
+  });
+
+  it('rejects a dispute resolution requested by a host who does not own the session', async () => {
+    const { service, answers } = buildHarness();
+    (answers.findById as jest.Mock).mockResolvedValue({
+      id: 'a1',
+      session_id: 's1',
+      question_id: 'q1',
+      team_id: 't1',
+      needs_review: true,
+    });
+
+    await expect(service.resolveDispute('a1', 'someone-else', 'APPROVE')).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(answers.updateGrade).not.toHaveBeenCalled();
+  });
+
+  it('throws NotFoundException when the disputed answer does not exist', async () => {
+    const { service, answers } = buildHarness();
+    (answers.findById as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.resolveDispute('missing', 'host1', 'APPROVE')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(answers.updateGrade).not.toHaveBeenCalled();
+  });
+});
+
+describe('QuizEngineService.createSession', () => {
+  it('creates a session with a generated join code', async () => {
+    const { service, sessions } = buildHarness();
+
+    await service.createSession('quiz1', 'host1');
+
+    expect(sessions.create).toHaveBeenCalledWith('quiz1', 'host1', expect.stringMatching(/^[A-HJ-NP-Z2-9]{4}$/));
   });
 });
