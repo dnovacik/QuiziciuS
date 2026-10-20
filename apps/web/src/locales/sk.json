@@ -323,5 +323,6 @@
   "live.state.QUESTION_REVEAL": "Odhalenie odpovedí",
   "live.state.PAUSE_BREAK": "Prestávka",
   "live.resume": "Otvoriť ovládacie centrum",
-  "live.noSessions": "Zatiaľ žiadne kvízové relácie. Spustite jednu z Mojich kvízov."
+  "live.noSessions": "Zatiaľ žiadne kvízové relácie. Spustite jednu z Mojich kvízov.",
+  "live.projector": "Projekcia"
 }
