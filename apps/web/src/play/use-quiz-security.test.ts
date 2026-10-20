@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { QuizState } from '@quizicius/shared-types';
 import { useQuizSecurity } from './use-quiz-security';
 
 function mockWakeLock() {
@@ -57,8 +58,8 @@ describe('useQuizSecurity', () => {
 
   it('releases Wake Lock and exits Fullscreen when transitioning to QUESTION_REVEAL', async () => {
     const { request, sentinel } = mockWakeLock();
-    const { rerender } = renderHook(({ status }) => useQuizSecurity(status, 'team-token'), {
-      initialProps: { status: 'QUESTION_ACTIVE' as const },
+    const { rerender } = renderHook(({ status }: { status: QuizState }) => useQuizSecurity(status, 'team-token'), {
+      initialProps: { status: 'QUESTION_ACTIVE' },
     });
 
     // Let the initial wakeLock.request() settle before triggering cleanup.
