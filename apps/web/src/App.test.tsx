@@ -34,7 +34,7 @@ describe('AppRoutes', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    expect(screen.getAllByRole('link', { name: /Prihlásenie hostiteľa/i })[0]).toHaveAttribute('href', '/host');
+    expect(screen.getAllByRole('link', { name: /Pre hostiteľov/i })[0]).toHaveAttribute('href', '/host');
     expect(screen.getAllByRole('link', { name: /Pripojiť sa ku kvízu/i })[0]).toHaveAttribute('href', '/play');
   });
 
@@ -44,7 +44,7 @@ describe('AppRoutes', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    expect(screen.getAllByRole('link', { name: /Prihlásenie hostiteľa/i })[0]).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Pre hostiteľov/i })[0]).toBeInTheDocument();
   });
 
   it('resolves /host/* to the host app', async () => {
