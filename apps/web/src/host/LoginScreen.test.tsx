@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { supabase } from '../lib/supabase-client';
 import LoginScreen from './LoginScreen';
@@ -6,69 +7,74 @@ import LoginScreen from './LoginScreen';
 vi.mock('../lib/supabase-client', () => ({
   supabase: {
     auth: {
-      signInWithPassword: vi.fn().mockResolvedValue({ error: null }),
-      signUp: vi.fn().mockResolvedValue({ error: null }),
+      signInWithPassword: vi.fn(),
+      signUp: vi.fn(),
+      resetPasswordForEmail: vi.fn(),
     },
   },
 }));
 
-const signIn = supabase.auth.signInWithPassword as ReturnType<typeof vi.fn>;
-const signUp = supabase.auth.signUp as ReturnType<typeof vi.fn>;
+const signIn = vi.mocked(supabase.auth.signInWithPassword);
+const signUp = vi.mocked(supabase.auth.signUp);
+const resetPassword = vi.mocked(supabase.auth.resetPasswordForEmail);
+
+function renderLogin() {
+  return render(<MemoryRouter><LoginScreen /></MemoryRouter>);
+}
+
+function fillCredentials(email = 'host@example.com', password = 'hunter2') {
+  fireEvent.change(screen.getByTestId('host-email'), { target: { value: email } });
+  fireEvent.change(screen.getByTestId('host-password'), { target: { value: password } });
+}
 
 beforeEach(() => {
-  signIn.mockReset().mockResolvedValue({ error: null });
-  signUp.mockReset().mockResolvedValue({ error: null });
+  vi.clearAllMocks();
+  signIn.mockResolvedValue({ error: null } as never);
+  signUp.mockResolvedValue({ data: { session: null }, error: null } as never);
+  resetPassword.mockResolvedValue({ data: {}, error: null } as never);
+  localStorage.clear();
 });
 
 describe('LoginScreen', () => {
-  it('submits email and password to Supabase Auth', async () => {
-    render(<LoginScreen />);
-
-    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'host@example.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'hunter2' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-
-    expect(signIn).toHaveBeenCalledWith({
-      email: 'host@example.com',
-      password: 'hunter2',
-    });
+  it('submits host credentials to Supabase', async () => {
+    renderLogin();
+    fillCredentials();
+    fireEvent.submit(screen.getByTestId('host-auth-form'));
+    await waitFor(() => expect(signIn).toHaveBeenCalledWith({ email: 'host@example.com', password: 'hunter2' }));
   });
 
-  it('shows the error message on a failed sign-in', async () => {
-    signIn.mockResolvedValueOnce({ error: { message: 'Invalid credentials' } });
-    render(<LoginScreen />);
-
-    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'host@example.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'wrong' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
-
-    expect(await screen.findByText('Invalid credentials')).toBeInTheDocument();
+  it('shows sign-in errors', async () => {
+    signIn.mockResolvedValueOnce({ error: { message: 'Invalid credentials' } } as never);
+    renderLogin();
+    fillCredentials();
+    fireEvent.submit(screen.getByTestId('host-auth-form'));
+    expect(await screen.findByTestId('host-auth-feedback')).toHaveAttribute('data-feedback-code', 'AUTH_SIGN_IN_FAILED');
   });
 
-  it('creates an account through the sign-up mode toggle', async () => {
-    render(<LoginScreen />);
-
-    fireEvent.click(screen.getByRole('button', { name: /need an account/i }));
-    expect(screen.getByRole('heading', { name: 'Host sign up' })).toBeInTheDocument();
-
-    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'new@example.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'hunter2' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Sign up' }));
-
-    expect(signUp).toHaveBeenCalledWith({ email: 'new@example.com', password: 'hunter2' });
+  it('registers hosts via signup mode', async () => {
+    renderLogin();
+    fireEvent.click(screen.getByTestId('host-register-tab'));
+    fillCredentials('new@example.com');
+    fireEvent.submit(screen.getByTestId('host-auth-form'));
+    await waitFor(() => expect(signUp).toHaveBeenCalledWith({ email: 'new@example.com', password: 'hunter2' }));
     expect(signIn).not.toHaveBeenCalled();
-    expect(await screen.findByText(/account created/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('host-auth-feedback')).toHaveAttribute('data-feedback-code', 'AUTH_REGISTERED');
   });
 
-  it('shows the error message on a failed sign-up', async () => {
-    signUp.mockResolvedValueOnce({ error: { message: 'Password too short' } });
-    render(<LoginScreen />);
+  it('shows signup errors', async () => {
+    signUp.mockResolvedValueOnce({ error: { message: 'Email already registered' } } as never);
+    renderLogin();
+    fireEvent.click(screen.getByTestId('host-register-tab'));
+    fillCredentials();
+    fireEvent.submit(screen.getByTestId('host-auth-form'));
+    expect(await screen.findByTestId('host-auth-feedback')).toHaveAttribute('data-feedback-code', 'AUTH_SIGN_UP_FAILED');
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: /need an account/i }));
-    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'new@example.com' } });
-    fireEvent.change(screen.getByPlaceholderText('Password'), { target: { value: 'x' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Sign up' }));
-
-    expect(await screen.findByText('Password too short')).toBeInTheDocument();
+  it('sends password reset email', async () => {
+    renderLogin();
+    fireEvent.click(screen.getByTestId('host-forgot-password'));
+    fireEvent.change(screen.getByTestId('host-email'), { target: { value: 'host@example.com' } });
+    fireEvent.submit(screen.getByTestId('host-auth-form'));
+    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith('host@example.com'));
   });
 });

@@ -93,3 +93,25 @@ Verification status: authored tests, but no local environment test run by assist
 - Landing and route tests select elements using stable `data-testid` attributes (`landing-logo`, `landing-host-entry`, `landing-team-entry`, `landing-join-quiz`, `locale-sk`, `locale-en`, `landing-mobile-menu-toggle`).
 - Tests no longer match translated Slovak or English text in navigation assertions; translation coverage is tested by comparing JSON keys and the locale persistence test.
 - Prefer stable IDs or test attributes over styling classes, which may change when design is refined. Accessible labels remain for users and assistive technology.
+
+## Stitch UI port — Host authentication (2026-10-20)
+- Source: user-provided `code.html` exported from Google Stitch; React port lives in `apps/web/src/StitchLanding.tsx` and `stitch-landing.css`.
+- Host sign-in uses `supabase.auth.signInWithPassword`, registration uses `supabase.auth.signUp`, reset uses `supabase.auth.resetPasswordForEmail`; on successful session navigation returns `/host` dashboard through existing HostApp.
+- Existing `/host` unauthenticated view reuses this layout; no duplicated credential handler. Form errors are displayed (Supabase SDK messages are not yet localized).
+- Language content stored in `src/locales/sk.json` and `en.json`, accessed via typed `t()`.
+- Team button opens a modal with a link to existing `/play` joining. The six-digit PIN, table number, and persistent team registration flow from the Stitch concept are deliberately NOT claimed as implemented: team account/API work remains a separate package.
+- Omitted fake testimonial and unsupported Google/Microsoft OAuth buttons from Stitch. Original source has CSS atmospheric gradients but no embedded pub photograph; production photo assets are separate design work.
+- Test selectors are `data-testid`, not translated text. CI + local acceptance pending.
+- Local QA: `pnpm -r build`; `pnpm -r --workspace-concurrency=1 run test`; verify `/` and `/host` with Supabase configured; register, confirm email if required, log in, password reset, translate, team modal; mobile responsive layout.
+
+## Auth test stability correction
+- Supabase auth outcomes expose stable `data-feedback-code` values on the feedback element; tests assert these codes, never UI language or error message text.
+- For thrown plain-object SDK error responses, display their `message` when present; otherwise use the localized fallback. Tests remain independent of both.
+- Codes: `AUTH_SIGN_IN_FAILED`, `AUTH_SIGN_UP_FAILED`, `AUTH_RECOVERY_FAILED`, `AUTH_REGISTERED`, `AUTH_RECOVERY_SENT`.
+
+## Stitch team dialog full port
+- Replaced temporary team modal with `TeamDialog.tsx` porting Stitch's quick join and registration forms (code, team name, optional table, captain email, team password, member count) and preserving the source design's SVG path geometry.
+- Quick join accepts exactly 4 alphanumeric characters, calls `/sessions/by-code/:code` and `/sessions/:id/teams/join`, persists the guest session token and navigates to `/play/:sessionId`. Table number is retained as a UI field but isn't accepted by the existing join endpoint.
+- QR load accepts an image from file selection/camera capture using native BarcodeDetector when supported; valid same-origin `/play/:id` QR navigates directly, a plain 4-character QR populates the code field. Unsupported browsers show an explanatory message (not silent success).
+- Registration form sends captain signup to Supabase and stores requested team metadata; permanent team creation, unique name enforcement and member management are NOT yet implemented server-side. UI clearly notes that the team backend step is pending.
+- Tests use stable `data-testid` selectors and inspect the complete fields without language-dependent assertions. Remaining tasks: production-grade team registration service, independent account authorization and cross-browser QR scanning fallback.
