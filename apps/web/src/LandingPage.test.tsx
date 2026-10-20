@@ -12,7 +12,9 @@ describe('Gemini landing layout', () => {
   it('renders main calls to action connected to supported routes', () => {
     renderLanding();
     expect(screen.getAllByRole('link', { name: /Pripojiť sa ku kvízu/ })[0]).toHaveAttribute('href', '/play');
-    expect(screen.getAllByRole('link', { name: /Prihlásenie organizátora/ })[0]).toHaveAttribute('href', '/host');
+    expect(screen.getAllByRole('link', { name: 'Prihlásenie hostiteľa' })[0]).toHaveAttribute('href', '/host');
+    expect(screen.getAllByRole('link', { name: 'Registrácia hostiteľa' })[0]).toHaveAttribute('href', '/host');
+    expect(screen.getByText('Prihlásenie tímu (čoskoro)')).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('heading', { name: /Jedna platforma/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Vytvoriť tím' })).not.toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'Hlavná navigácia' });
