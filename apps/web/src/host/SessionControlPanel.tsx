@@ -4,11 +4,11 @@ import { apiPost } from '../lib/api-client';
 import { useSessionState } from '../lib/use-session-state';
 
 const NEXT_STATES: Record<QuizState, QuizState[]> = {
-  LOBBY: ['LOCK_IN_ROUND'],
-  LOCK_IN_ROUND: ['QUESTION_ACTIVE'],
-  QUESTION_ACTIVE: ['QUESTION_REVEAL'],
+  LOBBY: ['LOCK_IN_ROUND', 'FINISHED'],
+  LOCK_IN_ROUND: ['QUESTION_ACTIVE', 'FINISHED'],
+  QUESTION_ACTIVE: ['QUESTION_REVEAL', 'FINISHED'],
   QUESTION_REVEAL: ['LOCK_IN_ROUND', 'PAUSE_BREAK', 'FINISHED'],
-  PAUSE_BREAK: ['LOCK_IN_ROUND'],
+  PAUSE_BREAK: ['LOCK_IN_ROUND', 'FINISHED'],
   FINISHED: [],
 };
 

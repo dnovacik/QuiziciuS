@@ -29,6 +29,15 @@ describe('SessionControlPanel', () => {
     expect(screen.getByRole('button', { name: 'LOCK_IN_ROUND' })).toBeInTheDocument();
   });
 
+  it('offers a FINISHED button to end the session early from a non-terminal state', async () => {
+    (apiGet as ReturnType<typeof vi.fn>).mockResolvedValue(STATE);
+
+    render(<SessionControlPanel sessionId="s1" token="host-token" />);
+
+    expect(await screen.findByRole('button', { name: 'LOCK_IN_ROUND' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'FINISHED' })).toBeInTheDocument();
+  });
+
   it('posts a transition when a next-state button is clicked', async () => {
     (apiGet as ReturnType<typeof vi.fn>).mockResolvedValue(STATE);
     (apiPost as ReturnType<typeof vi.fn>).mockResolvedValue({});
