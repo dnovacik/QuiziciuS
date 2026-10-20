@@ -14,7 +14,8 @@ Updated: 2026-10-20
 ## Work packages
 | PR/work package | State | User verification |
 |---|---|---|
-| 01 — i18n foundation + tracker | PR OPEN — AWAITING CI / LOCAL TEST | Homepage defaults to SK, language switch persists EN/SK; tests/build |
+| 01 — i18n foundation + tracker | MERGED | Homepage defaults to SK, language switch persists EN/SK; tests/build |
+| Landing refresh — full design and SK/EN | IN REVIEW — VISUAL + CI | Check hero SVG, CTAs, anchors, translation, responsive layout |
 | 02 — team identity specification + auth migrations | TODO | Register, log in, reserved-name conflict, recovery |
 | 03 — team screens + authenticated joining | TODO | Login and join session, one active device |
 | 04 — engine integrity + reconnection | TODO | Concurrent answers, stale transitions, reconnection |
@@ -51,3 +52,11 @@ PR branches are based on master; review + local verification before merge. Updat
 6. Ensure this is only the i18n foundation: existing host, player, and projector screens are not yet translated.
 
 Verification status: authored tests, but no local environment test run by assistant; GitHub CI must complete.
+
+## Landing refresh PR — local checks
+- `pnpm -r build` and `pnpm -r --workspace-concurrency=1 run test`
+- Open `/` at 375px and desktop widths; check nav, hero, cards, and steps do not overflow.
+- Switch flags; all new landing copy should translate to EN and SK.
+- Check host links go to `/host` and team link goes to `/play` (legacy flow until team auth PR).
+- Artwork is a checked-in static SVG illustration, not a photo; it follows the mock's composition while remaining light and self-hosted.
+- No new API/backend functionality required for this screen.
