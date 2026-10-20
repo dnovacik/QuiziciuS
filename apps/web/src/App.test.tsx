@@ -28,6 +28,25 @@ describe('App', () => {
 });
 
 describe('AppRoutes', () => {
+  it('resolves / to the landing page with host/join links', () => {
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: /host/i })).toHaveAttribute('href', '/host');
+    expect(screen.getByRole('link', { name: /join/i })).toHaveAttribute('href', '/play');
+  });
+
+  it('resolves an unknown path to the landing page too', () => {
+    render(
+      <MemoryRouter initialEntries={['/something-unexpected']}>
+        <AppRoutes />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: /host/i })).toBeInTheDocument();
+  });
+
   it('resolves /host/* to the host app', async () => {
     render(
       <MemoryRouter initialEntries={['/host']}>
