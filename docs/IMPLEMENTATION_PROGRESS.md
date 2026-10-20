@@ -75,3 +75,10 @@ Verification status: authored tests, but no local environment test run by assist
 - Keep only 2 useful section links: quiz preview and audience cards. Removed duplicate/unimplemented Features, How it works, Pubs & leagues, Super-League, and Contact menu items.
 - Active section uses purple underline and `aria-current=location`; mobile navigation mirrors the same sections.
 - Review at desktop/mobile and verify header sticks and purple underline updates as sections enter view.
+
+## Landing header revision (PR #2)
+- Removed all section navigation links, the scroll listener and purple section underline.
+- Retained sticky brand header with SK/EN switch and four clear auth entry labels: host login, host registration, team login, team registration.
+- Both host entry points route to existing `/host` auth UI, which provides login and signup. Team entry labels are explicitly disabled/coming soon until registered team auth exists; no broken routes.
+- Styled wordmark exposes a stable `aria-label="QuiziciuS"`, so tests query accessible brand identity rather than text node concatenation.
+- Responsive auth menu includes same actions and language switch.
