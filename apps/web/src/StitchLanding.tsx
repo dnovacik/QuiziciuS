@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CalendarDays, PlayCircle, BarChart3, Users, Crown, Eye, EyeOff, X, Mail, Lock } from 'lucide-react';
 import { supabase } from './lib/supabase-client';
 import { useI18n } from './lib/i18n';
+import { TeamDialog } from './TeamDialog';
 import './stitch-landing.css';
 
 type HostMode = 'login' | 'register' | 'recover';
@@ -125,15 +126,7 @@ export function StitchLanding() {
           </div>
         </section>
       </main>
-      {teamOpen && <div data-testid="stitch-team-modal" role="presentation" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" onMouseDown={e=>{if(e.target===e.currentTarget)setTeamOpen(false);}}>
-        <section role="dialog" aria-modal="true" aria-labelledby="stitch-team-title" className="stitch-card w-full max-w-[480px] rounded-3xl p-7">
-          <div className="flex justify-end"><button type="button" data-testid="stitch-team-close" aria-label={t('stitch.team.close')} onClick={()=>setTeamOpen(false)}><X size={22}/></button></div>
-          <div className="text-center"><div className="stitch-crown text-purple-400"><Users size={28}/></div><h2 id="stitch-team-title" className="mt-4 text-2xl font-extrabold">{t('stitch.team.title')}</h2><p className="mt-2 text-sm text-slate-400">{t('stitch.team.description')}</p></div>
-          <div className="mt-6 grid grid-cols-2 gap-2"><Link to="/play" data-testid="stitch-team-quickjoin" className="stitch-primary rounded-xl px-3 py-3 text-center text-xs font-bold">{t('stitch.team.quickJoin')}</Link><span aria-disabled="true" className="stitch-secondary rounded-xl px-3 py-3 text-center text-xs text-slate-400">{t('stitch.team.registerSoon')}</span></div>
-          <p className="mt-5 text-center text-xs text-slate-400">{t('stitch.team.legacyNotice')}</p>
-          <button type="button" className="mt-5 block w-full text-center text-xs text-purple-300" onClick={showHost}>{t('stitch.team.switchHost')}</button>
-        </section>
-      </div>}
+      {teamOpen && <TeamDialog onClose={() => setTeamOpen(false)} onHost={showHost} />}
     </div>
   );
 }
