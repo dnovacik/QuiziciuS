@@ -5,6 +5,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { DataModule } from './data/data.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { TeamsModule } from './teams/teams.module';
+import { AnswersModule } from './answers/answers.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { TeamsModule } from './teams/teams.module';
     DataModule,
     RealtimeModule,
     TeamsModule,
+    AnswersModule,
   ],
 })
 export class AppModule {}
