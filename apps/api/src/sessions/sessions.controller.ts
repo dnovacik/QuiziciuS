@@ -58,4 +58,10 @@ export class SessionsController {
   ) {
     return this.quizEngine.addPaperScore(sessionId, host.id, teamId, dto.points, dto.reason ?? null);
   }
+
+  @Get('sessions/:sessionId/disputes')
+  @UseGuards(SupabaseAuthGuard)
+  listDisputes(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload) {
+    return this.quizEngine.listDisputes(sessionId, host.id);
+  }
 }

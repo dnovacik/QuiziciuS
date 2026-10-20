@@ -153,6 +153,11 @@ export class QuizEngineService {
     return updated;
   }
 
+  async listDisputes(sessionId: string, hostId: string): Promise<AnswerRecord[]> {
+    await this.requireOwnedSession(sessionId, hostId);
+    return this.answers.listNeedsReview(sessionId);
+  }
+
   async addPaperScore(
     sessionId: string,
     hostId: string,

@@ -345,6 +345,24 @@ describe('QuizEngineService.resolveDispute', () => {
   });
 });
 
+describe('QuizEngineService.listDisputes', () => {
+  it('returns answers needing review for a host-owned session', async () => {
+    const { service, answers } = buildHarness();
+    (answers.listNeedsReview as jest.Mock).mockResolvedValue([{ id: 'a1', needs_review: true }]);
+
+    const result = await service.listDisputes('s1', 'host1');
+
+    expect(answers.listNeedsReview).toHaveBeenCalledWith('s1');
+    expect(result).toEqual([{ id: 'a1', needs_review: true }]);
+  });
+
+  it('rejects a host who does not own the session', async () => {
+    const { service } = buildHarness();
+
+    await expect(service.listDisputes('s1', 'someone-else')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+});
+
 describe('QuizEngineService.createSession', () => {
   it('creates a session with a generated join code', async () => {
     const { service, sessions } = buildHarness();
