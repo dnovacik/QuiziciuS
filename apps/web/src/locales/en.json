@@ -392,5 +392,10 @@
   "builder.mediaFailed": "Unable to upload media",
   "builder.uploading": "Uploading media…",
   "builder.mediaPreview": "Media preview",
-  "builder.removeMedia": "Remove attachment"
+  "builder.removeMedia": "Remove attachment",
+  "player.questionImage": "Question image",
+  "player.videoProjector": "Watch the video on the projector and answer on your phone.",
+  "player.mediaUnavailable": "Question media could not be loaded.",
+  "projector.questionImage": "Question image",
+  "projector.mediaUnavailable": "Question media could not be loaded."
 }
