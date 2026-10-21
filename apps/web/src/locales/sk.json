@@ -385,5 +385,12 @@
   "projector.winner": "Víťazi",
   "projector.noQuestion": "Čakáme na ďalšiu otázku…",
   "player.backHome": "Späť na úvodnú stránku",
-  "player.revealNote": "Toto je správna odpoveď na otázku, nie hodnotenie vašej odpovede."
+  "player.revealNote": "Toto je správna odpoveď na otázku, nie hodnotenie vašej odpovede.",
+  "builder.media": "Médiá otázky",
+  "builder.mediaHint": "Priložte jeden obrázok JPG, PNG, WebP (do 10 MB) alebo video MP4/WebM (do 50 MB).",
+  "builder.mediaInvalid": "Nepodporovaný formát alebo príliš veľký súbor.",
+  "builder.mediaFailed": "Médiá sa nepodarilo nahrať",
+  "builder.uploading": "Nahrávam médiá…",
+  "builder.mediaPreview": "Ukážka média",
+  "builder.removeMedia": "Odstrániť prílohu"
 }
