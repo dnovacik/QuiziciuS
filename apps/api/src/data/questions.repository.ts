@@ -5,6 +5,8 @@ import { SupabaseService } from '../supabase/supabase.service';
 export interface QuestionRecord {
   id: string;
   quiz_id: string;
+  media_type?: 'image' | 'video' | null;
+  media_path?: string | null;
   type: QuestionType;
   prompt: string;
   options: { id: string; label: string; isCorrect: boolean }[] | null;
