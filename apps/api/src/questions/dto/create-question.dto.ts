@@ -5,6 +5,14 @@ export class CreateQuestionDto {
   @IsIn(QUESTION_TYPES)
   type!: QuestionType;
 
+  @IsOptional()
+  @IsIn(['image', 'video'])
+  mediaType?: 'image' | 'video' | null;
+
+  @IsOptional()
+  @IsString()
+  mediaPath?: string | null;
+
   @IsString()
   prompt!: string;
 
