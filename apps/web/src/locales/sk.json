@@ -383,5 +383,7 @@
   "projector.backSoon": "O chvíľu pokračujeme",
   "projector.finished": "KVÍZ JE UKONČENÝ",
   "projector.winner": "Víťazi",
-  "projector.noQuestion": "Čakáme na ďalšiu otázku…"
+  "projector.noQuestion": "Čakáme na ďalšiu otázku…",
+  "player.backHome": "Späť na úvodnú stránku",
+  "player.revealNote": "Toto je správna odpoveď na otázku, nie hodnotenie vašej odpovede."
 }
