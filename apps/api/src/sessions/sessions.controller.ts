@@ -50,6 +50,16 @@ export class SessionsController {
     return { id: session.id };
   }
 
+  // Public display metadata: safe to share with projectors, never includes host credentials.
+  @Get('sessions/:sessionId/display')
+  async displayMetadata(@Param('sessionId') sessionId:string) {
+    const session=await this.sessions.findById(sessionId);
+    if(!session)throw new NotFoundException('Session not found');
+    const quiz=await this.quizzes.findById(session.quiz_id);
+    if(!quiz)throw new NotFoundException('Quiz not found');
+    return { title:quiz.title, quizId:quiz.id };
+  }
+
   @Get('sessions/:sessionId/state')
   getState(@Param('sessionId') sessionId: string) {
     return this.quizEngine.getState(sessionId);
