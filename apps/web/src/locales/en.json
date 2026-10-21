@@ -385,5 +385,12 @@
   "projector.winner": "Winners",
   "projector.noQuestion": "Waiting for the next question…",
   "player.backHome": "Back to home",
-  "player.revealNote": "This is the correct answer, not a verdict on your submission."
+  "player.revealNote": "This is the correct answer, not a verdict on your submission.",
+  "builder.media": "Question media",
+  "builder.mediaHint": "Attach one JPG, PNG, WebP image (up to 10 MB) or MP4/WebM video (up to 50 MB).",
+  "builder.mediaInvalid": "Unsupported file type or file too large.",
+  "builder.mediaFailed": "Unable to upload media",
+  "builder.uploading": "Uploading media…",
+  "builder.mediaPreview": "Media preview",
+  "builder.removeMedia": "Remove attachment"
 }
