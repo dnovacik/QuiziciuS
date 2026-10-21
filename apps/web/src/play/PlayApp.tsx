@@ -1,5 +1,5 @@
 import { I18nProvider } from '../lib/i18n';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { useSessionState } from '../lib/use-session-state';
 import { useQuizSecurity } from './use-quiz-security';
@@ -20,6 +20,7 @@ function loadStoredJoin(sessionId: string | undefined): JoinResult | null {
 
 export default function PlayApp() {
   const { sessionId } = useParams<{ sessionId?: string }>();
+  const navigate = useNavigate();
   const [joined, setJoined] = useState<JoinResult | null>(() => loadStoredJoin(sessionId));
 
   const { state } = useSessionState(joined?.sessionId);
@@ -60,6 +61,7 @@ export default function PlayApp() {
         teamId={joined.teamId}
         token={joined.token}
         onTapToLockIn={requestFullscreenNow}
+        onExit={() => navigate('/')}
       /></I18nProvider>
     </div>
   );
