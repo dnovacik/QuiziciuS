@@ -383,5 +383,7 @@
   "projector.backSoon": "We'll be back soon",
   "projector.finished": "QUIZ COMPLETE",
   "projector.winner": "Winners",
-  "projector.noQuestion": "Waiting for the next question…"
+  "projector.noQuestion": "Waiting for the next question…",
+  "player.backHome": "Back to home",
+  "player.revealNote": "This is the correct answer, not a verdict on your submission."
 }
