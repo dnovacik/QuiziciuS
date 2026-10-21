@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QuizSessionStateDto } from '@quizicius/shared-types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiPost } from '../lib/api-client';
+import { apiGet, apiPost } from '../lib/api-client';
 import PlayApp from './PlayApp';
 
 vi.mock('../lib/api-client', () => ({ apiGet: vi.fn(), apiPost: vi.fn() }));
@@ -47,6 +47,7 @@ function renderPlay() {
 
 beforeEach(() => {
   sessionState.current = null;
+  vi.mocked(apiGet).mockResolvedValue({mediaType:null,url:null} as never);
   localStorage.clear();
   (apiPost as ReturnType<typeof vi.fn>).mockReset().mockResolvedValue({});
 });
