@@ -392,5 +392,10 @@
   "builder.mediaFailed": "Médiá sa nepodarilo nahrať",
   "builder.uploading": "Nahrávam médiá…",
   "builder.mediaPreview": "Ukážka média",
-  "builder.removeMedia": "Odstrániť prílohu"
+  "builder.removeMedia": "Odstrániť prílohu",
+  "player.questionImage": "Obrázok k otázke",
+  "player.videoProjector": "Video sa premieta na hlavnej obrazovke. Odpovedzte vo svojom telefóne.",
+  "player.mediaUnavailable": "Médium sa nepodarilo načítať.",
+  "projector.questionImage": "Obrázok k otázke",
+  "projector.mediaUnavailable": "Médium sa nepodarilo načítať."
 }
