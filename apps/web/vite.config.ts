@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 // forward it, so a single tunnel (e.g. ngrok to this port) serves both the app and the API.
 const apiProxy = {
   '/api': {
-    target: process.env.VITE_API_URL ?? 'http://localhost:3000',
+    target: process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
     changeOrigin: true,
   },
 };
