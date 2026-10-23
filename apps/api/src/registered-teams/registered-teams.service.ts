@@ -157,7 +157,7 @@ export class RegisteredTeamsService {
     }
     if (seat.sessionId !== sessionId)
       throw new ForbiddenException({ code: 'INVALID_TEAM_TOKEN', message: 'Token does not match this session' });
-    const claimed = await this.sessionTeams.claim(sessionId, seat.teamId, team.id, team.name);
+    const claimed = await this.sessionTeams.claim(sessionId, seat.teamId, team.id, team.name, captainId);
     return { ...claimed, token: teamToken };
   }
 }

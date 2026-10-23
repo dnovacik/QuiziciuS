@@ -327,6 +327,15 @@ describe('RegisteredTeamsService', () => {
       expect(await sessionTeams.findById(seat.teamId)).toMatchObject({ registered_team_id: null, name: 'wise ducks fans' });
     });
 
+    it('does not let a host register their own team into their own quiz night', async () => {
+      const { service, sessions, teamsService } = build();
+      const ownNight = await sessions.create('quiz-1', CAPTAIN, 'EF56');
+      const seat = await teamsService.join(ownNight.id, 'Walk-ins');
+      const team = await service.create(CAPTAIN, dto());
+
+      await expect(service.claimSeat(CAPTAIN, team.id, ownNight.id, seat.token)).rejects.toMatchObject({ response: { code: 'OWN_QUIZ' } });
+    });
+
     it('refuses a token from another session', async () => {
       const { service, sessions, teamsService, team, session } = await lobby();
       const other = await sessions.create('quiz-1', HOST, 'CD34');
