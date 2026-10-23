@@ -1,6 +1,6 @@
 import {useNavigate,useLocation} from 'react-router-dom';
 import { useHostSession } from '../lib/use-host-session';
-import LoginScreen from './LoginScreen';
+import { LandingPage } from '../landing/LandingPage';
 import { StitchHostDashboard } from './StitchHostDashboard';
 import { I18nProvider } from '../lib/i18n';
 import {LiveControlRoom} from './LiveControlRoom';
@@ -17,7 +17,7 @@ export default function HostApp() {
   if (!session || !token) {
     return (
       <div data-testid="host-app">
-        <LoginScreen />
+        <LandingPage />
       </div>
     );
   }

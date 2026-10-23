@@ -9,8 +9,12 @@ const STORAGE_KEY = 'quizicius:locale';
 export const dictionaries = { sk, en } as const;
 
 export type TranslationKey = keyof typeof dictionaries.sk;
+export type Translate = (key: TranslationKey) => string;
 export function translate(locale: Locale, key: TranslationKey): string {
   return dictionaries[locale][key] ?? dictionaries[DEFAULT_LOCALE][key];
+}
+export function isTranslationKey(key: string): key is TranslationKey {
+  return key in dictionaries[DEFAULT_LOCALE];
 }
 export function readLocale(): Locale {
   try {

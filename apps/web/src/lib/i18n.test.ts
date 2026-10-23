@@ -6,7 +6,7 @@ describe('internationalization', () => {
   it('defaults to Slovak', () => {
     expect(DEFAULT_LOCALE).toBe('sk');
     expect(readLocale()).toBe('sk');
-    expect(translate('sk', 'landing.join')).toBe('Pripojiť sa ku kvízu');
+    expect(translate('sk', 'landing.nav.teams')).toBe('Tímy');
   });
   it('reads saved English preference', () => {
     localStorage.setItem('quizicius:locale', 'en');
