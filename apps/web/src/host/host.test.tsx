@@ -22,6 +22,14 @@ vi.mock('../lib/api-client', async (importOriginal) => ({
 }));
 vi.mock('../lib/supabase-client', () => ({ supabase: { auth: { signOut: vi.fn() } }, subscribeToSession: vi.fn(() => vi.fn()) }));
 
+const mediaStatus = vi.hoisted(() => ({ send: null as null | ((message: { questionId: string; slot: string; state: string }) => void) }));
+vi.mock('../lib/media-channel', () => ({
+  subscribeToMediaStatus: vi.fn((_sessionId: string, onStatus: typeof mediaStatus.send) => {
+    mediaStatus.send = onStatus;
+    return vi.fn();
+  }),
+}));
+
 const pubs = vi.hoisted(() => ({ mine: [] as Pub[], all: [] as Pub[] }));
 const live = vi.hoisted(() => ({ state: null as QuizSessionStateDto | null, refetch: vi.fn() }));
 vi.mock('../lib/use-session-state', () => ({
@@ -439,6 +447,58 @@ describe('control room', () => {
     await screen.findByTestId('room-lobby');
     expect(screen.queryByTestId('lobby-unregistered-count')).not.toBeInTheDocument();
     expect(screen.queryByTestId('unregistered-t1')).not.toBeInTheDocument();
+  });
+
+  describe('clips', () => {
+    const SONG = {
+      kind: 'audio' as const,
+      source: 'link' as const,
+      url: 'https://cdn.example/song.mp3',
+      startSeconds: 80,
+      durationSeconds: 15,
+    };
+    const FULL = { kind: 'youtube' as const, source: 'link' as const, url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' };
+
+    it('shows the clip and its part, and plays it on the projector', async () => {
+      db.questions.quiz1[0].media = SONG;
+      live.state = liveState('QUESTION_ACTIVE', 'q1');
+      renderRoom();
+
+      const bar = await screen.findByTestId('room-media-question');
+      expect(bar).toHaveTextContent('Zvuk');
+      expect(bar).toHaveTextContent('1:20 – 1:35');
+      fireEvent.click(within(bar).getByTestId('room-media-question-play'));
+
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/media/control', { slot: 'question', action: 'play' }, 'jwt'));
+    });
+
+    it('offers the reveal clip only at the reveal', async () => {
+      db.questions.quiz1[0].reveal_media = FULL;
+      live.state = liveState('QUESTION_ACTIVE', 'q1');
+      const view = renderRoom();
+      await screen.findByTestId('room-question');
+      expect(screen.queryByTestId('room-media-reveal')).not.toBeInTheDocument();
+
+      live.state = liveState('QUESTION_REVEAL', 'q1');
+      view.unmount();
+      renderRoom();
+
+      fireEvent.click(within(await screen.findByTestId('room-media-reveal')).getByTestId('room-media-reveal-replay'));
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/media/control', { slot: 'reveal', action: 'replay' }, 'jwt'));
+    });
+
+    it('says when the projector has no sound, and when it cannot play the clip', async () => {
+      db.questions.quiz1[0].media = SONG;
+      live.state = liveState('QUESTION_ACTIVE', 'q1');
+      renderRoom();
+      await screen.findByTestId('room-media-question');
+
+      act(() => mediaStatus.send!({ questionId: 'q1', slot: 'question', state: 'blocked' }));
+      expect(screen.getByTestId('room-media-question-state')).toHaveTextContent('Projektor nemá zapnutý zvuk');
+
+      act(() => mediaStatus.send!({ questionId: 'q1', slot: 'question', state: 'error' }));
+      expect(screen.getByTestId('room-media-question-state')).toHaveTextContent('Projektor klip neprehrá');
+    });
   });
 
   it('closes answers for an untimed question', async () => {

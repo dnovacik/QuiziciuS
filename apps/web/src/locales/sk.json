@@ -883,5 +883,18 @@
   "projector.sound.title": "Zapnúť zvuk",
   "projector.sound.text": "Kliknite kamkoľvek, aby projekcia mohla prehrávať zvuk a videá. Stačí raz za večer.",
   "projector.media.playing": "Hrá zvuk",
-  "projector.media.ready": "Zvuk je pripravený"
+  "projector.media.ready": "Zvuk je pripravený",
+  "host.room.media.question": "Klip otázky",
+  "host.room.media.reveal": "Klip pri odhalení",
+  "host.room.media.play": "Prehrať",
+  "host.room.media.pause": "Pauza",
+  "host.room.media.replay": "Znova",
+  "host.room.media.playing": "Na projekcii hrá",
+  "host.room.media.paused": "Pozastavené",
+  "host.room.media.ended": "Dohrané",
+  "host.room.media.error": "Projektor klip neprehrá (odkaz nefunguje alebo video nejde vložiť). Pokračujte ďalej.",
+  "host.room.media.blocked": "Projektor nemá zapnutý zvuk — kliknite raz na okno projekcie a stlačte Prehrať znova.",
+  "host.room.media.waiting": "Projektor neodpovedá — je okno projekcie otvorené?",
+  "errors.MEDIA_NOT_AVAILABLE": "Tento klip sa teraz nedá prehrať.",
+  "errors.INVALID_MEDIA": "Médiá otázky nie sú platné: skontrolujte odkaz, začiatok a dĺžku."
 }

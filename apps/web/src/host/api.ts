@@ -1,4 +1,4 @@
-import type { AnswerSummaryDto, MediaRefDto, QuestionType, QuizState } from '@quizicius/shared-types';
+import type { AnswerSummaryDto, MediaAction, MediaRefDto, MediaSlot, QuestionType, QuizState } from '@quizicius/shared-types';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
 import { supabase } from '../lib/supabase-client';
 
@@ -103,6 +103,9 @@ export const hostApi = {
     apiPost<HostSession>(`/quizzes/${quizId}/sessions`, leagueId ? { pubId, leagueId } : { pubId }, token),
   transition: (token: string, sessionId: string, status: QuizState, questionId?: string) =>
     apiPost(`/sessions/${sessionId}/transition`, status === 'LOCK_IN_ROUND' ? { status, questionId } : { status }, token),
+  /** Plays, pauses or replays a media slot of the current question on the projector. */
+  mediaControl: (token: string, sessionId: string, slot: MediaSlot, action: MediaAction) =>
+    apiPost(`/sessions/${sessionId}/media/control`, { slot, action }, token),
   /** Ends answering for the open question now (untimed, or a timed one early). */
   closeAnswers: (token: string, sessionId: string) => apiPost(`/sessions/${sessionId}/close-answers`, {}, token),
   listAnswers: (token: string, sessionId: string, questionId?: string) =>

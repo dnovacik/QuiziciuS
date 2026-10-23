@@ -21,6 +21,7 @@ import { isUntimed, optionLetter, rankTeams, secondsLeft, useNow } from '../../l
 import { Pending } from '../../ui/Pending';
 import type { Question } from '../api';
 import { btn } from '../ui';
+import { MediaControls } from './MediaControls';
 import type { ControlRoom } from './use-control-room';
 
 /** Short form of a team's response for lists and tables. */
@@ -159,17 +160,32 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
               </h2>
             </div>
 
+            {showingCurrent && focus.media && focus.media.kind !== 'image' && (
+              <MediaControls
+                slot="question"
+                media={focus.media}
+                status={room.mediaStatus[`${focus.id}:question`] ?? null}
+                enabled={status === 'QUESTION_ACTIVE' || status === 'QUESTION_REVEAL'}
+                onControl={(action) => void room.mediaControl('question', action)}
+              />
+            )}
+            {status === 'QUESTION_REVEAL' && focus.reveal_media && focus.reveal_media.kind !== 'image' && (
+              <MediaControls
+                slot="reveal"
+                media={focus.reveal_media}
+                status={room.mediaStatus[`${focus.id}:reveal`] ?? null}
+                enabled
+                onControl={(action) => void room.mediaControl('reveal', action)}
+              />
+            )}
+
             {(mediaUrl || status === 'QUESTION_ACTIVE') && (
               <div className="grid grid-cols-1 items-center gap-space-md rounded-2xl bg-surface-container p-space-md sm:grid-cols-12">
                 {mediaUrl && (
                   <div
                     className={`relative overflow-hidden rounded-xl shadow-md ${status === 'QUESTION_ACTIVE' ? 'sm:col-span-5' : 'sm:col-span-12'}`}
                   >
-                    {focus.media?.kind === 'video' ? (
-                      <video src={mediaUrl} controls preload="metadata" className="h-32 w-full bg-black object-contain" />
-                    ) : (
-                      <img src={mediaUrl} alt={t('play.question.image')} className="h-32 w-full object-cover" />
-                    )}
+                    <img src={mediaUrl} alt={t('play.question.image')} className="h-32 w-full object-cover" />
                   </div>
                 )}
                 {status === 'QUESTION_ACTIVE' && isUntimed(focus.time_limit_seconds) && (
@@ -416,14 +432,16 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
   );
 }
 
+/** The question's image for the preview; clips get a player bar instead. */
 function useMediaUrl(room: ControlRoom, question: Question | null): string | null {
   const [url, setUrl] = useState<string | null>(null);
   const { mediaUrl } = room;
   useEffect(() => {
     setUrl(null);
-    if (question?.media?.source !== 'upload') return;
+    const ref = question?.media;
+    if (!question || ref?.kind !== 'image') return;
     let active = true;
-    mediaUrl(question)
+    mediaUrl(question, ref)
       .then((value) => active && setUrl(value))
       .catch(() => active && setUrl(null));
     return () => {

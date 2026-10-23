@@ -883,5 +883,18 @@
   "projector.sound.title": "Turn on sound",
   "projector.sound.text": "Click anywhere so the projector can play sound and videos. Once per night is enough.",
   "projector.media.playing": "Playing",
-  "projector.media.ready": "Sound ready"
+  "projector.media.ready": "Sound ready",
+  "host.room.media.question": "Question clip",
+  "host.room.media.reveal": "Reveal clip",
+  "host.room.media.play": "Play",
+  "host.room.media.pause": "Pause",
+  "host.room.media.replay": "Replay",
+  "host.room.media.playing": "Playing on the projector",
+  "host.room.media.paused": "Paused",
+  "host.room.media.ended": "Finished",
+  "host.room.media.error": "The projector cannot play this clip (broken link or the video cannot be embedded). Move on.",
+  "host.room.media.blocked": "The projector has no sound yet — click once on the projector window and press Play again.",
+  "host.room.media.waiting": "The projector is not responding — is the projector window open?",
+  "errors.MEDIA_NOT_AVAILABLE": "This clip cannot be played right now.",
+  "errors.INVALID_MEDIA": "The question media is not valid: check the link, start and length."
 }
