@@ -24,7 +24,13 @@ vi.mock('../lib/youtube', () => ({
   loadYouTubeApi: vi.fn(),
   createYouTubePlayer: vi.fn(async (_el: HTMLElement, _id: string, _part: unknown, events: typeof youtube.events) => {
     youtube.events = events;
-    youtube.player = { playVideo: vi.fn(), pauseVideo: vi.fn(), seekTo: vi.fn(), getCurrentTime: vi.fn().mockReturnValue(0), destroy: vi.fn() };
+    youtube.player = {
+      playVideo: vi.fn(),
+      pauseVideo: vi.fn(),
+      seekTo: vi.fn(),
+      getCurrentTime: vi.fn().mockReturnValue(0),
+      destroy: vi.fn(),
+    };
     return youtube.player;
   }),
 }));
