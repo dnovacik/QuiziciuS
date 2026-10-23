@@ -7,6 +7,7 @@ import { CategoriesController } from '../categories/categories.controller';
 import { InfractionsController } from '../infractions/infractions.controller';
 import { PubsController } from '../pubs/pubs.controller';
 import { QuestionsController } from '../questions/questions.controller';
+import { SessionQuestionMediaController } from '../questions/session-question-media.controller';
 import { QuizzesController } from '../quizzes/quizzes.controller';
 import { RegisteredTeamsController } from '../registered-teams/registered-teams.controller';
 import { SessionsController } from '../sessions/sessions.controller';
@@ -63,6 +64,12 @@ describe('role requirements on endpoints', () => {
     const publicRoutes = ['findByJoinCode', 'displayMetadata', 'getState'];
     for (const method of routes(SessionsController)) {
       expect([method, roleOf(SessionsController, method)]).toEqual([method, publicRoutes.includes(method) ? undefined : 'HOST']);
+    }
+  });
+
+  it('playback control requires HOST; the current media stays public for screens', () => {
+    for (const method of routes(SessionQuestionMediaController)) {
+      expect([method, roleOf(SessionQuestionMediaController, method)]).toEqual([method, method === 'control' ? 'HOST' : undefined]);
     }
   });
 
