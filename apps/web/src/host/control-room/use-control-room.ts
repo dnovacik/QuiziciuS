@@ -137,6 +137,21 @@ export function useControlRoom(token: string, sessionId: string) {
     [busy, selectedId, token, sessionId, refetch, t],
   );
 
+  const closeAnswers = useCallback(async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await hostApi.closeAnswers(token, sessionId);
+      refetch();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) refetch();
+      setError(describeError(err, t, 'errors.generic'));
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, token, sessionId, refetch, t]);
+
   const currentQuestion = questions.find((question) => question.id === currentId) ?? null;
   const mediaUrl = useCallback((question: Question) => hostApi.mediaUrl(token, question.quiz_id, question.media_path ?? ''), [token]);
   return {
@@ -155,6 +170,7 @@ export function useControlRoom(token: string, sessionId: string) {
     setSelectedId,
     nextUnplayed,
     transition,
+    closeAnswers,
     busy,
     error,
     setError,

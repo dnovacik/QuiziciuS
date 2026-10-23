@@ -22,6 +22,7 @@ import {
 import type { QuestionType } from '@quizicius/shared-types';
 import { describeError } from '../../lib/errors';
 import { useI18n } from '../../lib/i18n';
+import { isUntimed } from '../../lib/quiz';
 import { Modal } from '../../ui/Modal';
 import { Pending } from '../../ui/Pending';
 import {
@@ -468,7 +469,7 @@ export function QuizEditorPage({ token }: { token: string }) {
                             {t('host.common.pointsShort')}
                           </span>
                           <span>•</span>
-                          <span>{question.time_limit_seconds}s</span>
+                          <span>{isUntimed(question.time_limit_seconds) ? '∞' : `${question.time_limit_seconds}s`}</span>
                         </span>
                       </div>
                       <div className="flex items-center gap-1">

@@ -8,6 +8,7 @@ import {
   Eye,
   Flag,
   Hourglass,
+  Infinity as InfinityIcon,
   ListChecks,
   Lock,
   MonitorX,
@@ -171,6 +172,15 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                     )}
                   </div>
                 )}
+                {status === 'QUESTION_ACTIVE' && remaining === null && (
+                  <div
+                    className={`flex items-center justify-center gap-space-xs p-space-xs text-label-lg text-secondary ${mediaUrl ? 'sm:col-span-7' : 'sm:col-span-12'}`}
+                    data-testid="room-untimed"
+                  >
+                    <InfinityIcon className="h-6 w-6" />
+                    {t('host.room.untimed')}
+                  </div>
+                )}
                 {status === 'QUESTION_ACTIVE' && remaining !== null && (
                   <div
                     className={`flex flex-col items-center justify-center gap-space-xs p-space-xs ${mediaUrl ? 'sm:col-span-7' : 'sm:col-span-12'}`}
@@ -276,12 +286,16 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
           )}
           {status === 'QUESTION_ACTIVE' && (
             <>
-              <Pending feature="timer-controls" className="flex-1">
-                <span className={`${btn.secondary} w-full py-3`}>
-                  <Lock className="h-5 w-5 text-secondary" />
-                  {t('host.room.stopAnswers')}
-                </span>
-              </Pending>
+              <button
+                type="button"
+                className={`${btn.secondary} flex-1 py-3`}
+                disabled={room.busy || remaining === 0}
+                onClick={() => void room.closeAnswers()}
+                data-testid="room-action-close-answers"
+              >
+                <Lock className="h-5 w-5 text-secondary" />
+                {remaining === 0 ? t('host.room.answersClosed') : t('host.room.stopAnswers')}
+              </button>
               <button
                 type="button"
                 className={`${btn.primary} flex-1 py-3`}

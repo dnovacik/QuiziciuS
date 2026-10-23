@@ -1,6 +1,6 @@
 import { Check, Smartphone, Timer } from 'lucide-react';
 import { useI18n } from '../../lib/i18n';
-import { optionLetter } from '../../lib/quiz';
+import { isUntimed, optionLetter } from '../../lib/quiz';
 import type { QuestionDraft } from '../api';
 
 /** "Živý náhľad pre hráčov" — the question as a player's phone shows it, correct answer highlighted. */
@@ -44,7 +44,7 @@ export function PhonePreview({
             </div>
             <div className="flex items-center gap-1 rounded-full bg-surface-container-high px-2 py-0.5 text-[11px] text-primary">
               <Timer className="h-3 w-3" />
-              {draft.time_limit_seconds}s
+              {isUntimed(draft.time_limit_seconds) ? '∞' : `${draft.time_limit_seconds}s`}
             </div>
           </div>
           <div className="my-auto flex flex-col gap-2">

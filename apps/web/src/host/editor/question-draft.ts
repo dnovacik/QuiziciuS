@@ -4,7 +4,8 @@ import type { QuestionDraft, QuestionOption } from '../api';
 
 export const MAX_OPTIONS = 6;
 export const MAX_PROMPT = 250;
-export const TIMER_CHOICES = [15, 20, 30, 45, 60, 90] as const;
+/** 0 = no time limit; the host closes answering from the control room. */
+export const TIMER_CHOICES = [0, 15, 20, 30, 45, 60, 90] as const;
 
 function freshOptions(): QuestionOption[] {
   return ['a', 'b', 'c', 'd'].map((id, index) => ({ id, label: '', isCorrect: index === 0 }));

@@ -101,6 +101,8 @@ export const hostApi = {
     apiPost<HostSession>(`/quizzes/${quizId}/sessions`, { pubId }, token),
   transition: (token: string, sessionId: string, status: QuizState, questionId?: string) =>
     apiPost(`/sessions/${sessionId}/transition`, status === 'LOCK_IN_ROUND' ? { status, questionId } : { status }, token),
+  /** Ends answering for the open question now (untimed, or a timed one early). */
+  closeAnswers: (token: string, sessionId: string) => apiPost(`/sessions/${sessionId}/close-answers`, {}, token),
   listAnswers: (token: string, sessionId: string, questionId?: string) =>
     apiGet<AnswerSummaryDto[]>(`/host/sessions/${sessionId}/answers${questionId ? `?questionId=${questionId}` : ''}`, token),
   listDisputes: (token: string, sessionId: string) => apiGet<AnswerSummaryDto[]>(`/sessions/${sessionId}/disputes`, token),

@@ -77,6 +77,12 @@ export class SessionsController {
     return this.quizEngine.transitionState(sessionId, host.id, dto.status, { questionId: dto.questionId });
   }
 
+  @Post('sessions/:sessionId/close-answers')
+  @UseGuards(SupabaseAuthGuard)
+  closeAnswers(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload) {
+    return this.quizEngine.closeAnswers(sessionId, host.id);
+  }
+
   @Post('answers/:answerId/resolve-dispute')
   @UseGuards(SupabaseAuthGuard)
   resolveDispute(@Param('answerId') answerId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: ResolveDisputeDto) {

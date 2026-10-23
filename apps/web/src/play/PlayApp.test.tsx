@@ -205,6 +205,22 @@ describe('joining', () => {
 describe('answering', () => {
   beforeEach(seated);
 
+  it('shows no countdown for an untimed question and stops answering once the host closes it', () => {
+    setState('QUESTION_ACTIVE', { currentQuestion: question({ timeLimitSeconds: 0 }), questionEndsAt: null });
+    const { unmount } = renderPlay();
+    expect(screen.getByTestId('player-untimed')).toBeInTheDocument();
+    expect(screen.getByTestId('player-answer-form')).toBeInTheDocument();
+
+    setState('QUESTION_ACTIVE', {
+      currentQuestion: question({ timeLimitSeconds: 0 }),
+      questionEndsAt: new Date(Date.now() - 1000).toISOString(),
+    });
+    unmount();
+    renderPlay();
+    expect(screen.getByTestId('player-expired')).toBeInTheDocument();
+    expect(screen.queryByTestId('player-untimed')).not.toBeInTheDocument();
+  });
+
   it('locks in a multiple-choice answer and starts fresh on the next question', async () => {
     vi.mocked(apiPost).mockResolvedValue(graded());
     activeQuestion();

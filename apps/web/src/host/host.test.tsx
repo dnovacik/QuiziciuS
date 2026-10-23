@@ -260,6 +260,17 @@ describe('host dashboard', () => {
 describe('quiz editor', () => {
   const renderEditor = () => renderAt('/host/quizzes/quiz1', <QuizEditorPage token="jwt" />, '/host/quizzes/:quizId');
 
+  it('saves a question without a time limit (0 s)', async () => {
+    renderEditor();
+    await screen.findByTestId('editor-prompt');
+    fireEvent.change(screen.getByTestId('editor-timer'), { target: { value: '0' } });
+    fireEvent.click(screen.getByTestId('editor-save'));
+
+    await waitFor(() =>
+      expect(apiPatch).toHaveBeenCalledWith('/quizzes/quiz1/questions/q1', expect.objectContaining({ timeLimitSeconds: 0 }), 'jwt'),
+    );
+  });
+
   it('edits and saves the selected question with the full payload', async () => {
     renderEditor();
     const prompt = await screen.findByTestId('editor-prompt');
@@ -337,6 +348,16 @@ describe('quiz editor', () => {
 
 describe('control room', () => {
   const renderRoom = () => renderAt('/host/sessions/s1', <ControlRoomPage token="jwt" />, '/host/sessions/:sessionId');
+
+  it('closes answers for an untimed question', async () => {
+    db.questions.quiz1[0].time_limit_seconds = 0;
+    live.state = { ...liveState('QUESTION_ACTIVE', 'q1'), questionEndsAt: null };
+    renderRoom();
+
+    expect(await screen.findByTestId('room-untimed')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('room-action-close-answers'));
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/close-answers', {}, 'jwt'));
+  });
 
   it('shows which teams are ready during the lock-in round, warning when fullscreen is off', async () => {
     live.state = liveState('LOCK_IN_ROUND', 'q1');

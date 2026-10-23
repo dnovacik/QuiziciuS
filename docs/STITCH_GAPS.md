@@ -22,7 +22,7 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 | `scheduled-sessions` | Host dashboard | Sessions planned ahead (date, venue, table capacity, reservations) | |
 | `quiz-default-timer` | Quiz settings | Default answer time stored per quiz | |
 | `numeric-unit` | Quiz editor | `unit` column on numeric questions, shown to players and on the projector | |
-| `timer-controls` | Control room | Pause / +10 s / stop answers early / host pause — needs a pausable timer in the quiz engine | |
+| `timer-controls` | Control room | Pause / +10 s / host pause — needs a pausable timer in the quiz engine (stopping answers early is built: `POST /sessions/:id/close-answers`) | |
 | `session-archive` | Control room results | Archiving into league tables, deactivating the code | |
 
 ## Data the designs show but the API does not provide

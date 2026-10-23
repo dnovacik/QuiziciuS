@@ -662,5 +662,14 @@
   "host.room.readyTitle": "Teams ready",
   "host.room.readyNoFullscreen": "Ready, but the browser did not go fullscreen — the leave-the-quiz check is off",
   "play.lockIn.failed": "Could not send, please try again.",
-  "projector.lockIn.teamsReady": "teams ready"
+  "projector.lockIn.teamsReady": "teams ready",
+  "host.editor.noTimer": "No limit",
+  "host.editor.noTimerOption": "No time limit",
+  "host.editor.noTimerHint": "Teams can answer until you close answers in the control room.",
+  "host.room.answersClosed": "Answers closed",
+  "host.room.untimed": "No time limit — you close the answers",
+  "play.question.untimed": "No time limit — the host closes the answers",
+  "play.question.untimedShort": "No limit",
+  "projector.question.closed": "Answers closed",
+  "projector.question.untimed": "No time limit"
 }

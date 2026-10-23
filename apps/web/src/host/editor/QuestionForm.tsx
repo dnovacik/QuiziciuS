@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import type { QuestionType } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
-import { optionLetter } from '../../lib/quiz';
+import { isUntimed, optionLetter } from '../../lib/quiz';
 import { Pending } from '../../ui/Pending';
 import { ACCEPTED_MEDIA, type QuestionDraft } from '../api';
 import { btn, Card, inputClass, Label } from '../ui';
@@ -440,7 +440,9 @@ export function QuestionForm({
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="editor-timer">{t('host.editor.timer')}</Label>
-            <span className="text-label-md text-primary">{draft.time_limit_seconds} s</span>
+            <span className="text-label-md text-primary">
+              {isUntimed(draft.time_limit_seconds) ? t('host.editor.noTimer') : `${draft.time_limit_seconds} s`}
+            </span>
           </div>
           <select
             id="editor-timer"
@@ -451,10 +453,11 @@ export function QuestionForm({
           >
             {timerChoices.map((seconds) => (
               <option key={seconds} value={seconds}>
-                {seconds} {t('host.editor.seconds')}
+                {isUntimed(seconds) ? t('host.editor.noTimerOption') : `${seconds} ${t('host.editor.seconds')}`}
               </option>
             ))}
           </select>
+          {isUntimed(draft.time_limit_seconds) && <p className="text-body-sm text-on-surface-variant">{t('host.editor.noTimerHint')}</p>}
         </div>
       </div>
 

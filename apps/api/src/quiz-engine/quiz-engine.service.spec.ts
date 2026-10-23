@@ -135,6 +135,15 @@ describe('QuizEngineService.transitionState', () => {
     expect(broadcast.publish).toHaveBeenCalledWith('s1', 'STATE_CHANGE', expect.any(Object));
   });
 
+  it('opens a question without a time limit with no deadline', async () => {
+    const { service, questions } = buildHarness({ session: { status: 'LOCK_IN_ROUND', current_question_id: 'q1' } });
+    jest.mocked(questions.findById).mockResolvedValue({ ...NUMERIC_QUESTION, time_limit_seconds: 0 });
+
+    const result = await service.transitionState('s1', 'host1', 'QUESTION_ACTIVE');
+
+    expect(result.question_ends_at).toBeNull();
+  });
+
   it('grades numeric answers and broadcasts a score update on entering QUESTION_REVEAL', async () => {
     const { service, answers, broadcast } = buildHarness({
       session: { status: 'QUESTION_ACTIVE', current_question_id: 'q1' },
@@ -214,6 +223,47 @@ describe('QuizEngineService.transitionState', () => {
       'a3',
       expect.objectContaining({ is_correct: false, graded_by: 'AUTO', score_awarded: 0 }),
     );
+  });
+});
+
+describe('QuizEngineService.closeAnswers', () => {
+  it('ends answering now for an untimed question and tells every screen', async () => {
+    const { service, sessions, broadcast } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q1', question_ends_at: null },
+    });
+
+    const before = Date.now();
+    const result = await service.closeAnswers('s1', 'host1');
+
+    expect(Date.parse(result.question_ends_at!)).toBeGreaterThanOrEqual(before);
+    expect(sessions.updateStatus).toHaveBeenCalledWith('s1', { question_ends_at: expect.any(String) });
+    expect(broadcast.publish).toHaveBeenCalledWith('s1', 'STATE_CHANGE', expect.objectContaining({ status: 'QUESTION_ACTIVE' }));
+  });
+
+  it('ends a timed question early', async () => {
+    const { service } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q1', question_ends_at: new Date(Date.now() + 60_000).toISOString() },
+    });
+
+    const result = await service.closeAnswers('s1', 'host1');
+
+    expect(Date.parse(result.question_ends_at!)).toBeLessThanOrEqual(Date.now());
+  });
+
+  it('leaves an already expired deadline alone', async () => {
+    const { service, sessions } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q1', question_ends_at: new Date(Date.now() - 5_000).toISOString() },
+    });
+
+    await service.closeAnswers('s1', 'host1');
+
+    expect(sessions.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('refuses when no question is open', async () => {
+    const { service } = buildHarness({ session: { status: 'LOCK_IN_ROUND', current_question_id: 'q1' } });
+
+    await expect(service.closeAnswers('s1', 'host1')).rejects.toMatchObject({ response: { code: 'NO_OPEN_QUESTION' } });
   });
 });
 

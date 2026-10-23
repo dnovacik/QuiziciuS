@@ -44,6 +44,11 @@ export function secondsLeft(endsAt: string | null, now: number): number | null {
   return Math.max(0, Math.ceil((Date.parse(endsAt) - now) / 1000));
 }
 
+/** Questions with a 0 s limit have no timer: answering stays open until the host closes it. */
+export function isUntimed(timeLimitSeconds: number): boolean {
+  return timeLimitSeconds <= 0;
+}
+
 export function formatClock(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }

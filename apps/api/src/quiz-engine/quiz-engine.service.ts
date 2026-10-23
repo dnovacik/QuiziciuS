@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { AnswerSummaryDto, QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
 import { toAnswerSummary } from '../answers/answer-summary';
 import { AnswerRecord, AnswersRepository } from '../data/answers.repository';
@@ -121,7 +121,9 @@ export class QuizEngineService {
       if (!questionId) throw new BadRequestException('No question selected for this session');
       const question = await this.questions.findById(questionId);
       if (!question) throw new NotFoundException('Question not found');
-      patch.question_ends_at = new Date(Date.now() + question.time_limit_seconds * 1000).toISOString();
+      // A question without a time limit has no deadline: answering stays open until the host closes it.
+      patch.question_ends_at =
+        question.time_limit_seconds > 0 ? new Date(Date.now() + question.time_limit_seconds * 1000).toISOString() : null;
     }
 
     if (newState === 'FINISHED') {
@@ -140,6 +142,26 @@ export class QuizEngineService {
       questionEndsAt: updated.question_ends_at,
     });
 
+    return updated;
+  }
+
+  /**
+   * Stops answering for the open question now (an untimed question, or a timed one ended early).
+   * The deadline moves to now, so the usual late-submission grace and result visibility apply.
+   */
+  async closeAnswers(sessionId: string, hostId: string): Promise<SessionRecord> {
+    const session = await this.requireOwnedSession(sessionId, hostId);
+    if (session.status !== 'QUESTION_ACTIVE') {
+      throw new ConflictException({ code: 'NO_OPEN_QUESTION', message: 'No question is open for answers' });
+    }
+    if (session.question_ends_at && Date.parse(session.question_ends_at) <= Date.now()) return session;
+
+    const updated = await this.sessions.updateStatus(sessionId, { question_ends_at: new Date().toISOString() });
+    await this.broadcast.publish(sessionId, 'STATE_CHANGE', {
+      status: updated.status,
+      currentQuestionId: updated.current_question_id,
+      questionEndsAt: updated.question_ends_at,
+    });
     return updated;
   }
 

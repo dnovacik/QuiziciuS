@@ -20,7 +20,7 @@ export const PENDING_FEATURES = {
   'scheduled-sessions': 'Planning quiz nights ahead with a date, venue and table capacity.',
   'quiz-default-timer': 'Default answer time per quiz, applied to new questions.',
   'numeric-unit': 'Unit suffix for numeric questions (years, km, %).',
-  'timer-controls': 'Pausing, extending or stopping the answer timer early, and a host pause for everyone.',
+  'timer-controls': 'Pausing or extending the answer timer, and a host pause for everyone.',
   'session-archive': 'Archiving a finished session into league tables.',
   'pub-leaderboard': 'Pub / league leaderboard for registered teams.',
   'team-invite-link': 'Invite link or e-mail for teammates to join a registered team.',

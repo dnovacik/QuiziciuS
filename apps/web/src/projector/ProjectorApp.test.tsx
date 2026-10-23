@@ -108,6 +108,18 @@ beforeEach(() => {
 });
 
 describe('ProjectorApp', () => {
+  it('shows "no time limit" instead of a countdown, then "answers closed"', () => {
+    setState('QUESTION_ACTIVE', { currentQuestion: { ...QUESTION, timeLimitSeconds: 0 }, questionEndsAt: null });
+    const { unmount } = renderProjector();
+    expect(screen.getByTestId('projector-untimed')).toHaveTextContent('Bez časového limitu');
+    expect(screen.queryByTestId('projector-timer')).not.toBeInTheDocument();
+    unmount();
+
+    setState('QUESTION_ACTIVE', { currentQuestion: { ...QUESTION, timeLimitSeconds: 0 }, questionEndsAt: new Date().toISOString() });
+    renderProjector();
+    expect(screen.getByTestId('projector-untimed')).toHaveTextContent('Odpovede uzavreté');
+  });
+
   it('shows how to join in the lobby: QR code, link, room code and teams', async () => {
     setState('LOBBY');
     renderProjector();

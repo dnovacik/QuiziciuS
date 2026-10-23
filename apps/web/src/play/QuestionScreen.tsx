@@ -3,6 +3,7 @@ import {
   Check,
   CircleX,
   Hourglass,
+  Infinity as InfinityIcon,
   Image as ImageIcon,
   LockKeyhole,
   Minus,
@@ -19,7 +20,7 @@ import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto } from '@
 import { apiPost } from '../lib/api-client';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
-import { optionLetter, rankTeams, secondsLeft, useNow, formatClock } from '../lib/quiz';
+import { formatClock, isUntimed, optionLetter, rankTeams, secondsLeft, useNow } from '../lib/quiz';
 import type { TeamSeat } from '../lib/team-seat';
 import { useCurrentQuestionMedia } from '../lib/use-current-question-media';
 import { Modal } from '../ui/Modal';
@@ -47,6 +48,7 @@ export function QuestionScreen({
   const { t } = useI18n();
   const now = useNow();
   const remaining = secondsLeft(state.questionEndsAt, now);
+  const untimed = isUntimed(question.timeLimitSeconds);
   const ranked = rankTeams(state.teams);
   const own = ranked.find((team) => team.id === seat.teamId);
 
@@ -74,7 +76,7 @@ export function QuestionScreen({
           <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-highest p-0.5">
             <div
               className="h-full rounded-full bg-secondary transition-all duration-1000 ease-linear"
-              style={{ width: `${remaining === null ? 100 : (remaining / question.timeLimitSeconds) * 100}%` }}
+              style={{ width: `${remaining === null ? 100 : untimed ? 0 : (remaining / question.timeLimitSeconds) * 100}%` }}
             />
           </div>
           <span className="mt-2 flex items-center gap-1.5 text-label-sm text-on-surface-variant">
@@ -82,7 +84,14 @@ export function QuestionScreen({
             {t(`play.question.type.${question.type}`)}
           </span>
         </div>
-        {remaining !== null && <TimerRing seconds={remaining} total={question.timeLimitSeconds} />}
+        {untimed
+          ? remaining === null && (
+              <span className="flex flex-col items-center text-secondary" data-testid="player-untimed" title={t('play.question.untimed')}>
+                <InfinityIcon className="h-8 w-8" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">{t('play.question.untimedShort')}</span>
+              </span>
+            )
+          : remaining !== null && <TimerRing seconds={remaining} total={question.timeLimitSeconds} />}
       </section>
 
       <QuestionCard state={state} question={question} />
@@ -366,7 +375,10 @@ function LockedView({
   remaining: number | null;
 }) {
   const { t } = useI18n();
-  const startedAt = state.questionEndsAt ? Date.parse(state.questionEndsAt) - question.timeLimitSeconds * 1000 : null;
+  const startedAt =
+    state.questionEndsAt && !isUntimed(question.timeLimitSeconds)
+      ? Date.parse(state.questionEndsAt) - question.timeLimitSeconds * 1000
+      : null;
   const took = startedAt === null ? null : Math.max(0, (answer.submittedAt - startedAt) / 1000);
 
   return (

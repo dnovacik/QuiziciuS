@@ -662,5 +662,14 @@
   "host.room.readyTitle": "Pripravené tímy",
   "host.room.readyNoFullscreen": "Pripravení, ale prehliadač nezapol celú obrazovku — kontrola opustenia kvízu nie je aktívna",
   "play.lockIn.failed": "Nepodarilo sa odoslať, skúste to znova.",
-  "projector.lockIn.teamsReady": "tímov pripravených"
+  "projector.lockIn.teamsReady": "tímov pripravených",
+  "host.editor.noTimer": "Bez limitu",
+  "host.editor.noTimerOption": "Bez časového limitu",
+  "host.editor.noTimerHint": "Tímy odpovedajú, kým odpovede neuzavriete v riadiacej miestnosti.",
+  "host.room.answersClosed": "Odpovede uzavreté",
+  "host.room.untimed": "Bez časového limitu — odpovede uzavriete vy",
+  "play.question.untimed": "Bez časového limitu — odpovede uzavrie moderátor",
+  "play.question.untimedShort": "Bez limitu",
+  "projector.question.closed": "Odpovede uzavreté",
+  "projector.question.untimed": "Bez časového limitu"
 }

@@ -1,7 +1,7 @@
-import { BadgeCheck, Check, Flag, Hash, PencilLine, Pointer, Trophy } from 'lucide-react';
+import { BadgeCheck, Check, Flag, Hash, Infinity as InfinityIcon, Lock, PencilLine, Pointer, Trophy } from 'lucide-react';
 import type { QuestionPublicDto, QuizSessionStateDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../lib/i18n';
-import { correctAnswerText, optionLetter, secondsLeft, useNow } from '../lib/quiz';
+import { correctAnswerText, isUntimed, optionLetter, secondsLeft, useNow } from '../lib/quiz';
 import { useCurrentQuestionMedia } from '../lib/use-current-question-media';
 
 export function LockInScene({ question, teams = [] }: { question: QuestionPublicDto | null; teams?: TeamSummaryDto[] }) {
@@ -102,7 +102,18 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
             </div>
           )}
         </div>
-        {!revealed && state.questionEndsAt && (
+        {!revealed && isUntimed(question.timeLimitSeconds) && (
+          <div
+            className="flex min-h-[180px] flex-col items-center justify-center gap-space-xs rounded-xl bg-surface-container/90 p-space-lg text-center shadow-2xl backdrop-blur-2xl lg:col-span-3"
+            data-testid="projector-untimed"
+          >
+            {state.questionEndsAt ? <Lock className="h-14 w-14 text-red-400" /> : <InfinityIcon className="h-14 w-14 text-secondary" />}
+            <span className="text-headline-sm font-bold text-on-surface">
+              {t(state.questionEndsAt ? 'projector.question.closed' : 'projector.question.untimed')}
+            </span>
+          </div>
+        )}
+        {!revealed && !isUntimed(question.timeLimitSeconds) && state.questionEndsAt && (
           <div className="flex min-h-[180px] flex-col items-center justify-center rounded-xl bg-surface-container/90 p-space-lg shadow-2xl backdrop-blur-2xl lg:col-span-3">
             <BigTimer endsAt={state.questionEndsAt} total={question.timeLimitSeconds} />
           </div>
