@@ -3,6 +3,7 @@ import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Po
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { RequireRole } from '../auth/require-role';
 import { QuizzesRepository } from '../data/quizzes.repository';
+import { LeaguesService } from '../leagues/leagues.service';
 import { SessionsRepository } from '../data/sessions.repository';
 import { PubsService } from '../pubs/pubs.service';
 import { QuizEngineService } from '../quiz-engine/quiz-engine.service';
@@ -18,6 +19,7 @@ export class SessionsController {
     private readonly quizzes: QuizzesRepository,
     private readonly sessions: SessionsRepository,
     private readonly pubs: PubsService,
+    private readonly leagues: LeaguesService,
   ) {}
 
   @Post('quizzes/:quizId/sessions')
@@ -34,7 +36,9 @@ export class SessionsController {
     }
     const pubId = dto.pubId === undefined ? quiz.pub_id : dto.pubId;
     if (pubId) await this.pubs.requirePub(pubId);
-    return this.quizEngine.createSession(quizId, host.id, pubId);
+    const leagueId = dto.leagueId ?? null;
+    if (leagueId) await this.leagues.assertCanLaunch(host.id, leagueId, pubId);
+    return this.quizEngine.createSession(quizId, host.id, pubId, leagueId);
   }
 
   @Get('host/sessions')
@@ -70,7 +74,8 @@ export class SessionsController {
     const quiz = await this.quizzes.findById(session.quiz_id);
     if (!quiz) throw new NotFoundException('Quiz not found');
     const pub = session.pub_id ? await this.pubs.requirePub(session.pub_id).catch(() => null) : null;
-    return { title: quiz.title, quizId: quiz.id, pub: pub && { id: pub.id, name: pub.name, city: pub.city } };
+    const league = session.league_id ? await this.leagues.publicInfo(session.league_id) : null;
+    return { title: quiz.title, quizId: quiz.id, pub: pub && { id: pub.id, name: pub.name, city: pub.city }, league };
   }
 
   @Get('sessions/:sessionId/state')

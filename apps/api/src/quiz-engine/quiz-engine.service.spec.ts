@@ -561,6 +561,6 @@ describe('QuizEngineService.createSession', () => {
 
     await service.createSession('quiz1', 'host1');
 
-    expect(sessions.create).toHaveBeenCalledWith('quiz1', 'host1', expect.stringMatching(/^[A-HJ-NP-Z2-9]{4}$/), null);
+    expect(sessions.create).toHaveBeenCalledWith('quiz1', 'host1', expect.stringMatching(/^[A-HJ-NP-Z2-9]{4}$/), null, null);
   });
 });

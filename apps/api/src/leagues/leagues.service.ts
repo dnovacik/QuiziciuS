@@ -4,6 +4,7 @@ import {
   InvitableHostDto,
   LeagueDetailDto,
   LeagueHostStatus,
+  LeagueKind,
   LeaguePhase,
   LeagueStandingDto,
   LeagueSummaryDto,
@@ -375,6 +376,12 @@ export class LeaguesService {
       qualifiers(standings).map((row) => ({ registeredTeamId: row.registeredTeamId, pubId: row.pubId })),
     );
     return this.detail(hostId, superLeague.id);
+  }
+
+  /** What players and the projector may know about a night's league. */
+  async publicInfo(leagueId: string): Promise<{ id: string; name: string; kind: LeagueKind } | null> {
+    const league = await this.leagues.findById(leagueId);
+    return league && { id: league.id, name: league.name, kind: league.kind };
   }
 
   /** Called before launching a night ticked for `leagueId` at `pubId`. */
