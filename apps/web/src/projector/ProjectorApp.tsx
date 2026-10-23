@@ -112,7 +112,7 @@ function Scene({
     case 'LOBBY':
       return <LobbyScene state={state} sessionId={sessionId} title={title} pub={pub} />;
     case 'LOCK_IN_ROUND':
-      return <LockInScene question={question} />;
+      return <LockInScene question={question} teams={state.teams} />;
     case 'QUESTION_ACTIVE':
     case 'QUESTION_REVEAL':
       return question ? <QuestionScene state={state} question={question} /> : <LockInScene question={null} />;

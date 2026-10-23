@@ -658,5 +658,9 @@
   "errors.TEAM_NAME_RESERVED": "A registered team already plays under this name in the quiz.",
   "errors.PUB_NOT_FOUND": "Pub not found.",
   "errors.TOO_MANY_PUBS": "A team can have at most 5 pubs.",
-  "errors.INVALID_PUB": "Enter the pub name and city."
+  "errors.INVALID_PUB": "Enter the pub name and city.",
+  "host.room.readyTitle": "Teams ready",
+  "host.room.readyNoFullscreen": "Ready, but the browser did not go fullscreen — the leave-the-quiz check is off",
+  "play.lockIn.failed": "Could not send, please try again.",
+  "projector.lockIn.teamsReady": "teams ready"
 }

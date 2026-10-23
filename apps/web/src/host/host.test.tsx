@@ -95,8 +95,26 @@ function liveState(status: QuizState, currentId: string | null = null): QuizSess
     },
     questionEndsAt: status === 'QUESTION_ACTIVE' ? new Date(Date.now() + 20_000).toISOString() : null,
     teams: [
-      { id: 't1', name: 'Wise Ducks', isActive: true, registeredTeamId: null, score: 20, infractionCount: 0 },
-      { id: 't2', name: 'Pub Mozarts', isActive: true, registeredTeamId: null, score: 10, infractionCount: 1 },
+      {
+        id: 't1',
+        name: 'Wise Ducks',
+        isActive: true,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 20,
+        infractionCount: 0,
+      },
+      {
+        id: 't2',
+        name: 'Pub Mozarts',
+        isActive: true,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 10,
+        infractionCount: 1,
+      },
     ],
   };
 }
@@ -319,6 +337,20 @@ describe('quiz editor', () => {
 
 describe('control room', () => {
   const renderRoom = () => renderAt('/host/sessions/s1', <ControlRoomPage token="jwt" />, '/host/sessions/:sessionId');
+
+  it('shows which teams are ready during the lock-in round, warning when fullscreen is off', async () => {
+    live.state = liveState('LOCK_IN_ROUND', 'q1');
+    live.state.teams = [
+      { ...live.state.teams[0], ready: true, readyFullscreen: false },
+      { ...live.state.teams[1], ready: false },
+    ];
+    renderRoom();
+
+    expect(await screen.findByTestId('room-ready-count')).toHaveTextContent('1 / 2');
+    expect(screen.getByTestId('room-ready-t1')).toHaveAttribute('data-ready', 'true');
+    expect(screen.getByTestId('room-no-fullscreen-t1')).toBeInTheDocument();
+    expect(screen.getByTestId('room-ready-t2')).toHaveAttribute('data-ready', 'false');
+  });
 
   it('starts the quiz with the first question after confirmation', async () => {
     live.state = liveState('LOBBY');

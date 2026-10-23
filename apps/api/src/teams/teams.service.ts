@@ -25,6 +25,18 @@ export class TeamsService {
    * registered team; that links the session team to it, and from then on nobody else can take
    * the name in this session.
    */
+  /** "We're ready" from the lock-in screen; only accepted while a question is locked in. */
+  async markReady(sessionId: string, teamId: string, fullscreen: boolean): Promise<{ ready: true }> {
+    const session = await this.sessions.findById(sessionId);
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.status !== 'LOCK_IN_ROUND' || !session.current_question_id) {
+      throw new ConflictException({ code: 'NOT_LOCK_IN', message: 'No question is locked in right now' });
+    }
+    await this.teams.markReady(teamId, session.current_question_id, fullscreen);
+    await this.broadcast.publish(sessionId, 'STATE_CHANGE', { teamId, ready: true });
+    return { ready: true };
+  }
+
   async join(sessionId: string, rawName: string, registeredTeamId: string | null = null): Promise<JoinResult> {
     const session = await this.sessions.findById(sessionId);
     if (!session) throw new NotFoundException('Session not found');

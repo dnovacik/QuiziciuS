@@ -115,9 +115,19 @@ export class InMemoryTeamsRepository extends TeamsRepository {
       joined_at: new Date().toISOString(),
       is_active: true,
       registered_team_id: registeredTeamId,
+      ready_question_id: null,
+      ready_fullscreen: false,
     };
     this.rows.set(record.id, record);
     return record;
+  }
+
+  async markReady(teamId: string, questionId: string, fullscreen: boolean): Promise<TeamRecord> {
+    const existing = this.rows.get(teamId);
+    if (!existing) throw new Error('team not found');
+    const updated = { ...existing, ready_question_id: questionId, ready_fullscreen: fullscreen };
+    this.rows.set(teamId, updated);
+    return updated;
   }
 
   async setDeviceTokenHash(teamId: string, tokenHash: string): Promise<TeamRecord> {

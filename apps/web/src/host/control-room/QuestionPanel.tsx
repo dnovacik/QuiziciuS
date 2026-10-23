@@ -1,6 +1,20 @@
 import { useEffect, useState } from 'react';
-import { AlarmClockPlus, ArrowRight, Check, CheckCircle2, Coffee, Eye, Flag, ListChecks, Lock, Pause, Play } from 'lucide-react';
-import type { AnswerSummaryDto } from '@quizicius/shared-types';
+import {
+  AlarmClockPlus,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Coffee,
+  Eye,
+  Flag,
+  Hourglass,
+  ListChecks,
+  Lock,
+  MonitorX,
+  Pause,
+  Play,
+} from 'lucide-react';
+import type { AnswerSummaryDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
 import { optionLetter, rankTeams, secondsLeft, useNow } from '../../lib/quiz';
 import { Pending } from '../../ui/Pending';
@@ -233,6 +247,8 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
           </p>
         )}
 
+        {status === 'LOCK_IN_ROUND' && <ReadyTeams teams={state.teams} />}
+
         <div className="flex flex-wrap items-center gap-space-sm pt-space-sm" data-testid="room-actions">
           {status === 'LOBBY' && (
             <button
@@ -439,6 +455,56 @@ function Ring({ seconds, total }: { seconds: number; total: number }) {
         <span className="text-headline-lg leading-none text-secondary">{seconds}</span>
         <span className="text-label-sm text-on-surface-variant">{t('play.secondsShort')}</span>
       </div>
+    </div>
+  );
+}
+
+/** Lock-in: which connected teams tapped "we're ready". The host can still show the question at any time. */
+function ReadyTeams({ teams }: { teams: TeamSummaryDto[] }) {
+  const { t } = useI18n();
+  const active = teams.filter((team) => team.isActive);
+  const ready = active.filter((team) => team.ready).length;
+  const all = active.length > 0 && ready === active.length;
+  return (
+    <div className="flex flex-col gap-space-sm rounded-xl bg-surface-container p-space-md" data-testid="room-ready">
+      <div className="flex items-center justify-between gap-space-sm">
+        <span className="text-label-md uppercase tracking-wider text-on-surface-variant">{t('host.room.readyTitle')}</span>
+        <span className={`text-headline-sm font-bold ${all ? 'text-tertiary' : 'text-on-surface'}`} data-testid="room-ready-count">
+          {ready} / {active.length}
+        </span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-surface-container-highest">
+        <div
+          className="h-full rounded-full bg-tertiary transition-all"
+          style={{ width: `${active.length ? (ready / active.length) * 100 : 0}%` }}
+        />
+      </div>
+      <ul className="flex flex-wrap gap-space-xs">
+        {active.map((team) => {
+          const noFullscreen = team.ready && !team.readyFullscreen;
+          return (
+            <li
+              key={team.id}
+              data-testid={`room-ready-${team.id}`}
+              data-ready={team.ready}
+              title={noFullscreen ? t('host.room.readyNoFullscreen') : undefined}
+              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-label-md ${
+                team.ready ? 'bg-tertiary-container/30 text-on-surface' : 'bg-surface-container-high text-on-surface-variant'
+              }`}
+            >
+              {team.ready ? <Check className="h-4 w-4 text-tertiary" /> : <Hourglass className="h-4 w-4" />}
+              {team.name}
+              {noFullscreen && (
+                <MonitorX
+                  className="h-4 w-4 text-secondary"
+                  aria-label={t('host.room.readyNoFullscreen')}
+                  data-testid={`room-no-fullscreen-${team.id}`}
+                />
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

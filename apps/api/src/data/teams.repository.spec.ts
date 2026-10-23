@@ -9,6 +9,8 @@ const RECORD: TeamRecord = {
   joined_at: '2026-09-16T00:00:00.000Z',
   is_active: true,
   registered_team_id: null,
+  ready_question_id: null,
+  ready_fullscreen: false,
 };
 
 describe('SupabaseTeamsRepository', () => {

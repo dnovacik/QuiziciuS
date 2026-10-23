@@ -1,11 +1,13 @@
 import { BadgeCheck, Check, Flag, Hash, PencilLine, Pointer, Trophy } from 'lucide-react';
-import type { QuestionPublicDto, QuizSessionStateDto } from '@quizicius/shared-types';
+import type { QuestionPublicDto, QuizSessionStateDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../lib/i18n';
 import { correctAnswerText, optionLetter, secondsLeft, useNow } from '../lib/quiz';
 import { useCurrentQuestionMedia } from '../lib/use-current-question-media';
 
-export function LockInScene({ question }: { question: QuestionPublicDto | null }) {
+export function LockInScene({ question, teams = [] }: { question: QuestionPublicDto | null; teams?: TeamSummaryDto[] }) {
   const { t } = useI18n();
+  const active = teams.filter((team) => team.isActive);
+  const ready = active.filter((team) => team.ready).length;
   return (
     <section className="flex w-full flex-col items-center justify-center py-space-xl text-center" data-testid="projector-lock-in">
       <div className="relative flex w-full max-w-3xl flex-col items-center overflow-hidden rounded-xl bg-surface-container/90 p-space-xl shadow-2xl backdrop-blur-2xl">
@@ -23,9 +25,33 @@ export function LockInScene({ question }: { question: QuestionPublicDto | null }
           {t('projector.lockIn.title')}
         </h2>
         <div className="mt-space-xl h-4 w-full overflow-hidden rounded-full bg-surface-container-lowest p-0.5">
-          <div className="h-full w-3/4 animate-pulse rounded-full bg-gradient-to-r from-primary via-secondary to-tertiary" />
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-primary via-secondary to-tertiary transition-all duration-500"
+            style={{ width: `${active.length ? (ready / active.length) * 100 : 0}%` }}
+            data-testid="projector-ready-bar"
+          />
         </div>
-        <p className="mt-space-sm text-label-md text-outline">{t('projector.lockIn.subtitle')}</p>
+        <p className="mt-space-sm text-headline-sm font-bold text-on-surface" data-testid="projector-ready-count">
+          {ready} / {active.length} {t('projector.lockIn.teamsReady')}
+        </p>
+        {active.length > 0 && (
+          <ul className="mt-space-md flex flex-wrap justify-center gap-space-xs">
+            {active.map((team) => (
+              <li
+                key={team.id}
+                data-testid={`projector-ready-${team.id}`}
+                data-ready={team.ready}
+                className={`flex items-center gap-1 rounded-full px-space-sm py-1 text-label-lg transition-colors ${
+                  team.ready ? 'bg-tertiary-container/40 text-on-surface' : 'bg-surface-container-high text-outline'
+                }`}
+              >
+                {team.ready && <Check className="h-4 w-4 text-tertiary" />}
+                {team.name}
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-space-md text-label-md text-outline">{t('projector.lockIn.subtitle')}</p>
       </div>
     </section>
   );

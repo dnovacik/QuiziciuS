@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { loadSeat, type TeamSeat } from '../lib/team-seat';
+import { apiPost } from '../lib/api-client';
 import { useQuizTitle } from '../lib/use-quiz-title';
 import { useSessionState } from '../lib/use-session-state';
 import { JoinScreen } from './JoinScreen';
@@ -58,7 +59,17 @@ function Game({ seat }: { seat: TeamSeat }) {
     case 'LOBBY':
       return <LobbyScreen state={state} teamId={seat.teamId} title={title} />;
     case 'LOCK_IN_ROUND':
-      return <LockInScreen state={state} onReady={requestFullscreenNow} />;
+      return (
+        <LockInScreen
+          state={state}
+          teamId={seat.teamId}
+          onReady={async () => {
+            // A team whose browser refuses fullscreen still counts as ready; the host sees a warning.
+            const fullscreen = await requestFullscreenNow();
+            await apiPost(`/sessions/${seat.sessionId}/teams/me/ready`, { fullscreen }, seat.token);
+          }}
+        />
+      );
     case 'PAUSE_BREAK':
       return <PauseScreen state={state} teamId={seat.teamId} />;
     case 'FINISHED':

@@ -29,6 +29,8 @@ const TEAM: TeamRecord = {
   joined_at: '2026-09-16T00:00:00.000Z',
   is_active: true,
   registered_team_id: null,
+  ready_question_id: null,
+  ready_fullscreen: false,
 };
 
 function buildHarness() {
@@ -39,6 +41,7 @@ function buildHarness() {
     findBySessionAndRegisteredTeam: jest.fn().mockResolvedValue(null),
     upsertJoin: jest.fn().mockResolvedValue(TEAM),
     setDeviceTokenHash: jest.fn().mockResolvedValue(TEAM),
+    markReady: jest.fn().mockResolvedValue(undefined),
     listBySession: jest.fn(),
   };
   const teamTokens = new TeamTokenService(new JwtService({ secret: 'test-secret' }));
@@ -112,5 +115,24 @@ describe('TeamsService.join as a registered team', () => {
 
     await expect(service.join('s1', 'The Quizzards')).rejects.toMatchObject({ response: { code: 'TEAM_NAME_RESERVED' } });
     expect(teams.upsertJoin).not.toHaveBeenCalled();
+  });
+});
+
+describe('TeamsService.markReady', () => {
+  it('records readiness for the locked-in question and notifies the host', async () => {
+    const { service, sessions, teams, broadcast } = buildHarness();
+    jest.mocked(sessions.findById).mockResolvedValue({ ...SESSION, status: 'LOCK_IN_ROUND', current_question_id: 'q3' });
+
+    await service.markReady('s1', 't1', false);
+
+    expect(teams.markReady).toHaveBeenCalledWith('t1', 'q3', false);
+    expect(broadcast.publish).toHaveBeenCalledWith('s1', 'STATE_CHANGE', { teamId: 't1', ready: true });
+  });
+
+  it('refuses readiness when no question is locked in', async () => {
+    const { service, teams } = buildHarness();
+
+    await expect(service.markReady('s1', 't1', true)).rejects.toMatchObject({ response: { code: 'NOT_LOCK_IN' } });
+    expect(teams.markReady).not.toHaveBeenCalled();
   });
 });

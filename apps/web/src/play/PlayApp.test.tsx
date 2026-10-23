@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -47,10 +47,46 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
     currentQuestion: null,
     questionEndsAt: null,
     teams: [
-      { id: 'team-1', name: 'Wise Ducks', isActive: true, registeredTeamId: null, score: 6, infractionCount: 0 },
-      { id: 'team-2', name: 'Pub Mozarts', isActive: true, registeredTeamId: null, score: 9, infractionCount: 0 },
-      { id: 'team-3', name: 'Einsteins', isActive: false, registeredTeamId: null, score: 3, infractionCount: 0 },
-      { id: 'team-4', name: 'Quiz Wolves', isActive: true, registeredTeamId: null, score: 1, infractionCount: 0 },
+      {
+        id: 'team-1',
+        name: 'Wise Ducks',
+        isActive: true,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 6,
+        infractionCount: 0,
+      },
+      {
+        id: 'team-2',
+        name: 'Pub Mozarts',
+        isActive: true,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 9,
+        infractionCount: 0,
+      },
+      {
+        id: 'team-3',
+        name: 'Einsteins',
+        isActive: false,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 3,
+        infractionCount: 0,
+      },
+      {
+        id: 'team-4',
+        name: 'Quiz Wolves',
+        isActive: true,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 1,
+        infractionCount: 0,
+      },
     ],
     ...overrides,
   };
@@ -249,15 +285,35 @@ describe('answering', () => {
     expect(standing).toHaveTextContent('3 b');
   });
 
-  it('asks for the fullscreen gesture during the lock-in round', () => {
+  it('asks for fullscreen and tells the host the team is ready', async () => {
     const requestFullscreen = vi.fn().mockResolvedValue(undefined);
     document.documentElement.requestFullscreen = requestFullscreen;
+    vi.mocked(apiPost).mockResolvedValue({ ready: true });
     setState('LOCK_IN_ROUND');
     renderPlay();
     requestFullscreen.mockClear();
 
     fireEvent.click(screen.getByTestId('player-ready'));
     expect(requestFullscreen).toHaveBeenCalled();
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/me/ready', { fullscreen: true }, 'team-token'));
+  });
+
+  it('still reports ready when the browser has no fullscreen (iPhone)', async () => {
+    // @ts-expect-error simulating a browser without the fullscreen API
+    document.documentElement.requestFullscreen = undefined;
+    vi.mocked(apiPost).mockResolvedValue({ ready: true });
+    setState('LOCK_IN_ROUND');
+    renderPlay();
+
+    fireEvent.click(screen.getByTestId('player-ready'));
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/me/ready', { fullscreen: false }, 'team-token'));
+  });
+
+  it('shows the team as ready from the server state', () => {
+    setState('LOCK_IN_ROUND');
+    session.state!.teams = session.state!.teams.map((team) => (team.id === 'team-1' ? { ...team, ready: true } : team));
+    renderPlay();
+    expect(screen.getByTestId('player-ready')).toHaveAttribute('aria-pressed', 'true');
   });
 });
 

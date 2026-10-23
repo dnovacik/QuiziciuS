@@ -658,5 +658,9 @@
   "errors.TEAM_NAME_RESERVED": "Pod týmto menom už v kvíze hrá registrovaný tím.",
   "errors.PUB_NOT_FOUND": "Pub sa nenašiel.",
   "errors.TOO_MANY_PUBS": "Tím môže mať najviac 5 pubov.",
-  "errors.INVALID_PUB": "Zadajte názov pubu a mesto."
+  "errors.INVALID_PUB": "Zadajte názov pubu a mesto.",
+  "host.room.readyTitle": "Pripravené tímy",
+  "host.room.readyNoFullscreen": "Pripravení, ale prehliadač nezapol celú obrazovku — kontrola opustenia kvízu nie je aktívna",
+  "play.lockIn.failed": "Nepodarilo sa odoslať, skúste to znova.",
+  "projector.lockIn.teamsReady": "tímov pripravených"
 }

@@ -19,11 +19,15 @@ function releaseWakeLock(ref: WakeLockPromiseRef): void {
   void pending?.then((sentinel) => sentinel.release()).catch(() => {});
 }
 
-function requestFullscreen(): void {
+/** Resolves to whether the page is in fullscreen afterwards (iPhone Safari has no fullscreen API). */
+function requestFullscreen(): Promise<boolean> {
   const el = document.documentElement;
-  if (el.requestFullscreen && !document.fullscreenElement) {
-    void el.requestFullscreen().catch(() => {});
-  }
+  if (document.fullscreenElement) return Promise.resolve(true);
+  if (!el.requestFullscreen) return Promise.resolve(false);
+  return el.requestFullscreen().then(
+    () => true,
+    () => false,
+  );
 }
 
 function exitFullscreenIfActive(): void {
@@ -32,7 +36,7 @@ function exitFullscreenIfActive(): void {
   }
 }
 
-export function useQuizSecurity(status: QuizState, teamToken: string | null): { requestFullscreenNow: () => void } {
+export function useQuizSecurity(status: QuizState, teamToken: string | null): { requestFullscreenNow: () => Promise<boolean> } {
   const wakeLockRef = useRef<Promise<WakeLockSentinel> | null>(null);
 
   useEffect(() => {
@@ -45,7 +49,7 @@ export function useQuizSecurity(status: QuizState, teamToken: string | null): { 
     }
 
     requestWakeLock(wakeLockRef);
-    requestFullscreen(); // best-effort; browsers usually reject this outside a user gesture
+    void requestFullscreen(); // best-effort; browsers usually reject this outside a user gesture
 
     return () => {
       releaseWakeLock(wakeLockRef);
@@ -68,8 +72,8 @@ export function useQuizSecurity(status: QuizState, teamToken: string | null): { 
 
   // Called from the "Tap to Lock-In" overlay's onClick (Task 22) — a real user gesture, so
   // requestFullscreen() is reliably granted here even when the effect above was rejected.
-  function requestFullscreenNow(): void {
-    requestFullscreen();
+  function requestFullscreenNow(): Promise<boolean> {
+    return requestFullscreen();
   }
 
   return { requestFullscreenNow };

@@ -57,6 +57,8 @@ export class QuizEngineService {
       infractionCountByTeam.set(infraction.team_id, (infractionCountByTeam.get(infraction.team_id) ?? 0) + 1);
     }
 
+    // Readiness only means something while the current question is locked in.
+    const readyFor = session.status === 'LOCK_IN_ROUND' ? session.current_question_id : null;
     const revealSafe = (['QUESTION_REVEAL', 'PAUSE_BREAK', 'FINISHED'] as QuizState[]).includes(session.status);
 
     return {
@@ -83,6 +85,8 @@ export class QuizEngineService {
         name: team.name,
         isActive: team.is_active,
         registeredTeamId: team.registered_team_id ?? null,
+        ready: readyFor !== null && team.ready_question_id === readyFor,
+        readyFullscreen: readyFor !== null && team.ready_question_id === readyFor && team.ready_fullscreen,
         score: scoreByTeam.get(team.id) ?? 0,
         infractionCount: infractionCountByTeam.get(team.id) ?? 0,
       })),

@@ -86,9 +86,12 @@ export function LobbyScreen({ state, teamId, title }: { state: QuizSessionStateD
 }
 
 /** Between questions: one tap from the player lets the browser enter fullscreen for the round. */
-export function LockInScreen({ state, onReady }: { state: QuizSessionStateDto; onReady: () => void }) {
+export function LockInScreen({ state, teamId, onReady }: { state: QuizSessionStateDto; teamId: string; onReady: () => Promise<void> }) {
   const { t } = useI18n();
-  const [ready, setReady] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [failed, setFailed] = useState(false);
+  // Comes back from the server, so it survives a reload and resets for the next question.
+  const ready = state.teams.find((team) => team.id === teamId)?.ready ?? false;
   return (
     <PlayerShell joinCode={state.joinCode} phase="lobby" testId="player-lock-in">
       <StatusCard icon={Zap} badge={t('play.lockIn.badge')} title={t('play.lockIn.title')}>
@@ -96,15 +99,25 @@ export function LockInScreen({ state, onReady }: { state: QuizSessionStateDto; o
         <button
           type="button"
           data-testid="player-ready"
+          disabled={sending}
+          aria-pressed={ready}
           onClick={() => {
-            onReady();
-            setReady(true);
+            setSending(true);
+            setFailed(false);
+            onReady()
+              .catch(() => setFailed(true))
+              .finally(() => setSending(false));
           }}
           className="mt-space-md flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-container to-inverse-primary text-label-lg font-bold text-on-primary-container shadow-[0_0_24px_-4px_rgba(160,120,255,0.45)] transition-all active:scale-[0.98]"
         >
           {ready ? <CheckCircle2 className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
-          {ready ? t('play.lockIn.ready') : t('play.lockIn.button')}
+          {ready ? t('play.lockIn.ready') : sending ? t('common.working') : t('play.lockIn.button')}
         </button>
+        {failed && (
+          <p role="alert" className="mt-space-sm text-body-sm text-error" data-testid="player-ready-error">
+            {t('play.lockIn.failed')}
+          </p>
+        )}
       </StatusCard>
     </PlayerShell>
   );

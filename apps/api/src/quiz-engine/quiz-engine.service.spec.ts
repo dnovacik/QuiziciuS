@@ -59,6 +59,7 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
     findBySessionAndRegisteredTeam: jest.fn().mockResolvedValue(null),
     upsertJoin: jest.fn(),
     setDeviceTokenHash: jest.fn(),
+    markReady: jest.fn().mockResolvedValue(undefined),
     listBySession: jest.fn().mockResolvedValue([] as TeamRecord[]),
   };
   const answers: AnswersRepository = {
@@ -272,7 +273,54 @@ describe('QuizEngineService.getState', () => {
 
     const state = await service.getState('s1');
 
-    expect(state.teams).toEqual([{ id: 't1', name: 'Team A', isActive: true, registeredTeamId: null, score: 3, infractionCount: 0 }]);
+    expect(state.teams).toEqual([
+      {
+        id: 't1',
+        name: 'Team A',
+        isActive: true,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 3,
+        infractionCount: 0,
+      },
+    ]);
+  });
+
+  it('reports which teams are ready for the locked-in question', async () => {
+    const { service, teams } = buildHarness({ session: { status: 'LOCK_IN_ROUND', current_question_id: 'q2' } });
+    const base = { session_id: 's1', device_token_hash: null, joined_at: 'now', is_active: true, registered_team_id: null };
+    (teams.listBySession as jest.Mock).mockResolvedValue([
+      { ...base, id: 't1', name: 'Fullscreen', ready_question_id: 'q2', ready_fullscreen: true },
+      { ...base, id: 't2', name: 'No fullscreen', ready_question_id: 'q2', ready_fullscreen: false },
+      { ...base, id: 't3', name: 'Last question', ready_question_id: 'q1', ready_fullscreen: true },
+    ]);
+
+    const state = await service.getState('s1');
+
+    expect(state.teams.map(({ id, ready, readyFullscreen }) => ({ id, ready, readyFullscreen }))).toEqual([
+      { id: 't1', ready: true, readyFullscreen: true },
+      { id: 't2', ready: true, readyFullscreen: false },
+      { id: 't3', ready: false, readyFullscreen: false },
+    ]);
+  });
+
+  it('drops readiness once the question is open', async () => {
+    const { service, teams } = buildHarness({ session: { status: 'QUESTION_ACTIVE', current_question_id: 'q2' } });
+    (teams.listBySession as jest.Mock).mockResolvedValue([
+      {
+        id: 't1',
+        session_id: 's1',
+        name: 'A',
+        device_token_hash: null,
+        joined_at: 'now',
+        is_active: true,
+        ready_question_id: 'q2',
+        ready_fullscreen: true,
+      },
+    ]);
+
+    expect((await service.getState('s1')).teams[0].ready).toBe(false);
   });
 
   it('leaves the open question out of team scores until its results are public', async () => {

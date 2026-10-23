@@ -10,6 +10,9 @@ export interface TeamRecord {
   is_active: boolean;
   /** Set when the team joined as a registered team (through its captain). */
   registered_team_id: string | null;
+  /** The question the team last tapped "we're ready" for; ready only while that question is locked in. */
+  ready_question_id: string | null;
+  ready_fullscreen: boolean;
 }
 
 export abstract class TeamsRepository {
@@ -18,6 +21,7 @@ export abstract class TeamsRepository {
   abstract upsertJoin(sessionId: string, name: string, registeredTeamId?: string | null): Promise<TeamRecord>;
   abstract findBySessionAndRegisteredTeam(sessionId: string, registeredTeamId: string): Promise<TeamRecord | null>;
   abstract setDeviceTokenHash(teamId: string, tokenHash: string): Promise<TeamRecord>;
+  abstract markReady(teamId: string, questionId: string, fullscreen: boolean): Promise<TeamRecord>;
   abstract listBySession(sessionId: string): Promise<TeamRecord[]>;
 }
 
@@ -55,6 +59,18 @@ export class SupabaseTeamsRepository extends TeamsRepository {
     const row: Record<string, unknown> = { session_id: sessionId, name, is_active: true, joined_at: new Date().toISOString() };
     if (registeredTeamId) row.registered_team_id = registeredTeamId;
     const { data, error } = await this.supabase.getClient().from('teams').upsert(row, { onConflict: 'session_id,name' }).select().single();
+    if (error) throw new InternalServerErrorException(error.message);
+    return data as TeamRecord;
+  }
+
+  async markReady(teamId: string, questionId: string, fullscreen: boolean): Promise<TeamRecord> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('teams')
+      .update({ ready_question_id: questionId, ready_fullscreen: fullscreen })
+      .eq('id', teamId)
+      .select()
+      .single();
     if (error) throw new InternalServerErrorException(error.message);
     return data as TeamRecord;
   }

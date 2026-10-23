@@ -37,10 +37,46 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
     currentQuestion: null,
     questionEndsAt: null,
     teams: [
-      { id: 't1', name: 'Wise Ducks', isActive: true, registeredTeamId: null, score: 6, infractionCount: 0 },
-      { id: 't2', name: 'Pub Mozarts', isActive: true, registeredTeamId: null, score: 9, infractionCount: 0 },
-      { id: 't3', name: 'Einsteins', isActive: false, registeredTeamId: null, score: 3, infractionCount: 0 },
-      { id: 't4', name: 'Quiz Wolves', isActive: true, registeredTeamId: null, score: 1, infractionCount: 0 },
+      {
+        id: 't1',
+        name: 'Wise Ducks',
+        isActive: true,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 6,
+        infractionCount: 0,
+      },
+      {
+        id: 't2',
+        name: 'Pub Mozarts',
+        isActive: true,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 9,
+        infractionCount: 0,
+      },
+      {
+        id: 't3',
+        name: 'Einsteins',
+        isActive: false,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 3,
+        infractionCount: 0,
+      },
+      {
+        id: 't4',
+        name: 'Quiz Wolves',
+        isActive: true,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 1,
+        infractionCount: 0,
+      },
     ],
     ...overrides,
   };
@@ -89,6 +125,15 @@ describe('ProjectorApp', () => {
     renderProjector();
     expect(screen.getByTestId('projector-lock-in')).toHaveTextContent('Otázka 4');
     expect(screen.queryByText('Which film won in 1994?')).not.toBeInTheDocument();
+  });
+
+  it('shows how many connected teams are ready during the lock-in round', () => {
+    setState('LOCK_IN_ROUND', { currentQuestion: QUESTION });
+    session.state!.teams = session.state!.teams.map((team) => (team.id === 't1' ? { ...team, ready: true } : team));
+    renderProjector();
+    const active = session.state!.teams.filter((team) => team.isActive).length;
+    expect(screen.getByTestId('projector-ready-count')).toHaveTextContent(`1 / ${active}`);
+    expect(screen.getByTestId('projector-ready-t1')).toHaveAttribute('data-ready', 'true');
   });
 
   it('shows the active question with options and a countdown', () => {
