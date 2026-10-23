@@ -1,4 +1,4 @@
-import { IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { QUESTION_TYPES, QuestionType } from '@quizicius/shared-types';
 
 export class CreateQuestionDto {
@@ -33,9 +33,11 @@ export class CreateQuestionDto {
   @Min(1)
   points?: number;
 
+  /** 0 means no timer: answering stays open until the host closes it. */
   @IsOptional()
   @IsInt()
-  @Min(1)
+  @Min(0)
+  @Max(3600)
   timeLimitSeconds?: number;
 
   @IsInt()

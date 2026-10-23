@@ -1,5 +1,6 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { AnswerSummaryDto, QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
+import { toAnswerSummary } from '../answers/answer-summary';
 import { AnswerRecord, AnswersRepository } from '../data/answers.repository';
 import { InfractionsRepository } from '../data/infractions.repository';
 import { QuestionsRepository } from '../data/questions.repository';
@@ -10,6 +11,7 @@ import { RealtimeBroadcastService } from '../realtime/realtime-broadcast.service
 import { gradeNumericNearest } from './grading/numeric-grader';
 import { generateJoinCode } from './join-code';
 import { assertValidTransition } from './state-transitions';
+import { isAnswerResultVisible } from './result-visibility';
 
 export interface TransitionOptions {
   questionId?: string;
@@ -27,8 +29,8 @@ export class QuizEngineService {
     private readonly broadcast: RealtimeBroadcastService,
   ) {}
 
-  async createSession(quizId: string, hostId: string): Promise<SessionRecord> {
-    return this.sessions.create(quizId, hostId, generateJoinCode());
+  async createSession(quizId: string, hostId: string, pubId: string | null = null): Promise<SessionRecord> {
+    return this.sessions.create(quizId, hostId, generateJoinCode(), pubId);
   }
 
   async getState(sessionId: string): Promise<QuizSessionStateDto> {
@@ -43,6 +45,7 @@ export class QuizEngineService {
 
     const scoreByTeam = new Map<string, number>();
     for (const answer of answers) {
+      if (!isAnswerResultVisible(answer, session)) continue;
       scoreByTeam.set(answer.team_id, (scoreByTeam.get(answer.team_id) ?? 0) + answer.score_awarded);
     }
     for (const adjustment of scoreAdjustments) {
@@ -54,6 +57,8 @@ export class QuizEngineService {
       infractionCountByTeam.set(infraction.team_id, (infractionCountByTeam.get(infraction.team_id) ?? 0) + 1);
     }
 
+    // Readiness only means something while the current question is locked in.
+    const readyFor = session.status === 'LOCK_IN_ROUND' ? session.current_question_id : null;
     const revealSafe = (['QUESTION_REVEAL', 'PAUSE_BREAK', 'FINISHED'] as QuizState[]).includes(session.status);
 
     return {
@@ -79,18 +84,16 @@ export class QuizEngineService {
         id: team.id,
         name: team.name,
         isActive: team.is_active,
+        registeredTeamId: team.registered_team_id ?? null,
+        ready: readyFor !== null && team.ready_question_id === readyFor,
+        readyFullscreen: readyFor !== null && team.ready_question_id === readyFor && team.ready_fullscreen,
         score: scoreByTeam.get(team.id) ?? 0,
         infractionCount: infractionCountByTeam.get(team.id) ?? 0,
       })),
     };
   }
 
-  async transitionState(
-    sessionId: string,
-    hostId: string,
-    newState: QuizState,
-    options: TransitionOptions = {},
-  ): Promise<SessionRecord> {
+  async transitionState(sessionId: string, hostId: string, newState: QuizState, options: TransitionOptions = {}): Promise<SessionRecord> {
     const session = await this.requireOwnedSession(sessionId, hostId);
     assertValidTransition(session.status, newState);
 
@@ -118,7 +121,9 @@ export class QuizEngineService {
       if (!questionId) throw new BadRequestException('No question selected for this session');
       const question = await this.questions.findById(questionId);
       if (!question) throw new NotFoundException('Question not found');
-      patch.question_ends_at = new Date(Date.now() + question.time_limit_seconds * 1000).toISOString();
+      // A question without a time limit has no deadline: answering stays open until the host closes it.
+      patch.question_ends_at =
+        question.time_limit_seconds > 0 ? new Date(Date.now() + question.time_limit_seconds * 1000).toISOString() : null;
     }
 
     if (newState === 'FINISHED') {
@@ -137,6 +142,26 @@ export class QuizEngineService {
       questionEndsAt: updated.question_ends_at,
     });
 
+    return updated;
+  }
+
+  /**
+   * Stops answering for the open question now (an untimed question, or a timed one ended early).
+   * The deadline moves to now, so the usual late-submission grace and result visibility apply.
+   */
+  async closeAnswers(sessionId: string, hostId: string): Promise<SessionRecord> {
+    const session = await this.requireOwnedSession(sessionId, hostId);
+    if (session.status !== 'QUESTION_ACTIVE') {
+      throw new ConflictException({ code: 'NO_OPEN_QUESTION', message: 'No question is open for answers' });
+    }
+    if (session.question_ends_at && Date.parse(session.question_ends_at) <= Date.now()) return session;
+
+    const updated = await this.sessions.updateStatus(sessionId, { question_ends_at: new Date().toISOString() });
+    await this.broadcast.publish(sessionId, 'STATE_CHANGE', {
+      status: updated.status,
+      currentQuestionId: updated.current_question_id,
+      questionEndsAt: updated.question_ends_at,
+    });
     return updated;
   }
 
@@ -160,9 +185,16 @@ export class QuizEngineService {
     return updated;
   }
 
-  async listDisputes(sessionId: string, hostId: string): Promise<AnswerRecord[]> {
+  async listDisputes(sessionId: string, hostId: string): Promise<AnswerSummaryDto[]> {
     await this.requireOwnedSession(sessionId, hostId);
-    return this.answers.listNeedsReview(sessionId);
+    return (await this.answers.listNeedsReview(sessionId)).map((answer) => toAnswerSummary(answer));
+  }
+
+  /** Every team's answers in the session (optionally for one question), graded — for the host only. */
+  async listAnswers(sessionId: string, hostId: string, questionId?: string): Promise<AnswerSummaryDto[]> {
+    await this.requireOwnedSession(sessionId, hostId);
+    const answers = questionId ? await this.answers.listByQuestion(sessionId, questionId) : await this.answers.listBySession(sessionId);
+    return answers.map((answer) => toAnswerSummary(answer));
   }
 
   async addPaperScore(

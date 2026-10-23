@@ -23,7 +23,7 @@ vi.mock('./lib/supabase-client', () => ({
 describe('App', () => {
   it('renders the fallback route at an unmatched path', () => {
     render(<App />);
-    expect(screen.getByTestId('landing-logo')).toHaveAttribute('href', '/');
+    expect(screen.getByTestId('logo')).toHaveAttribute('href', '/');
   });
 });
 
@@ -34,8 +34,8 @@ describe('AppRoutes', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    expect(screen.getByTestId('landing-host-entry')).toBeInTheDocument();
-    expect(screen.getByTestId('landing-team-entry')).toBeInTheDocument();
+    expect(screen.getByTestId('focus-host-login')).toBeInTheDocument();
+    expect(screen.getByTestId('open-team-entry')).toBeInTheDocument();
   });
 
   it('resolves an unknown path to the landing page too', () => {
@@ -44,7 +44,7 @@ describe('AppRoutes', () => {
         <AppRoutes />
       </MemoryRouter>,
     );
-    expect(screen.getByTestId('landing-host-entry')).toBeInTheDocument();
+    expect(screen.getByTestId('focus-host-login')).toBeInTheDocument();
   });
 
   it('resolves /host/* to the host app', async () => {

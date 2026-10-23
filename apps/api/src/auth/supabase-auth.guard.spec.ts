@@ -25,9 +25,7 @@ describe('SupabaseAuthGuard', () => {
     } as unknown as SupabaseService;
     const guard = new SupabaseAuthGuard(supabase);
 
-    await expect(guard.canActivate(contextWithHeader('Bearer bad-token'))).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(guard.canActivate(contextWithHeader('Bearer bad-token'))).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('attaches host to the request on a valid token', async () => {

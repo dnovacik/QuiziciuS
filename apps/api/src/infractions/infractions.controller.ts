@@ -25,11 +25,7 @@ export class InfractionsController {
 
   @Patch('sessions/:sessionId/infractions/:infractionId/review')
   @UseGuards(SupabaseAuthGuard)
-  review(
-    @Param('sessionId') sessionId: string,
-    @Param('infractionId') infractionId: string,
-    @CurrentHost() host: CurrentHostPayload,
-  ) {
+  review(@Param('sessionId') sessionId: string, @Param('infractionId') infractionId: string, @CurrentHost() host: CurrentHostPayload) {
     return this.infractions.markReviewed(sessionId, infractionId, host.id);
   }
 }

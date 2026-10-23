@@ -24,6 +24,12 @@ export interface TeamSummaryDto {
   id: string;
   name: string;
   isActive: boolean;
+  /** The registered team this session team was joined as, or null for a one-off team. */
+  registeredTeamId: string | null;
+  /** Tapped "we're ready" for the question that is locked in right now (false outside LOCK_IN_ROUND). */
+  ready: boolean;
+  /** Ready and the browser entered fullscreen; ready without it means the fullscreen check is off. */
+  readyFullscreen: boolean;
   score: number;
   infractionCount: number;
 }

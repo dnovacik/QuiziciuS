@@ -1,10 +1,12 @@
-import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { QuizzesRepository } from '../data/quizzes.repository';
 import { SessionsRepository } from '../data/sessions.repository';
+import { PubsService } from '../pubs/pubs.service';
 import { QuizEngineService } from '../quiz-engine/quiz-engine.service';
 import { AddPaperScoreDto } from './dto/add-paper-score.dto';
+import { CreateSessionDto } from './dto/create-session.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
 import { TransitionSessionDto } from './dto/transition-session.dto';
 
@@ -14,29 +16,32 @@ export class SessionsController {
     private readonly quizEngine: QuizEngineService,
     private readonly quizzes: QuizzesRepository,
     private readonly sessions: SessionsRepository,
+    private readonly pubs: PubsService,
   ) {}
 
   @Post('quizzes/:quizId/sessions')
   @UseGuards(SupabaseAuthGuard)
-  async create(@Param('quizId') quizId: string, @CurrentHost() host: CurrentHostPayload) {
+  async create(@Param('quizId') quizId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: CreateSessionDto = {}) {
     const quiz = await this.quizzes.findById(quizId);
     if (!quiz) throw new NotFoundException('Quiz not found');
     if (quiz.host_id !== host.id) throw new ForbiddenException('Not your quiz');
-    return this.quizEngine.createSession(quizId, host.id);
+    const pubId = dto.pubId === undefined ? quiz.pub_id : dto.pubId;
+    if (pubId) await this.pubs.requirePub(pubId);
+    return this.quizEngine.createSession(quizId, host.id, pubId);
   }
 
   @Get('host/sessions')
   @UseGuards(SupabaseAuthGuard)
-  listHostSessions(@CurrentHost() host:CurrentHostPayload){
+  listHostSessions(@CurrentHost() host: CurrentHostPayload) {
     return this.sessions.listByHost(host.id);
   }
 
   @Get('host/sessions/:sessionId')
   @UseGuards(SupabaseAuthGuard)
-  async hostSession(@Param('sessionId') sessionId:string,@CurrentHost() host:CurrentHostPayload){
-    const session=await this.sessions.findById(sessionId);
-    if(!session)throw new NotFoundException('Session not found');
-    if(session.host_id!==host.id)throw new ForbiddenException('Not your session');
+  async hostSession(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload) {
+    const session = await this.sessions.findById(sessionId);
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.host_id !== host.id) throw new ForbiddenException('Not your session');
     return session;
   }
 
@@ -52,12 +57,13 @@ export class SessionsController {
 
   // Public display metadata: safe to share with projectors, never includes host credentials.
   @Get('sessions/:sessionId/display')
-  async displayMetadata(@Param('sessionId') sessionId:string) {
-    const session=await this.sessions.findById(sessionId);
-    if(!session)throw new NotFoundException('Session not found');
-    const quiz=await this.quizzes.findById(session.quiz_id);
-    if(!quiz)throw new NotFoundException('Quiz not found');
-    return { title:quiz.title, quizId:quiz.id };
+  async displayMetadata(@Param('sessionId') sessionId: string) {
+    const session = await this.sessions.findById(sessionId);
+    if (!session) throw new NotFoundException('Session not found');
+    const quiz = await this.quizzes.findById(session.quiz_id);
+    if (!quiz) throw new NotFoundException('Quiz not found');
+    const pub = session.pub_id ? await this.pubs.requirePub(session.pub_id).catch(() => null) : null;
+    return { title: quiz.title, quizId: quiz.id, pub: pub && { id: pub.id, name: pub.name, city: pub.city } };
   }
 
   @Get('sessions/:sessionId/state')
@@ -67,21 +73,19 @@ export class SessionsController {
 
   @Post('sessions/:sessionId/transition')
   @UseGuards(SupabaseAuthGuard)
-  transition(
-    @Param('sessionId') sessionId: string,
-    @CurrentHost() host: CurrentHostPayload,
-    @Body() dto: TransitionSessionDto,
-  ) {
+  transition(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: TransitionSessionDto) {
     return this.quizEngine.transitionState(sessionId, host.id, dto.status, { questionId: dto.questionId });
+  }
+
+  @Post('sessions/:sessionId/close-answers')
+  @UseGuards(SupabaseAuthGuard)
+  closeAnswers(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload) {
+    return this.quizEngine.closeAnswers(sessionId, host.id);
   }
 
   @Post('answers/:answerId/resolve-dispute')
   @UseGuards(SupabaseAuthGuard)
-  resolveDispute(
-    @Param('answerId') answerId: string,
-    @CurrentHost() host: CurrentHostPayload,
-    @Body() dto: ResolveDisputeDto,
-  ) {
+  resolveDispute(@Param('answerId') answerId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: ResolveDisputeDto) {
     return this.quizEngine.resolveDispute(answerId, host.id, dto.decision);
   }
 
@@ -100,5 +104,11 @@ export class SessionsController {
   @UseGuards(SupabaseAuthGuard)
   listDisputes(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload) {
     return this.quizEngine.listDisputes(sessionId, host.id);
+  }
+
+  @Get('host/sessions/:sessionId/answers')
+  @UseGuards(SupabaseAuthGuard)
+  listAnswers(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload, @Query('questionId') questionId?: string) {
+    return this.quizEngine.listAnswers(sessionId, host.id, questionId);
   }
 }

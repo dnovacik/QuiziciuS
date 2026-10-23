@@ -6,6 +6,7 @@ const RECORD: QuizRecord = {
   host_id: 'host1',
   league_id: null,
   category_id: null,
+  pub_id: null,
   title: 'Wednesday Night Quiz',
   created_at: '2026-09-16T00:00:00.000Z',
 };

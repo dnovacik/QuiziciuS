@@ -48,3 +48,7 @@ export function apiPatch<T>(path: string, body: unknown, token?: string): Promis
 export function apiDelete<T = { deleted: boolean }>(path: string, token?: string): Promise<T> {
   return request<T>(path, { method: 'DELETE', headers: authHeader(token) });
 }
+
+export function apiPut<T>(path: string, body: unknown, token?: string): Promise<T> {
+  return request<T>(path, { method: 'PUT', body: JSON.stringify(body), headers: authHeader(token) });
+}

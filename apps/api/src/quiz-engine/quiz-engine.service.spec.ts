@@ -14,6 +14,7 @@ const BASE_SESSION: SessionRecord = {
   quiz_id: 'quiz1',
   host_id: 'host1',
   join_code: 'AB12',
+  pub_id: null,
   status: 'LOBBY',
   current_question_id: null,
   question_ends_at: null,
@@ -55,8 +56,10 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
   const teams: TeamsRepository = {
     findById: jest.fn(),
     findBySessionAndName: jest.fn(),
+    findBySessionAndRegisteredTeam: jest.fn().mockResolvedValue(null),
     upsertJoin: jest.fn(),
     setDeviceTokenHash: jest.fn(),
+    markReady: jest.fn().mockResolvedValue(undefined),
     listBySession: jest.fn().mockResolvedValue([] as TeamRecord[]),
   };
   const answers: AnswersRepository = {
@@ -98,9 +101,7 @@ describe('QuizEngineService.transitionState', () => {
   it('rejects an illegal transition without persisting or broadcasting', async () => {
     const { service, sessions, broadcast } = buildHarness({ session: { status: 'LOBBY' } });
 
-    await expect(service.transitionState('s1', 'host1', 'QUESTION_ACTIVE')).rejects.toBeInstanceOf(
-      InvalidTransitionError,
-    );
+    await expect(service.transitionState('s1', 'host1', 'QUESTION_ACTIVE')).rejects.toBeInstanceOf(InvalidTransitionError);
     expect(sessions.updateStatus).not.toHaveBeenCalled();
     expect(broadcast.publish).not.toHaveBeenCalled();
   });
@@ -117,9 +118,7 @@ describe('QuizEngineService.transitionState', () => {
     const { service, sessions } = buildHarness();
     (sessions.findById as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.transitionState('missing', 'host1', 'LOCK_IN_ROUND')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(service.transitionState('missing', 'host1', 'LOCK_IN_ROUND')).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('sets question_ends_at from the question time limit on entering QUESTION_ACTIVE', async () => {
@@ -132,11 +131,17 @@ describe('QuizEngineService.transitionState', () => {
     const endsAt = new Date(result.question_ends_at as string).getTime();
 
     expect(endsAt).toBeGreaterThanOrEqual(before + NUMERIC_QUESTION.time_limit_seconds * 1000);
-    expect(sessions.updateStatus).toHaveBeenCalledWith(
-      's1',
-      expect.objectContaining({ status: 'QUESTION_ACTIVE' }),
-    );
+    expect(sessions.updateStatus).toHaveBeenCalledWith('s1', expect.objectContaining({ status: 'QUESTION_ACTIVE' }));
     expect(broadcast.publish).toHaveBeenCalledWith('s1', 'STATE_CHANGE', expect.any(Object));
+  });
+
+  it('opens a question without a time limit with no deadline', async () => {
+    const { service, questions } = buildHarness({ session: { status: 'LOCK_IN_ROUND', current_question_id: 'q1' } });
+    jest.mocked(questions.findById).mockResolvedValue({ ...NUMERIC_QUESTION, time_limit_seconds: 0 });
+
+    const result = await service.transitionState('s1', 'host1', 'QUESTION_ACTIVE');
+
+    expect(result.question_ends_at).toBeNull();
   });
 
   it('grades numeric answers and broadcasts a score update on entering QUESTION_REVEAL', async () => {
@@ -150,32 +155,24 @@ describe('QuizEngineService.transitionState', () => {
 
     await service.transitionState('s1', 'host1', 'QUESTION_REVEAL');
 
-    expect(answers.updateGrade).toHaveBeenCalledWith(
-      'a1',
-      expect.objectContaining({ is_correct: true, graded_by: 'AUTO' }),
-    );
-    expect(answers.updateGrade).toHaveBeenCalledWith(
-      'a2',
-      expect.objectContaining({ is_correct: false, graded_by: 'AUTO' }),
-    );
+    expect(answers.updateGrade).toHaveBeenCalledWith('a1', expect.objectContaining({ is_correct: true, graded_by: 'AUTO' }));
+    expect(answers.updateGrade).toHaveBeenCalledWith('a2', expect.objectContaining({ is_correct: false, graded_by: 'AUTO' }));
     expect(broadcast.publish).toHaveBeenCalledWith('s1', 'SCORE_UPDATE', expect.any(Object));
   });
 
   it('requires a questionId when transitioning into LOCK_IN_ROUND', async () => {
     const { service } = buildHarness({ session: { status: 'LOBBY' } });
 
-    await expect(service.transitionState('s1', 'host1', 'LOCK_IN_ROUND')).rejects.toThrow(
-      'questionId is required',
-    );
+    await expect(service.transitionState('s1', 'host1', 'LOCK_IN_ROUND')).rejects.toThrow('questionId is required');
   });
 
   it('rejects a LOCK_IN_ROUND question that belongs to another quiz', async () => {
     const { service, sessions, questions, broadcast } = buildHarness({ session: { status: 'LOBBY' } });
     (questions.findById as jest.Mock).mockResolvedValue({ ...NUMERIC_QUESTION, id: 'q-foreign', quiz_id: 'other-quiz' });
 
-    await expect(
-      service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'q-foreign' }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'q-foreign' })).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
     expect(sessions.updateStatus).not.toHaveBeenCalled();
     expect(broadcast.publish).not.toHaveBeenCalled();
   });
@@ -184,9 +181,9 @@ describe('QuizEngineService.transitionState', () => {
     const { service, sessions, questions } = buildHarness({ session: { status: 'LOBBY' } });
     (questions.findById as jest.Mock).mockResolvedValue(null);
 
-    await expect(
-      service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'missing' }),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'missing' })).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
     expect(sessions.updateStatus).not.toHaveBeenCalled();
   });
 
@@ -226,6 +223,47 @@ describe('QuizEngineService.transitionState', () => {
       'a3',
       expect.objectContaining({ is_correct: false, graded_by: 'AUTO', score_awarded: 0 }),
     );
+  });
+});
+
+describe('QuizEngineService.closeAnswers', () => {
+  it('ends answering now for an untimed question and tells every screen', async () => {
+    const { service, sessions, broadcast } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q1', question_ends_at: null },
+    });
+
+    const before = Date.now();
+    const result = await service.closeAnswers('s1', 'host1');
+
+    expect(Date.parse(result.question_ends_at!)).toBeGreaterThanOrEqual(before);
+    expect(sessions.updateStatus).toHaveBeenCalledWith('s1', { question_ends_at: expect.any(String) });
+    expect(broadcast.publish).toHaveBeenCalledWith('s1', 'STATE_CHANGE', expect.objectContaining({ status: 'QUESTION_ACTIVE' }));
+  });
+
+  it('ends a timed question early', async () => {
+    const { service } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q1', question_ends_at: new Date(Date.now() + 60_000).toISOString() },
+    });
+
+    const result = await service.closeAnswers('s1', 'host1');
+
+    expect(Date.parse(result.question_ends_at!)).toBeLessThanOrEqual(Date.now());
+  });
+
+  it('leaves an already expired deadline alone', async () => {
+    const { service, sessions } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q1', question_ends_at: new Date(Date.now() - 5_000).toISOString() },
+    });
+
+    await service.closeAnswers('s1', 'host1');
+
+    expect(sessions.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('refuses when no question is open', async () => {
+    const { service } = buildHarness({ session: { status: 'LOCK_IN_ROUND', current_question_id: 'q1' } });
+
+    await expect(service.closeAnswers('s1', 'host1')).rejects.toMatchObject({ response: { code: 'NO_OPEN_QUESTION' } });
   });
 });
 
@@ -285,7 +323,84 @@ describe('QuizEngineService.getState', () => {
 
     const state = await service.getState('s1');
 
-    expect(state.teams).toEqual([{ id: 't1', name: 'Team A', isActive: true, score: 3, infractionCount: 0 }]);
+    expect(state.teams).toEqual([
+      {
+        id: 't1',
+        name: 'Team A',
+        isActive: true,
+        registeredTeamId: null,
+        ready: false,
+        readyFullscreen: false,
+        score: 3,
+        infractionCount: 0,
+      },
+    ]);
+  });
+
+  it('reports which teams are ready for the locked-in question', async () => {
+    const { service, teams } = buildHarness({ session: { status: 'LOCK_IN_ROUND', current_question_id: 'q2' } });
+    const base = { session_id: 's1', device_token_hash: null, joined_at: 'now', is_active: true, registered_team_id: null };
+    (teams.listBySession as jest.Mock).mockResolvedValue([
+      { ...base, id: 't1', name: 'Fullscreen', ready_question_id: 'q2', ready_fullscreen: true },
+      { ...base, id: 't2', name: 'No fullscreen', ready_question_id: 'q2', ready_fullscreen: false },
+      { ...base, id: 't3', name: 'Last question', ready_question_id: 'q1', ready_fullscreen: true },
+    ]);
+
+    const state = await service.getState('s1');
+
+    expect(state.teams.map(({ id, ready, readyFullscreen }) => ({ id, ready, readyFullscreen }))).toEqual([
+      { id: 't1', ready: true, readyFullscreen: true },
+      { id: 't2', ready: true, readyFullscreen: false },
+      { id: 't3', ready: false, readyFullscreen: false },
+    ]);
+  });
+
+  it('drops readiness once the question is open', async () => {
+    const { service, teams } = buildHarness({ session: { status: 'QUESTION_ACTIVE', current_question_id: 'q2' } });
+    (teams.listBySession as jest.Mock).mockResolvedValue([
+      {
+        id: 't1',
+        session_id: 's1',
+        name: 'A',
+        device_token_hash: null,
+        joined_at: 'now',
+        is_active: true,
+        ready_question_id: 'q2',
+        ready_fullscreen: true,
+      },
+    ]);
+
+    expect((await service.getState('s1')).teams[0].ready).toBe(false);
+  });
+
+  it('leaves the open question out of team scores until its results are public', async () => {
+    const { service, teams, answers } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q2', question_ends_at: new Date(Date.now() + 10_000).toISOString() },
+    });
+    (teams.listBySession as jest.Mock).mockResolvedValue([
+      { id: 't1', session_id: 's1', name: 'Team A', device_token_hash: null, joined_at: 'now', is_active: true },
+    ]);
+    (answers.listBySession as jest.Mock).mockResolvedValue([
+      { team_id: 't1', question_id: 'q1', score_awarded: 2 },
+      { team_id: 't1', question_id: 'q2', score_awarded: 5 },
+    ]);
+
+    expect((await service.getState('s1')).teams[0].score).toBe(2);
+  });
+
+  it('counts the open question once its timer has run out', async () => {
+    const { service, teams, answers } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q2', question_ends_at: new Date(Date.now() - 5_000).toISOString() },
+    });
+    (teams.listBySession as jest.Mock).mockResolvedValue([
+      { id: 't1', session_id: 's1', name: 'Team A', device_token_hash: null, joined_at: 'now', is_active: true },
+    ]);
+    (answers.listBySession as jest.Mock).mockResolvedValue([
+      { team_id: 't1', question_id: 'q1', score_awarded: 2 },
+      { team_id: 't1', question_id: 'q2', score_awarded: 5 },
+    ]);
+
+    expect((await service.getState('s1')).teams[0].score).toBe(7);
   });
 
   it('throws NotFoundException for an unknown session', async () => {
@@ -337,9 +452,7 @@ describe('QuizEngineService.addPaperScore', () => {
   it('rejects a host who does not own the session', async () => {
     const { service } = buildHarness();
 
-    await expect(service.addPaperScore('s1', 'someone-else', 't1', 3, null)).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(service.addPaperScore('s1', 'someone-else', 't1', 3, null)).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
 
@@ -377,10 +490,7 @@ describe('QuizEngineService.resolveDispute', () => {
 
     await service.resolveDispute('a1', 'host1', 'REJECT');
 
-    expect(answers.updateGrade).toHaveBeenCalledWith(
-      'a1',
-      expect.objectContaining({ is_correct: false, score_awarded: 0 }),
-    );
+    expect(answers.updateGrade).toHaveBeenCalledWith('a1', expect.objectContaining({ is_correct: false, score_awarded: 0 }));
   });
 
   it('rejects a dispute resolution requested by a host who does not own the session', async () => {
@@ -393,9 +503,7 @@ describe('QuizEngineService.resolveDispute', () => {
       needs_review: true,
     });
 
-    await expect(service.resolveDispute('a1', 'someone-else', 'APPROVE')).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(service.resolveDispute('a1', 'someone-else', 'APPROVE')).rejects.toBeInstanceOf(ForbiddenException);
     expect(answers.updateGrade).not.toHaveBeenCalled();
   });
 
@@ -403,9 +511,7 @@ describe('QuizEngineService.resolveDispute', () => {
     const { service, answers } = buildHarness();
     (answers.findById as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.resolveDispute('missing', 'host1', 'APPROVE')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(service.resolveDispute('missing', 'host1', 'APPROVE')).rejects.toBeInstanceOf(NotFoundException);
     expect(answers.updateGrade).not.toHaveBeenCalled();
   });
 });
@@ -413,12 +519,12 @@ describe('QuizEngineService.resolveDispute', () => {
 describe('QuizEngineService.listDisputes', () => {
   it('returns answers needing review for a host-owned session', async () => {
     const { service, answers } = buildHarness();
-    (answers.listNeedsReview as jest.Mock).mockResolvedValue([{ id: 'a1', needs_review: true }]);
+    (answers.listNeedsReview as jest.Mock).mockResolvedValue([{ id: 'a1', team_id: 't1', needs_review: true }]);
 
     const result = await service.listDisputes('s1', 'host1');
 
     expect(answers.listNeedsReview).toHaveBeenCalledWith('s1');
-    expect(result).toEqual([{ id: 'a1', needs_review: true }]);
+    expect(result).toEqual([expect.objectContaining({ id: 'a1', teamId: 't1', needsReview: true })]);
   });
 
   it('rejects a host who does not own the session', async () => {
@@ -428,12 +534,31 @@ describe('QuizEngineService.listDisputes', () => {
   });
 });
 
+describe('QuizEngineService.listAnswers', () => {
+  it('returns graded answers of one question for the owning host', async () => {
+    const { service, answers } = buildHarness();
+    (answers.listByQuestion as jest.Mock).mockResolvedValue([
+      { id: 'a1', team_id: 't1', question_id: 'q1', is_correct: true, score_awarded: 2, needs_review: false },
+    ]);
+
+    const result = await service.listAnswers('s1', 'host1', 'q1');
+
+    expect(answers.listByQuestion).toHaveBeenCalledWith('s1', 'q1');
+    expect(result).toEqual([expect.objectContaining({ teamId: 't1', isCorrect: true, scoreAwarded: 2 })]);
+  });
+
+  it('rejects a host who does not own the session', async () => {
+    const { service } = buildHarness();
+    await expect(service.listAnswers('s1', 'someone-else')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+});
+
 describe('QuizEngineService.createSession', () => {
   it('creates a session with a generated join code', async () => {
     const { service, sessions } = buildHarness();
 
     await service.createSession('quiz1', 'host1');
 
-    expect(sessions.create).toHaveBeenCalledWith('quiz1', 'host1', expect.stringMatching(/^[A-HJ-NP-Z2-9]{4}$/));
+    expect(sessions.create).toHaveBeenCalledWith('quiz1', 'host1', expect.stringMatching(/^[A-HJ-NP-Z2-9]{4}$/), null);
   });
 });

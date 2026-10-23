@@ -8,6 +8,7 @@ export interface SessionRecord {
   host_id: string;
   join_code: string;
   status: QuizState;
+  pub_id: string | null;
   current_question_id: string | null;
   question_ends_at: string | null;
   created_at: string;
@@ -20,7 +21,7 @@ export type SessionStatusPatch = Partial<
 >;
 
 export abstract class SessionsRepository {
-  abstract create(quizId: string, hostId: string, joinCode: string): Promise<SessionRecord>;
+  abstract create(quizId: string, hostId: string, joinCode: string, pubId?: string | null): Promise<SessionRecord>;
   abstract findById(id: string): Promise<SessionRecord | null>;
   abstract listByHost(hostId: string): Promise<SessionRecord[]>;
   /**
@@ -38,21 +39,26 @@ export class SupabaseSessionsRepository extends SessionsRepository {
     super();
   }
 
-  async create(quizId: string, hostId: string, joinCode: string): Promise<SessionRecord> {
+  async create(quizId: string, hostId: string, joinCode: string, pubId: string | null = null): Promise<SessionRecord> {
     const { data, error } = await this.supabase
       .getClient()
       .from('quiz_sessions')
-      .insert({ quiz_id: quizId, host_id: hostId, join_code: joinCode, status: 'LOBBY' })
+      .insert({ quiz_id: quizId, host_id: hostId, join_code: joinCode, status: 'LOBBY', pub_id: pubId })
       .select()
       .single();
     if (error) throw new InternalServerErrorException(error.message);
     return data as SessionRecord;
   }
 
-  async listByHost(hostId:string):Promise<SessionRecord[]>{
-    const {data,error}=await this.supabase.getClient().from('quiz_sessions').select().eq('host_id',hostId).order('created_at',{ascending:false});
-    if(error)throw new InternalServerErrorException(error.message);
-    return (data??[]) as SessionRecord[];
+  async listByHost(hostId: string): Promise<SessionRecord[]> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('quiz_sessions')
+      .select()
+      .eq('host_id', hostId)
+      .order('created_at', { ascending: false });
+    if (error) throw new InternalServerErrorException(error.message);
+    return (data ?? []) as SessionRecord[];
   }
 
   async findById(id: string): Promise<SessionRecord | null> {
@@ -74,13 +80,7 @@ export class SupabaseSessionsRepository extends SessionsRepository {
   }
 
   async updateStatus(id: string, patch: SessionStatusPatch): Promise<SessionRecord> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('quiz_sessions')
-      .update(patch)
-      .eq('id', id)
-      .select()
-      .single();
+    const { data, error } = await this.supabase.getClient().from('quiz_sessions').update(patch).eq('id', id).select().single();
     if (error) throw new InternalServerErrorException(error.message);
     return data as SessionRecord;
   }

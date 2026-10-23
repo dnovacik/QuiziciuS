@@ -10,6 +10,7 @@ const ACTIVE_SESSION: SessionRecord = {
   quiz_id: 'quiz1',
   host_id: 'host1',
   join_code: 'AB12',
+  pub_id: null,
   status: 'QUESTION_ACTIVE',
   current_question_id: 'q1',
   question_ends_at: new Date(Date.now() + 10_000).toISOString(),
@@ -88,7 +89,8 @@ describe('AnswersService.submit', () => {
       'ans1',
       expect.objectContaining({ is_correct: true, graded_by: 'AUTO', score_awarded: 3 }),
     );
-    expect(result.isCorrect).toBe(true);
+    // The grade is stored but not returned while the question is open (no probing by resubmitting).
+    expect(result).toMatchObject({ isCorrect: null, scoreAwarded: 0, needsReview: false, gradedBy: null });
     expect(broadcast.publish).toHaveBeenCalledWith('s1', 'SCORE_UPDATE', { teamId: 't1' });
   });
 
@@ -97,10 +99,7 @@ describe('AnswersService.submit', () => {
 
     await service.submit('s1', 't1', 'q1', { optionId: 'b' });
 
-    expect(answers.updateGrade).toHaveBeenCalledWith(
-      'ans1',
-      expect.objectContaining({ is_correct: false, score_awarded: 0 }),
-    );
+    expect(answers.updateGrade).toHaveBeenCalledWith('ans1', expect.objectContaining({ is_correct: false, score_awarded: 0 }));
   });
 
   it('sends a low-confidence free-text answer to the dispute queue instead of auto-grading', async () => {
@@ -143,9 +142,7 @@ describe('AnswersService.submit', () => {
   it('rejects a submission after the grace window has closed', async () => {
     const { service } = buildHarness({ session: { question_ends_at: new Date(Date.now() - 10_000).toISOString() } });
 
-    await expect(service.submit('s1', 't1', 'q1', { optionId: 'a' })).rejects.toBeInstanceOf(
-      UnprocessableEntityException,
-    );
+    await expect(service.submit('s1', 't1', 'q1', { optionId: 'a' })).rejects.toBeInstanceOf(UnprocessableEntityException);
   });
 
   it('rejects a submission for an unknown session', async () => {
@@ -153,5 +150,47 @@ describe('AnswersService.submit', () => {
     (sessions.findById as jest.Mock).mockResolvedValue(null);
 
     await expect(service.submit('missing', 't1', 'q1', { optionId: 'a' })).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('AnswersService.listForTeam', () => {
+  const graded = (questionId: string, teamId = 't1') =>
+    buildAnswerRecord({
+      id: `${questionId}-${teamId}`,
+      question_id: questionId,
+      team_id: teamId,
+      is_correct: true,
+      graded_by: 'AUTO',
+      score_awarded: 3,
+    });
+
+  it('hides the grade of the open question but keeps earlier results', async () => {
+    const { service, answers } = buildHarness();
+    (answers.listBySession as jest.Mock).mockResolvedValue([graded('q0'), graded('q1'), graded('q1', 't2')]);
+
+    const result = await service.listForTeam('s1', 't1');
+
+    expect(result).toEqual([
+      expect.objectContaining({ questionId: 'q0', isCorrect: true, scoreAwarded: 3 }),
+      expect.objectContaining({ questionId: 'q1', isCorrect: null, scoreAwarded: 0 }),
+    ]);
+  });
+
+  it('includes the current grade once the timer and grace period have run out', async () => {
+    const { service, answers } = buildHarness({ session: { question_ends_at: new Date(Date.now() - 5_000).toISOString() } });
+    (answers.listBySession as jest.Mock).mockResolvedValue([graded('q1')]);
+
+    const [answer] = await service.listForTeam('s1', 't1');
+
+    expect(answer).toMatchObject({ isCorrect: true, scoreAwarded: 3 });
+  });
+
+  it('includes the current grade after the host reveals the answer', async () => {
+    const { service, answers } = buildHarness({ session: { status: 'QUESTION_REVEAL' } });
+    (answers.listBySession as jest.Mock).mockResolvedValue([graded('q1')]);
+
+    const [answer] = await service.listForTeam('s1', 't1');
+
+    expect(answer).toMatchObject({ isCorrect: true, scoreAwarded: 3 });
   });
 });

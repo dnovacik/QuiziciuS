@@ -18,6 +18,9 @@ function buildTeam(overrides?: Partial<TeamRecord>): TeamRecord {
     device_token_hash: null,
     joined_at: '2026-09-16T00:00:00.000Z',
     is_active: true,
+    registered_team_id: null,
+    ready_question_id: null,
+    ready_fullscreen: false,
     ...overrides,
   };
 }
@@ -36,9 +39,7 @@ describe('TeamTokenGuard', () => {
     const teams = { findById: jest.fn() } as unknown as TeamsRepository;
     const guard = new TeamTokenGuard(teamTokens, teams);
 
-    await expect(guard.canActivate(contextWithHeader('Bearer garbage'))).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(guard.canActivate(contextWithHeader('Bearer garbage'))).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('rejects a validly-signed token that was superseded by a later join ("last device wins")', async () => {
@@ -48,9 +49,7 @@ describe('TeamTokenGuard', () => {
     } as unknown as TeamsRepository;
     const guard = new TeamTokenGuard(teamTokens, teams);
 
-    await expect(guard.canActivate(contextWithHeader(`Bearer ${token}`))).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(guard.canActivate(contextWithHeader(`Bearer ${token}`))).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('attaches the team payload when the token hash matches the current device', async () => {

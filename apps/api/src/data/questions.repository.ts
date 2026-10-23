@@ -21,8 +21,8 @@ export abstract class QuestionsRepository {
   abstract findById(id: string): Promise<QuestionRecord | null>;
   abstract listByQuiz(quizId: string): Promise<QuestionRecord[]>;
   abstract create(quizId: string, input: Omit<QuestionRecord, 'id' | 'quiz_id'>): Promise<QuestionRecord>;
-  abstract update(quizId:string,id:string,input:Omit<QuestionRecord,'id'|'quiz_id'>):Promise<QuestionRecord|null>;
-  abstract remove(quizId:string,id:string):Promise<boolean>;
+  abstract update(quizId: string, id: string, input: Omit<QuestionRecord, 'id' | 'quiz_id'>): Promise<QuestionRecord | null>;
+  abstract remove(quizId: string, id: string): Promise<boolean>;
 }
 
 @Injectable()
@@ -38,12 +38,7 @@ export class SupabaseQuestionsRepository extends QuestionsRepository {
   }
 
   async listByQuiz(quizId: string): Promise<QuestionRecord[]> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('questions')
-      .select()
-      .eq('quiz_id', quizId)
-      .order('order_index');
+    const { data, error } = await this.supabase.getClient().from('questions').select().eq('quiz_id', quizId).order('order_index');
     if (error) throw new InternalServerErrorException(error.message);
     return (data ?? []) as QuestionRecord[];
   }
@@ -58,15 +53,28 @@ export class SupabaseQuestionsRepository extends QuestionsRepository {
     if (error) throw new InternalServerErrorException(error.message);
     return data as QuestionRecord;
   }
-  async update(quizId:string,id:string,input:Omit<QuestionRecord,'id'|'quiz_id'>):Promise<QuestionRecord|null>{
-    const {data,error}=await this.supabase.getClient().from('questions').update(input).eq('quiz_id',quizId).eq('id',id).select().maybeSingle();
-    if(error)throw new InternalServerErrorException(error.message);
-    return data as QuestionRecord|null;
+  async update(quizId: string, id: string, input: Omit<QuestionRecord, 'id' | 'quiz_id'>): Promise<QuestionRecord | null> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('questions')
+      .update(input)
+      .eq('quiz_id', quizId)
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    if (error) throw new InternalServerErrorException(error.message);
+    return data as QuestionRecord | null;
   }
-  async remove(quizId:string,id:string):Promise<boolean>{
-    const {data,error}=await this.supabase.getClient().from('questions').delete().eq('quiz_id',quizId).eq('id',id).select('id').maybeSingle();
-    if(error)throw new InternalServerErrorException(error.message);
+  async remove(quizId: string, id: string): Promise<boolean> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('questions')
+      .delete()
+      .eq('quiz_id', quizId)
+      .eq('id', id)
+      .select('id')
+      .maybeSingle();
+    if (error) throw new InternalServerErrorException(error.message);
     return Boolean(data);
   }
-
 }

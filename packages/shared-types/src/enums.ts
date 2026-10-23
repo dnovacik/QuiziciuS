@@ -1,11 +1,4 @@
-export const QUIZ_STATES = [
-  'LOBBY',
-  'LOCK_IN_ROUND',
-  'QUESTION_ACTIVE',
-  'QUESTION_REVEAL',
-  'PAUSE_BREAK',
-  'FINISHED',
-] as const;
+export const QUIZ_STATES = ['LOBBY', 'LOCK_IN_ROUND', 'QUESTION_ACTIVE', 'QUESTION_REVEAL', 'PAUSE_BREAK', 'FINISHED'] as const;
 export type QuizState = (typeof QUIZ_STATES)[number];
 
 export const QUESTION_TYPES = ['MULTIPLE_CHOICE', 'FREE_TEXT', 'NUMERIC_NEAREST'] as const;

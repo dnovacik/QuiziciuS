@@ -21,9 +21,9 @@ describe('SupabaseAnswersRepository', () => {
     const supabase = fakeSupabaseService({ answers: { data: RECORD, error: null } });
     const repo = new SupabaseAnswersRepository(supabase);
 
-    await expect(
-      repo.upsertSubmission({ sessionId: 's1', questionId: 'q1', teamId: 't1', response: { optionId: 'a' } }),
-    ).resolves.toEqual(RECORD);
+    await expect(repo.upsertSubmission({ sessionId: 's1', questionId: 'q1', teamId: 't1', response: { optionId: 'a' } })).resolves.toEqual(
+      RECORD,
+    );
   });
 
   it('applies a grade patch', async () => {
@@ -31,9 +31,7 @@ describe('SupabaseAnswersRepository', () => {
     const supabase = fakeSupabaseService({ answers: { data: graded, error: null } });
     const repo = new SupabaseAnswersRepository(supabase);
 
-    await expect(
-      repo.updateGrade('a1', { is_correct: true, graded_by: 'AUTO', score_awarded: 1 }),
-    ).resolves.toEqual(graded);
+    await expect(repo.updateGrade('a1', { is_correct: true, graded_by: 'AUTO', score_awarded: 1 })).resolves.toEqual(graded);
   });
 });
 

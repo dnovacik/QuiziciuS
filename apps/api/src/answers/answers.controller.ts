@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AnswerSummaryDto } from '@quizicius/shared-types';
 import { CurrentTeam } from '../teams/current-team.decorator';
 import { TeamTokenGuard } from '../teams/team-token.guard';
@@ -21,5 +21,13 @@ export class AnswersController {
       throw new ForbiddenException('Token does not match this session');
     }
     return this.answers.submit(sessionId, team.teamId, dto.questionId, dto.response);
+  }
+
+  @Get('mine')
+  listMine(@Param('sessionId') sessionId: string, @CurrentTeam() team: TeamTokenPayload): Promise<AnswerSummaryDto[]> {
+    if (team.sessionId !== sessionId) {
+      throw new ForbiddenException('Token does not match this session');
+    }
+    return this.answers.listForTeam(sessionId, team.teamId);
   }
 }

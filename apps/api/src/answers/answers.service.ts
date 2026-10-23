@@ -6,8 +6,10 @@ import { SessionsRepository } from '../data/sessions.repository';
 import { RealtimeBroadcastService } from '../realtime/realtime-broadcast.service';
 import { gradeFreeText } from '../quiz-engine/grading/free-text-grader';
 import { gradeMultipleChoice } from '../quiz-engine/grading/multiple-choice-grader';
+import { isAnswerResultVisible, RESULT_GRACE_MS } from '../quiz-engine/result-visibility';
+import { toAnswerSummary } from './answer-summary';
 
-const LATE_SUBMISSION_GRACE_MS = 2000;
+const LATE_SUBMISSION_GRACE_MS = RESULT_GRACE_MS;
 
 export interface SubmitResponseInput {
   optionId?: string;
@@ -24,12 +26,7 @@ export class AnswersService {
     private readonly broadcast: RealtimeBroadcastService,
   ) {}
 
-  async submit(
-    sessionId: string,
-    teamId: string,
-    questionId: string,
-    response: SubmitResponseInput,
-  ): Promise<AnswerSummaryDto> {
+  async submit(sessionId: string, teamId: string, questionId: string, response: SubmitResponseInput): Promise<AnswerSummaryDto> {
     const session = await this.sessions.findById(sessionId);
     if (!session) throw new NotFoundException('Session not found');
     if (session.status !== 'QUESTION_ACTIVE' || session.current_question_id !== questionId) {
@@ -49,7 +46,19 @@ export class AnswersService {
     const graded = await this.gradeImmediately(question, saved);
 
     await this.broadcast.publish(sessionId, 'SCORE_UPDATE', { teamId });
-    return this.toSummary(graded);
+    // The grade stays hidden until the question closes: answers can be resubmitted while the
+    // question is open, so returning it here would let a team probe for the correct option.
+    return toAnswerSummary(graded, false);
+  }
+
+  /** The team's own answers in this session; grading is included only where results are public. */
+  async listForTeam(sessionId: string, teamId: string): Promise<AnswerSummaryDto[]> {
+    const session = await this.sessions.findById(sessionId);
+    if (!session) throw new NotFoundException('Session not found');
+    const answers = await this.answers.listBySession(sessionId);
+    return answers
+      .filter((answer) => answer.team_id === teamId)
+      .map((answer) => toAnswerSummary(answer, isAnswerResultVisible(answer, session)));
   }
 
   private async gradeImmediately(question: QuestionRecord, answer: AnswerRecord): Promise<AnswerRecord> {
@@ -78,20 +87,5 @@ export class AnswersService {
 
     // NUMERIC_NEAREST is graded once the round closes (QuizEngineService, on QUESTION_REVEAL).
     return answer;
-  }
-
-  private toSummary(answer: AnswerRecord): AnswerSummaryDto {
-    return {
-      id: answer.id,
-      sessionId: answer.session_id,
-      questionId: answer.question_id,
-      teamId: answer.team_id,
-      response: answer.response,
-      isCorrect: answer.is_correct,
-      confidence: answer.confidence,
-      needsReview: answer.needs_review,
-      gradedBy: answer.graded_by,
-      scoreAwarded: answer.score_awarded,
-    };
   }
 }

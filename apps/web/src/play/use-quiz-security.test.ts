@@ -22,10 +22,7 @@ describe('useQuizSecurity', () => {
       configurable: true,
     });
     Object.defineProperty(document, 'exitFullscreen', { value: exitFullscreen, configurable: true });
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: true, status: 201, json: async () => ({}) }),
-    );
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 201, json: async () => ({}) }));
   });
 
   afterEach(() => {

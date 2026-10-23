@@ -8,6 +8,7 @@ const SESSION: SessionRecord = {
   quiz_id: 'quiz1',
   host_id: 'host1',
   join_code: 'AB12',
+  pub_id: null,
   status: 'QUESTION_ACTIVE',
   current_question_id: 'q1',
   question_ends_at: null,
@@ -71,10 +72,7 @@ describe('InfractionsService.listForHost', () => {
 
   it('omits already-reviewed infractions from the host review queue', async () => {
     const { service, infractions } = buildHarness();
-    (infractions.listBySession as jest.Mock).mockResolvedValue([
-      INFRACTION,
-      { ...INFRACTION, id: 'inf2', reviewed: true },
-    ]);
+    (infractions.listBySession as jest.Mock).mockResolvedValue([INFRACTION, { ...INFRACTION, id: 'inf2', reviewed: true }]);
 
     await expect(service.listForHost('s1', 'host1')).resolves.toEqual([INFRACTION]);
   });
