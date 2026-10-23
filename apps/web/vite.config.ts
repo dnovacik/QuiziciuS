@@ -2,6 +2,15 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// The browser calls the API on the same origin (`VITE_API_URL=/api`); the dev and preview servers
+// forward it, so a single tunnel (e.g. ngrok to this port) serves both the app and the API.
+const apiProxy = {
+  '/api': {
+    target: process.env.VITE_API_URL ?? 'http://localhost:3000',
+    changeOrigin: true,
+  },
+};
+
 export default defineConfig({
   plugins: [
     react(),
@@ -31,12 +40,15 @@ export default defineConfig({
   },
   server: {
     allowedHosts: true,
-    proxy: {
-      '/api': {
-        target: process.env.VITE_API_URL ?? 'http://localhost:3000',
-        changeOrigin: true,
-      },
-    },
+    proxy: apiProxy,
+  },
+  // `pnpm live`: the built app (much lighter on players' phones than the dev server) on the same port.
+  preview: {
+    host: true,
+    port: 5199,
+    strictPort: true,
+    allowedHosts: true,
+    proxy: apiProxy,
   },
   test: {
     environment: 'jsdom',

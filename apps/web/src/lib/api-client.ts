@@ -23,7 +23,8 @@ function authHeader(token?: string): HeadersInit {
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers },
+    // ngrok's free tunnels show a warning page to browsers; API calls must never get it.
+    headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1', ...options.headers },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
