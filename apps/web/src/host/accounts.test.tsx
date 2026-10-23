@@ -77,6 +77,11 @@ beforeEach(() => {
       badgeColor: 'amber',
       createdAt: '2026-10-02T18:00:00Z',
       captainEmail: 'cap@example.com',
+      pubs: [
+        { id: 'p2', name: 'Zlatý Bažant', city: 'Žilina', primary: false },
+        { id: 'p1', name: 'KC Hoffman', city: 'Žilina', primary: true },
+      ],
+      legacyHomePub: null,
     },
   ];
   vi.mocked(apiGet)
@@ -172,6 +177,13 @@ describe('administration', () => {
     fireEvent.click(within(screen.getByTestId('admin-host-toggle-dialog')).getByTestId('confirm-dialog-confirm'));
 
     await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/admin/hosts/h1', { active: false }, 'jwt'));
+  });
+
+  it('shows which pubs each registered team plays at', async () => {
+    renderHost('/host/admin');
+    const pubs = await screen.findByTestId('admin-team-pubs-t1');
+    expect(pubs).toHaveTextContent('KC Hoffman, Žilina');
+    expect(pubs).toHaveTextContent('Zlatý Bažant, Žilina');
   });
 
   it('renames and deletes a registered team', async () => {

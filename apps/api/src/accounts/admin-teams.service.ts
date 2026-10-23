@@ -8,6 +8,10 @@ export interface AdminTeamDto {
   badgeColor: string;
   createdAt: string;
   captainEmail: string | null;
+  /** Pubs the team registered with, primary first. */
+  pubs: { id: string; name: string; city: string; primary: boolean }[];
+  /** Free-text home pub from before shared pubs existed; shown only when `pubs` is empty. */
+  legacyHomePub: string | null;
 }
 
 /** Moderation of self-registered teams (name squatting, fake teams). */
@@ -19,16 +23,18 @@ export class AdminTeamsService {
     const client = this.supabase.getClient();
     const { data, error } = await client
       .from('registered_teams')
-      .select('id,name,badge,badge_color,created_at,captain_id')
+      .select('id,name,badge,badge_color,created_at,captain_id,home_pub,registered_team_pubs(is_primary,pubs(id,name,city))')
       .order('created_at', { ascending: false });
     if (error) throw new InternalServerErrorException(error.message);
-    const teams = (data ?? []) as {
+    const teams = (data ?? []) as unknown as {
       id: string;
       name: string;
       badge: string;
       badge_color: string;
       created_at: string;
       captain_id: string;
+      home_pub: string | null;
+      registered_team_pubs: { is_primary: boolean; pubs: { id: string; name: string; city: string } }[] | null;
     }[];
     const captainIds = [...new Set(teams.map((team) => team.captain_id))];
     const { data: profiles, error: profileError } = captainIds.length
@@ -43,6 +49,10 @@ export class AdminTeamsService {
       badgeColor: team.badge_color,
       createdAt: team.created_at,
       captainEmail: emailById.get(team.captain_id) ?? null,
+      pubs: (team.registered_team_pubs ?? [])
+        .map((link) => ({ ...link.pubs, primary: link.is_primary }))
+        .sort((a, b) => Number(b.primary) - Number(a.primary) || a.name.localeCompare(b.name)),
+      legacyHomePub: team.home_pub,
     }));
   }
 

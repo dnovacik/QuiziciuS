@@ -760,5 +760,8 @@
   "errors.ALREADY_HOST": "This account is already a host.",
   "errors.CANNOT_DEACTIVATE_ADMIN": "An admin cannot be deactivated.",
   "errors.HOST_NOT_FOUND": "Host not found.",
-  "errors.ACCOUNT_NOT_FOUND": "Account not found."
+  "errors.ACCOUNT_NOT_FOUND": "Account not found.",
+  "admin.teams.pubs": "Pubs",
+  "admin.teams.primaryPub": "Home pub",
+  "admin.teams.legacyPub": "old entry"
 }

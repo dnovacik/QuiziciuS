@@ -760,5 +760,8 @@
   "errors.ALREADY_HOST": "Tento účet už je moderátorský.",
   "errors.CANNOT_DEACTIVATE_ADMIN": "Administrátora nemožno deaktivovať.",
   "errors.HOST_NOT_FOUND": "Moderátor sa nenašiel.",
-  "errors.ACCOUNT_NOT_FOUND": "Účet sa nenašiel."
+  "errors.ACCOUNT_NOT_FOUND": "Účet sa nenašiel.",
+  "admin.teams.pubs": "Puby",
+  "admin.teams.primaryPub": "Domovský pub",
+  "admin.teams.legacyPub": "starý údaj"
 }

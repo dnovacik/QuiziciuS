@@ -20,6 +20,8 @@ export interface AdminTeam {
   badgeColor: string;
   createdAt: string;
   captainEmail: string | null;
+  pubs: { id: string; name: string; city: string; primary: boolean }[];
+  legacyHomePub: string | null;
 }
 
 export const adminApi = {
@@ -311,6 +313,7 @@ function TeamsSection({ token }: { token: string }) {
             <thead className="bg-surface-container text-label-sm uppercase text-on-surface-variant">
               <tr>
                 <th className="rounded-l-lg p-space-sm">{t('admin.teams.name')}</th>
+                <th className="p-space-sm">{t('admin.teams.pubs')}</th>
                 <th className="p-space-sm">{t('admin.teams.captain')}</th>
                 <th className="p-space-sm">{t('admin.teams.created')}</th>
                 <th className="rounded-r-lg p-space-sm text-right" />
@@ -346,6 +349,29 @@ function TeamsSection({ token }: { token: string }) {
                       </form>
                     ) : (
                       <span className="text-label-md">{team.name}</span>
+                    )}
+                  </td>
+                  <td className="p-space-sm" data-testid={`admin-team-pubs-${team.id}`}>
+                    {team.pubs.length > 0 ? (
+                      <span className="flex flex-wrap gap-1">
+                        {team.pubs.map((pub) => (
+                          <span
+                            key={pub.id}
+                            title={pub.primary ? t('admin.teams.primaryPub') : undefined}
+                            className={`rounded px-1.5 py-0.5 text-label-sm ${
+                              pub.primary
+                                ? 'bg-primary-container/40 text-on-primary-container'
+                                : 'bg-surface-container text-on-surface-variant'
+                            }`}
+                          >
+                            {pub.name}, {pub.city}
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="text-on-surface-variant">
+                        {team.legacyHomePub ? `${team.legacyHomePub} (${t('admin.teams.legacyPub')})` : '—'}
+                      </span>
                     )}
                   </td>
                   <td className="p-space-sm text-on-surface-variant">{team.captainEmail ?? '—'}</td>
