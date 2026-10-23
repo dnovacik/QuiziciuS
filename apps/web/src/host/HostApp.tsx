@@ -9,6 +9,8 @@ import { useAccount } from '../lib/use-account';
 import { useHostSession } from '../lib/use-host-session';
 import { NotHostPage, SetPasswordPage } from '../ui/AccountPages';
 import { AdminPage } from './admin/AdminPage';
+import { LeagueDetailPage } from './leagues/LeagueDetailPage';
+import { LeaguesPage } from './leagues/LeaguesPage';
 import { ControlRoomPage } from './control-room/ControlRoomPage';
 import { DashboardPage } from './DashboardPage';
 import { HostShell } from './HostShell';
@@ -73,6 +75,8 @@ export default function HostApp() {
                   <Route path="quizzes/:quizId" element={<QuizEditorPage token={token} />} />
                   <Route path="sessions" element={<SessionsPage token={token} />} />
                   <Route path="pubs" element={<PubsPage token={token} />} />
+                  <Route path="leagues" element={<LeaguesPage token={token} />} />
+                  <Route path="leagues/:leagueId" element={<LeagueDetailPage token={token} />} />
                   {account.role === 'SUPER_ADMIN' && <Route path="admin" element={<AdminPage token={token} />} />}
                   <Route path="*" element={<DashboardPage token={token} />} />
                 </Routes>
