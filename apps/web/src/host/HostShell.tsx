@@ -4,6 +4,7 @@ import {
   Beer,
   Bell,
   CirclePlus,
+  Hourglass,
   LayoutGrid,
   LogOut,
   Menu,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
+import { formatDay, subscriptionNotice } from '../lib/subscription';
 import { supabase } from '../lib/supabase-client';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { LogoMark } from '../ui/Logo';
@@ -35,7 +37,15 @@ const NAV_ACTIVE =
 
 /** Sidebar + top bar from the Stitch host dashboard and quiz editor. */
 export function HostShell({ token, email, account, children }: { token: string; email: string; account: AccountDto; children: ReactNode }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const notice = subscriptionNotice(account.subscription);
+  const subscriptionLabel = account.subscription
+    ? account.subscription.status === 'FOREVER'
+      ? t('account.subscription.FOREVER')
+      : account.subscription.until
+        ? `${t(`account.subscription.${account.subscription.status}`)} ${formatDay(account.subscription.until, locale)}`
+        : t('account.subscription.EXPIRED')
+    : null;
   const [menuOpen, setMenuOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [sessions, setSessions] = useState<HostSession[]>([]);
@@ -122,6 +132,14 @@ export function HostShell({ token, email, account, children }: { token: string; 
         <div className="truncate text-body-md font-semibold text-on-surface" title={email}>
           {email}
         </div>
+        {subscriptionLabel && (
+          <div
+            data-testid="host-subscription-status"
+            className={`text-body-sm ${notice === 'expired' ? 'text-error' : notice === 'ending' ? 'text-secondary' : 'text-on-surface-variant'}`}
+          >
+            {subscriptionLabel}
+          </div>
+        )}
         <button
           type="button"
           data-testid="host-logout"
@@ -196,6 +214,21 @@ export function HostShell({ token, email, account, children }: { token: string; 
             >
               <TriangleAlert className="h-5 w-5 shrink-0" />
               {t('account.deactivatedBanner')}
+            </p>
+          )}
+          {notice && account.subscription && (
+            <p
+              role="status"
+              data-testid="host-subscription"
+              data-notice={notice}
+              className={`mb-space-md flex items-center gap-space-sm rounded-xl p-space-md text-body-md ${
+                notice === 'expired' ? 'bg-error-container/30 text-on-error-container' : 'bg-secondary-container/20 text-secondary'
+              }`}
+            >
+              {notice === 'expired' ? <TriangleAlert className="h-5 w-5 shrink-0" /> : <Hourglass className="h-5 w-5 shrink-0" />}
+              {notice === 'expired'
+                ? t('account.subscription.expiredBanner')
+                : `${t('account.subscription.endingBanner')} ${formatDay(account.subscription.until!, locale)}. ${t('account.subscription.contactUs')}`}
             </p>
           )}
           {children}

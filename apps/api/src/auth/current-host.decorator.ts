@@ -1,11 +1,13 @@
 import { ExecutionContext, createParamDecorator } from '@nestjs/common';
-import { AccountRole } from '@quizicius/shared-types';
+import { AccountRole, SubscriptionDto } from '@quizicius/shared-types';
 
 /** The signed-in account (any role — the name predates captains and admins). */
 export interface CurrentHostPayload {
   id: string;
   role: AccountRole;
   deactivated: boolean;
+  /** Null for team captains. */
+  subscription: SubscriptionDto | null;
 }
 
 export const CurrentHost = createParamDecorator((_data: unknown, ctx: ExecutionContext): CurrentHostPayload => {

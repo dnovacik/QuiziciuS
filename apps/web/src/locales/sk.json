@@ -763,5 +763,22 @@
   "errors.ACCOUNT_NOT_FOUND": "Účet sa nenašiel.",
   "admin.teams.pubs": "Puby",
   "admin.teams.primaryPub": "Domovský pub",
-  "admin.teams.legacyPub": "starý údaj"
+  "admin.teams.legacyPub": "starý údaj",
+  "account.subscription.FOREVER": "Predplatné navždy",
+  "account.subscription.TRIAL": "Skúšobná verzia do",
+  "account.subscription.ACTIVE": "Predplatné do",
+  "account.subscription.EXPIRED": "Predplatné vypršalo",
+  "account.subscription.endingBanner": "Vaše predplatné končí",
+  "account.subscription.contactUs": "Ozvite sa nám, nech môžete pokračovať bez prerušenia.",
+  "account.subscription.expiredBanner": "Predplatné vypršalo. Kvízy a výsledky vám zostávajú, no nový kvízový večer spustíte až po obnovení — ozvite sa nám.",
+  "admin.subscription.title": "Predplatné",
+  "admin.subscription.extendMonth": "+1 mesiac",
+  "admin.subscription.until": "Predplatné do",
+  "admin.subscription.setUntil": "Nastaviť dátum",
+  "admin.subscription.foreverOn": "Navždy",
+  "admin.subscription.foreverOff": "Zrušiť navždy",
+  "admin.subscription.saved": "Predplatné uložené",
+  "errors.SUBSCRIPTION_EXPIRED": "Predplatné vypršalo — nový kvízový večer spustíte po jeho obnovení.",
+  "errors.ADMIN_ALWAYS_SUBSCRIBED": "Administrátor má predplatné vždy.",
+  "errors.INVALID_SUBSCRIPTION": "Neplatná zmena predplatného."
 }

@@ -763,5 +763,22 @@
   "errors.ACCOUNT_NOT_FOUND": "Account not found.",
   "admin.teams.pubs": "Pubs",
   "admin.teams.primaryPub": "Home pub",
-  "admin.teams.legacyPub": "old entry"
+  "admin.teams.legacyPub": "old entry",
+  "account.subscription.FOREVER": "Subscribed forever",
+  "account.subscription.TRIAL": "Trial until",
+  "account.subscription.ACTIVE": "Subscribed until",
+  "account.subscription.EXPIRED": "Subscription expired",
+  "account.subscription.endingBanner": "Your subscription ends on",
+  "account.subscription.contactUs": "Get in touch so you can carry on without a break.",
+  "account.subscription.expiredBanner": "Your subscription has expired. You keep your quizzes and results, but you can launch a new quiz night only after renewing — please get in touch.",
+  "admin.subscription.title": "Subscription",
+  "admin.subscription.extendMonth": "+1 month",
+  "admin.subscription.until": "Subscribed until",
+  "admin.subscription.setUntil": "Set date",
+  "admin.subscription.foreverOn": "Forever",
+  "admin.subscription.foreverOff": "Remove forever",
+  "admin.subscription.saved": "Subscription saved",
+  "errors.SUBSCRIPTION_EXPIRED": "Your subscription has expired — renew it to launch a new quiz night.",
+  "errors.ADMIN_ALWAYS_SUBSCRIBED": "An admin is always subscribed.",
+  "errors.INVALID_SUBSCRIPTION": "Invalid subscription change."
 }

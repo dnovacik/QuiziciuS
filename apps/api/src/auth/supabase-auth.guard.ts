@@ -1,9 +1,10 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { subscriptionOf } from '../accounts/subscription';
 import { ProfilesRepository } from '../data/profiles.repository';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CurrentHostPayload } from './current-host.decorator';
 
-/** Verifies the Supabase session and attaches the account (id, role, deactivated) to the request. */
+/** Verifies the Supabase session and attaches the account (id, role, deactivated, subscription) to the request. */
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
   constructor(
@@ -31,6 +32,7 @@ export class SupabaseAuthGuard implements CanActivate {
       id: data.user.id,
       role: profile?.role ?? 'TEAM_CAPTAIN',
       deactivated: Boolean(profile?.deactivated_at),
+      subscription: profile ? subscriptionOf(profile) : null,
     };
 
     // `authHost`, not `host` — Express's real Request already defines a

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import type { AccountDto } from '@quizicius/shared-types';
+import type { AccountDto, SubscriptionDto } from '@quizicius/shared-types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
 import { I18nProvider } from '../lib/i18n';
@@ -34,8 +34,22 @@ const data = vi.hoisted(() => ({
   teams: [] as AdminTeam[],
 }));
 
-function account(role: AccountDto['role'], deactivated = false): AccountDto {
-  return { id: 'me', email: 'me@example.com', displayName: 'Me', role, deactivated };
+const ACTIVE: SubscriptionDto = { status: 'ACTIVE', until: '2099-12-31', forever: false };
+
+function account(role: AccountDto['role'], deactivated = false, subscription: SubscriptionDto | null = ACTIVE): AccountDto {
+  return {
+    id: 'me',
+    email: 'me@example.com',
+    displayName: 'Me',
+    role,
+    deactivated,
+    subscription: role === 'TEAM_CAPTAIN' ? null : subscription,
+  };
+}
+
+/** `YYYY-MM-DD`, `days` from today. */
+function inDays(days: number): string {
+  return new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 }
 
 const HOST: AdminHost = {
@@ -44,6 +58,7 @@ const HOST: AdminHost = {
   displayName: 'Pub Host',
   role: 'HOST',
   deactivated: false,
+  subscription: { status: 'TRIAL', until: '2026-11-06', forever: false },
   createdAt: '2026-10-01T18:00:00Z',
   quizCount: 3,
   sessionCount: 1,
@@ -122,6 +137,31 @@ describe('host area by account role', () => {
     expect(await screen.findByTestId('host-deactivated')).toBeInTheDocument();
   });
 
+  it('shows the subscription in the account box without a banner while it is far from ending', async () => {
+    renderHost();
+    expect(await screen.findByTestId('host-subscription-status')).toHaveTextContent('Predplatné do 31. 12. 2099');
+    expect(screen.queryByTestId('host-subscription')).not.toBeInTheDocument();
+  });
+
+  it('warns a host whose subscription ends within a week', async () => {
+    data.me = account('HOST', false, { status: 'ACTIVE', until: inDays(3), forever: false });
+    renderHost();
+    expect(await screen.findByTestId('host-subscription')).toHaveAttribute('data-notice', 'ending');
+  });
+
+  it('tells a host whose subscription has expired that they cannot launch nights', async () => {
+    data.me = account('HOST', false, { status: 'EXPIRED', until: '2026-01-31', forever: false });
+    renderHost();
+    expect(await screen.findByTestId('host-subscription')).toHaveTextContent('Predplatné vypršalo');
+  });
+
+  it('shows no banner for a forever subscription', async () => {
+    data.me = account('HOST', false, { status: 'FOREVER', until: null, forever: true });
+    renderHost();
+    expect(await screen.findByTestId('host-subscription-status')).toHaveTextContent('Predplatné navždy');
+    expect(screen.queryByTestId('host-subscription')).not.toBeInTheDocument();
+  });
+
   it('asks an invited host to set a password first', async () => {
     auth.passwordLink = 'invite';
     renderHost();
@@ -184,6 +224,22 @@ describe('administration', () => {
     const pubs = await screen.findByTestId('admin-team-pubs-t1');
     expect(pubs).toHaveTextContent('KC Hoffman, Žilina');
     expect(pubs).toHaveTextContent('Zlatý Bažant, Žilina');
+  });
+
+  it("extends a host's subscription, sets a date and makes it forever", async () => {
+    renderHost('/host/admin');
+    expect(await screen.findByTestId('admin-host-subscription-h1')).toHaveTextContent('Skúšobná verzia do 6. 11. 2026');
+    expect(screen.queryByTestId('admin-host-extend-me')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('admin-host-extend-h1'));
+    await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/admin/hosts/h1/subscription', { extendMonths: 1 }, 'jwt'));
+
+    fireEvent.change(screen.getByTestId('admin-host-until-h1'), { target: { value: '2027-06-30' } });
+    fireEvent.click(screen.getByTestId('admin-host-until-save-h1'));
+    await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/admin/hosts/h1/subscription', { until: '2027-06-30' }, 'jwt'));
+
+    fireEvent.click(screen.getByTestId('admin-host-forever-h1'));
+    await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/admin/hosts/h1/subscription', { forever: true }, 'jwt'));
   });
 
   it('renames and deletes a registered team', async () => {

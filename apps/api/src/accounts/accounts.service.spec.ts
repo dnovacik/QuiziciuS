@@ -18,6 +18,10 @@ function buildService() {
   return { service: new AccountsService(profiles, quizzes, sessions, authAdmin), profiles, quizzes, sessions, invites };
 }
 
+// "Today" is 23 Oct 2026 in Slovakia for every test.
+beforeEach(() => jest.useFakeTimers({ now: new Date('2026-10-23T10:00:00Z') }));
+afterEach(() => jest.useRealTimers());
+
 describe('AccountsService', () => {
   it('invites a new host by e-mail and makes the new account a host', async () => {
     const { service, invites } = buildService();
@@ -80,6 +84,90 @@ describe('AccountsService', () => {
       displayName: 'captain@example.com',
       role: 'TEAM_CAPTAIN',
       deactivated: false,
+      subscription: null,
+    });
+  });
+
+  describe('subscriptions', () => {
+    it('starts a 14-day trial for an invited host', async () => {
+      const { service } = buildService();
+
+      const { account } = await service.inviteHost('new@pub.sk');
+
+      expect(account.subscription).toEqual({ status: 'TRIAL', until: '2026-11-06', forever: false });
+    });
+
+    it('starts a trial for a promoted captain, but keeps an earlier subscription', async () => {
+      const { service, profiles } = buildService();
+      profiles.add('captain-1', 'TEAM_CAPTAIN', 'captain@example.com');
+      profiles.add('former-1', 'TEAM_CAPTAIN', 'former@example.com');
+      await profiles.update('former-1', { subscribed_until: '2027-01-31' });
+
+      expect((await service.inviteHost('captain@example.com')).account.subscription?.status).toBe('TRIAL');
+      expect((await service.inviteHost('former@example.com')).account.subscription).toEqual({
+        status: 'ACTIVE',
+        until: '2027-01-31',
+        forever: false,
+      });
+    });
+
+    it('extends by a month from today when the subscription has run out', async () => {
+      const { service, profiles } = buildService();
+      profiles.add('host-1', 'HOST');
+      await profiles.update('host-1', { subscribed_until: '2026-09-30' });
+
+      expect((await service.setSubscription('host-1', { extendMonths: 1 })).subscription).toEqual({
+        status: 'ACTIVE',
+        until: '2026-11-23',
+        forever: false,
+      });
+    });
+
+    it('extends from the current end date, which also ends the trial', async () => {
+      const { service, profiles } = buildService();
+      profiles.add('host-1', 'HOST');
+      await profiles.update('host-1', { subscribed_until: '2026-11-06', subscription_trial: true });
+
+      expect((await service.setSubscription('host-1', { extendMonths: 1 })).subscription).toEqual({
+        status: 'ACTIVE',
+        until: '2026-12-06',
+        forever: false,
+      });
+    });
+
+    it('sets an end date; a date in the past means expired', async () => {
+      const { service, profiles } = buildService();
+      profiles.add('host-1', 'HOST');
+
+      expect((await service.setSubscription('host-1', { until: '2026-10-23' })).subscription?.status).toBe('ACTIVE');
+      expect((await service.setSubscription('host-1', { until: '2026-10-22' })).subscription?.status).toBe('EXPIRED');
+    });
+
+    it('keeps a forever host subscribed until forever is switched off', async () => {
+      const { service, profiles } = buildService();
+      profiles.add('host-1', 'HOST');
+      await profiles.update('host-1', { subscribed_until: '2026-01-31' });
+
+      expect((await service.setSubscription('host-1', { forever: true })).subscription?.status).toBe('FOREVER');
+      expect((await service.setSubscription('host-1', { forever: false })).subscription).toEqual({
+        status: 'EXPIRED',
+        until: '2026-01-31',
+        forever: false,
+      });
+    });
+
+    it('treats super admins as always subscribed and refuses to change them', async () => {
+      const { service, profiles } = buildService();
+      profiles.add('admin-1', 'SUPER_ADMIN');
+      profiles.add('captain-1', 'TEAM_CAPTAIN');
+
+      expect((await service.me('admin-1')).subscription?.status).toBe('FOREVER');
+      await expect(service.setSubscription('admin-1', { extendMonths: 1 })).rejects.toMatchObject({
+        response: { code: 'ADMIN_ALWAYS_SUBSCRIBED' },
+      });
+      await expect(service.setSubscription('captain-1', { extendMonths: 1 })).rejects.toMatchObject({
+        response: { code: 'HOST_NOT_FOUND' },
+      });
     });
   });
 });

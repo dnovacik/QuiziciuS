@@ -1,9 +1,22 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Check, MailPlus, Pencil, Power, PowerOff, ShieldCheck, Trash2, Users, X } from 'lucide-react';
-import type { AccountDto, AccountRole } from '@quizicius/shared-types';
+import {
+  CalendarPlus,
+  Check,
+  Infinity as InfinityIcon,
+  MailPlus,
+  Pencil,
+  Power,
+  PowerOff,
+  ShieldCheck,
+  Trash2,
+  Users,
+  X,
+} from 'lucide-react';
+import type { AccountDto, AccountRole, SubscriptionStatus } from '@quizicius/shared-types';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../../lib/api-client';
 import { describeError } from '../../lib/errors';
 import { useI18n } from '../../lib/i18n';
+import { formatDay } from '../../lib/subscription';
 import { btn, Card, ConfirmDialog, ErrorBanner, inputClass, Label, useToast } from '../ui';
 
 export interface AdminHost extends AccountDto {
@@ -33,9 +46,18 @@ export const adminApi = {
       token,
     ),
   setHostActive: (token: string, hostId: string, active: boolean) => apiPatch<AccountDto>(`/admin/hosts/${hostId}`, { active }, token),
+  setSubscription: (token: string, hostId: string, change: { extendMonths: number } | { until: string } | { forever: boolean }) =>
+    apiPatch<AccountDto>(`/admin/hosts/${hostId}/subscription`, change, token),
   teams: (token: string) => apiGet<AdminTeam[]>('/admin/teams', token),
   renameTeam: (token: string, teamId: string, name: string) => apiPatch(`/admin/teams/${teamId}`, { name: name.trim() }, token),
   deleteTeam: (token: string, teamId: string) => apiDelete<void>(`/admin/teams/${teamId}`, token),
+};
+
+const SUBSCRIPTION_STYLE: Record<SubscriptionStatus, string> = {
+  FOREVER: 'bg-tertiary-container/20 text-tertiary',
+  TRIAL: 'bg-secondary-container/30 text-secondary',
+  ACTIVE: 'bg-tertiary-container/20 text-tertiary',
+  EXPIRED: 'bg-error-container/40 text-on-error-container',
 };
 
 const ROLE_STYLE: Record<AccountRole, string> = {
@@ -71,7 +93,7 @@ function useDate() {
 }
 
 function HostsSection({ token }: { token: string }) {
-  const { t, plural } = useI18n();
+  const { t, plural, locale } = useI18n();
   const toast = useToast();
   const date = useDate();
   const [hosts, setHosts] = useState<AdminHost[]>([]);
@@ -81,6 +103,7 @@ function HostsSection({ token }: { token: string }) {
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [toggling, setToggling] = useState<AdminHost | null>(null);
+  const [untilDraft, setUntilDraft] = useState<Record<string, string>>({});
 
   const load = useCallback(() => {
     adminApi
@@ -125,6 +148,20 @@ function HostsSection({ token }: { token: string }) {
     }
   }
 
+  async function changeSubscription(host: AdminHost, change: { extendMonths: number } | { until: string } | { forever: boolean }) {
+    setBusy(true);
+    try {
+      await adminApi.setSubscription(token, host.id, change);
+      toast(t('admin.subscription.saved'));
+      setUntilDraft((drafts) => ({ ...drafts, [host.id]: '' }));
+      load();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 gap-space-lg xl:grid-cols-12">
       <Card className="flex flex-col gap-space-md xl:col-span-8" testId="admin-hosts">
@@ -140,6 +177,7 @@ function HostsSection({ token }: { token: string }) {
             <thead className="bg-surface-container text-label-sm uppercase text-on-surface-variant">
               <tr>
                 <th className="rounded-l-lg p-space-sm">{t('admin.hosts.account')}</th>
+                <th className="p-space-sm">{t('admin.subscription.title')}</th>
                 <th className="p-space-sm">{t('admin.hosts.activity')}</th>
                 <th className="p-space-sm">{t('admin.hosts.lastNight')}</th>
                 <th className="rounded-r-lg p-space-sm text-right" />
@@ -167,6 +205,74 @@ function HostsSection({ token }: { token: string }) {
                         )}
                       </span>
                     </div>
+                  </td>
+                  <td className="p-space-sm" data-testid={`admin-host-subscription-${host.id}`}>
+                    {host.subscription && (
+                      <div className="flex flex-col items-start gap-1">
+                        <span className={`rounded px-1.5 py-0.5 text-label-sm ${SUBSCRIPTION_STYLE[host.subscription.status]}`}>
+                          {host.subscription.status === 'FOREVER'
+                            ? t('account.subscription.FOREVER')
+                            : host.subscription.until
+                              ? `${t(`account.subscription.${host.subscription.status}`)} ${formatDay(host.subscription.until, locale)}`
+                              : t('account.subscription.EXPIRED')}
+                        </span>
+                        {host.role === 'HOST' && (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {!host.subscription.forever && (
+                              <>
+                                <button
+                                  type="button"
+                                  className={`${btn.secondary} px-2 py-1 text-label-sm`}
+                                  disabled={busy}
+                                  data-testid={`admin-host-extend-${host.id}`}
+                                  onClick={() => void changeSubscription(host, { extendMonths: 1 })}
+                                >
+                                  <CalendarPlus className="h-3.5 w-3.5" />
+                                  {t('admin.subscription.extendMonth')}
+                                </button>
+                                <form
+                                  className="flex items-center gap-1"
+                                  onSubmit={(event) => {
+                                    event.preventDefault();
+                                    const until = untilDraft[host.id];
+                                    if (until) void changeSubscription(host, { until });
+                                  }}
+                                >
+                                  <input
+                                    type="date"
+                                    aria-label={t('admin.subscription.until')}
+                                    data-testid={`admin-host-until-${host.id}`}
+                                    className={`${inputClass} w-auto px-2 py-1 text-label-sm`}
+                                    value={untilDraft[host.id] ?? ''}
+                                    onChange={(event) => setUntilDraft((drafts) => ({ ...drafts, [host.id]: event.target.value }))}
+                                  />
+                                  <button
+                                    type="submit"
+                                    className={btn.icon}
+                                    disabled={busy || !untilDraft[host.id]}
+                                    aria-label={t('admin.subscription.setUntil')}
+                                    data-testid={`admin-host-until-save-${host.id}`}
+                                  >
+                                    <Check className="h-4 w-4 text-tertiary" />
+                                  </button>
+                                </form>
+                              </>
+                            )}
+                            <button
+                              type="button"
+                              className={`${btn.secondary} px-2 py-1 text-label-sm`}
+                              disabled={busy}
+                              aria-pressed={host.subscription.forever}
+                              data-testid={`admin-host-forever-${host.id}`}
+                              onClick={() => void changeSubscription(host, { forever: !host.subscription!.forever })}
+                            >
+                              <InfinityIcon className="h-3.5 w-3.5" />
+                              {t(host.subscription.forever ? 'admin.subscription.foreverOff' : 'admin.subscription.foreverOn')}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="p-space-sm text-on-surface-variant">
                     {host.quizCount} {plural('count.quizzes', host.quizCount)} • {host.sessionCount}{' '}

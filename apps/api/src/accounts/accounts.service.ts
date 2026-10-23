@@ -1,9 +1,13 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { AccountDto } from '@quizicius/shared-types';
-import { ProfileRecord, ProfilesRepository } from '../data/profiles.repository';
+import { ProfilePatch, ProfileRecord, ProfilesRepository } from '../data/profiles.repository';
 import { QuizzesRepository } from '../data/quizzes.repository';
 import { SessionsRepository } from '../data/sessions.repository';
 import { AuthAdminGateway } from './auth-admin.gateway';
+import { addMonths, subscriptionOf, today, trialFor } from './subscription';
+
+/** Exactly one change per request. */
+export type SubscriptionChange = { extendMonths: number } | { until: string } | { forever: boolean };
 
 export interface AdminHostDto extends AccountDto {
   createdAt: string;
@@ -19,6 +23,7 @@ export function toAccount(profile: ProfileRecord): AccountDto {
     displayName: profile.display_name,
     role: profile.role,
     deactivated: Boolean(profile.deactivated_at),
+    subscription: subscriptionOf(profile),
   };
 }
 
@@ -70,11 +75,14 @@ export class AccountsService {
     if (existing) {
       if (existing.role !== 'TEAM_CAPTAIN')
         throw new ConflictException({ code: 'ALREADY_HOST', message: 'This account is already a host' });
-      return { account: toAccount(await this.profiles.update(existing.id, { role: 'HOST', deactivated_at: null })), invited: false };
+      const promoted = await this.profiles.update(existing.id, { role: 'HOST', deactivated_at: null, ...trialFor(existing) });
+      return { account: toAccount(promoted), invited: false };
     }
     const userId = await this.authAdmin.inviteByEmail(email, displayName);
-    // The sign-up trigger has created the profile as a captain; promote it.
-    const profile = await this.profiles.update(userId, { role: 'HOST', display_name: displayName });
+    // The sign-up trigger has created the profile as a captain; promote it and start the trial.
+    const created = await this.profiles.findById(userId);
+    const trial = created ? trialFor(created) : trialFor(null);
+    const profile = await this.profiles.update(userId, { role: 'HOST', display_name: displayName, ...trial });
     return { account: toAccount(profile), invited: true };
   }
 
@@ -85,5 +93,29 @@ export class AccountsService {
     if (profile.role === 'SUPER_ADMIN')
       throw new BadRequestException({ code: 'CANNOT_DEACTIVATE_ADMIN', message: 'Super admins cannot be deactivated' });
     return toAccount(await this.profiles.update(hostId, { deactivated_at: active ? null : new Date().toISOString() }));
+  }
+
+  /**
+   * Sets a host's subscription: extend by whole months (from today or from the current end,
+   * whichever is later), set an end date, or switch "forever" on or off. Super admins are always
+   * subscribed and cannot be changed.
+   */
+  async setSubscription(hostId: string, change: SubscriptionChange): Promise<AccountDto> {
+    const profile = await this.profiles.findById(hostId);
+    if (!profile || profile.role === 'TEAM_CAPTAIN') throw new NotFoundException({ code: 'HOST_NOT_FOUND', message: 'Host not found' });
+    if (profile.role === 'SUPER_ADMIN')
+      throw new BadRequestException({ code: 'ADMIN_ALWAYS_SUBSCRIBED', message: 'Super admins are always subscribed' });
+
+    let patch: ProfilePatch;
+    if ('forever' in change) {
+      patch = { subscription_forever: change.forever };
+    } else if ('until' in change) {
+      patch = { subscribed_until: change.until, subscription_trial: false };
+    } else {
+      const now = today();
+      const from = profile.subscribed_until && profile.subscribed_until > now ? profile.subscribed_until : now;
+      patch = { subscribed_until: addMonths(from, change.extendMonths), subscription_trial: false };
+    }
+    return toAccount(await this.profiles.update(hostId, patch));
   }
 }

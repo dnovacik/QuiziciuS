@@ -1,3 +1,4 @@
+import { canLaunchNights } from '../accounts/subscription';
 import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { RequireRole } from '../auth/require-role';
@@ -27,6 +28,10 @@ export class SessionsController {
     if (quiz.host_id !== host.id) throw new ForbiddenException('Not your quiz');
     // A deactivated host keeps their quizzes and history but cannot run new quiz nights.
     if (host.deactivated) throw new ForbiddenException({ code: 'HOST_DEACTIVATED', message: 'This host account is deactivated' });
+    // So does a host whose subscription has run out; a night already running always finishes.
+    if (!canLaunchNights(host.subscription)) {
+      throw new ForbiddenException({ code: 'SUBSCRIPTION_EXPIRED', message: 'The subscription has expired' });
+    }
     const pubId = dto.pubId === undefined ? quiz.pub_id : dto.pubId;
     if (pubId) await this.pubs.requirePub(pubId);
     return this.quizEngine.createSession(quizId, host.id, pubId);
