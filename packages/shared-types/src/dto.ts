@@ -1,4 +1,4 @@
-import { GradedBy, QuestionType, QuizState } from './enums';
+import { AccountRole, GradedBy, QuestionType, QuizState } from './enums';
 
 export interface QuestionOptionDto {
   id: string;
@@ -54,4 +54,14 @@ export interface AnswerSummaryDto {
   needsReview: boolean;
   gradedBy: GradedBy | null;
   scoreAwarded: number;
+}
+
+/** The signed-in account as the web app sees it (GET /me). */
+export interface AccountDto {
+  id: string;
+  email: string | null;
+  displayName: string;
+  role: AccountRole;
+  /** A deactivated host can sign in and edit quizzes but cannot launch quiz nights. */
+  deactivated: boolean;
 }

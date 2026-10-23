@@ -1,6 +1,14 @@
+import { useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
+import { hasRole } from '@quizicius/shared-types';
 import { LandingPage } from '../landing/LandingPage';
+import { describeError } from '../lib/errors';
+import { useI18n } from '../lib/i18n';
+import { pendingPasswordLink } from '../lib/supabase-client';
+import { useAccount } from '../lib/use-account';
 import { useHostSession } from '../lib/use-host-session';
+import { NotHostPage, SetPasswordPage } from '../ui/AccountPages';
+import { AdminPage } from './admin/AdminPage';
 import { ControlRoomPage } from './control-room/ControlRoomPage';
 import { DashboardPage } from './DashboardPage';
 import { HostShell } from './HostShell';
@@ -11,9 +19,12 @@ import { SessionsPage } from './SessionsPage';
 import { ToastProvider } from './ui';
 
 export default function HostApp() {
+  const { t } = useI18n();
   const { session, loading, token } = useHostSession();
+  const { account, error: accountError, loading: accountLoading } = useAccount(token);
+  const [passwordLink, setPasswordLink] = useState(pendingPasswordLink);
 
-  if (loading) {
+  if (loading || (token && accountLoading && !account)) {
     return <div data-testid="host-app" className="min-h-screen bg-surface-container-lowest" aria-busy="true" />;
   }
   if (!session || !token) {
@@ -25,6 +36,27 @@ export default function HostApp() {
   }
 
   const email = session.user.email ?? '';
+  // Invited hosts and password resets arrive signed in, without a password they know.
+  if (passwordLink) {
+    return <SetPasswordPage kind={passwordLink} onDone={() => setPasswordLink(null)} />;
+  }
+  if (!account) {
+    return (
+      <div data-testid="host-app" className="min-h-screen bg-surface-container-lowest p-space-lg">
+        <p role="alert" className="text-body-md text-error">
+          {describeError(accountError, t, 'errors.generic')}
+        </p>
+      </div>
+    );
+  }
+  if (!hasRole(account.role, 'HOST')) {
+    return (
+      <div data-testid="host-app">
+        <NotHostPage email={email} />
+      </div>
+    );
+  }
+
   return (
     <div data-testid="host-app">
       <ToastProvider>
@@ -34,13 +66,14 @@ export default function HostApp() {
           <Route
             path="*"
             element={
-              <HostShell token={token} email={email}>
+              <HostShell token={token} email={email} account={account}>
                 <Routes>
                   <Route index element={<DashboardPage token={token} />} />
                   <Route path="quizzes" element={<QuizzesPage token={token} />} />
                   <Route path="quizzes/:quizId" element={<QuizEditorPage token={token} />} />
                   <Route path="sessions" element={<SessionsPage token={token} />} />
                   <Route path="pubs" element={<PubsPage token={token} />} />
+                  {account.role === 'SUPER_ADMIN' && <Route path="admin" element={<AdminPage token={token} />} />}
                   <Route path="*" element={<DashboardPage token={token} />} />
                 </Routes>
               </HostShell>

@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { AnswersRepository, SupabaseAnswersRepository } from './answers.repository';
 import { CategoriesRepository, SupabaseCategoriesRepository } from './categories.repository';
 import { InfractionsRepository, SupabaseInfractionsRepository } from './infractions.repository';
+import { ProfilesRepository, SupabaseProfilesRepository } from './profiles.repository';
 import { PubsRepository, SupabasePubsRepository } from './pubs.repository';
 import { QuestionsRepository, SupabaseQuestionsRepository } from './questions.repository';
 import { QuizzesRepository, SupabaseQuizzesRepository } from './quizzes.repository';
@@ -21,6 +22,7 @@ import { SupabaseTeamsRepository, TeamsRepository } from './teams.repository';
     { provide: ScoreAdjustmentsRepository, useClass: SupabaseScoreAdjustmentsRepository },
     { provide: CategoriesRepository, useClass: SupabaseCategoriesRepository },
     { provide: PubsRepository, useClass: SupabasePubsRepository },
+    { provide: ProfilesRepository, useClass: SupabaseProfilesRepository },
   ],
   exports: [
     SessionsRepository,
@@ -32,6 +34,7 @@ import { SupabaseTeamsRepository, TeamsRepository } from './teams.repository';
     ScoreAdjustmentsRepository,
     CategoriesRepository,
     PubsRepository,
+    ProfilesRepository,
   ],
 })
 export class DataModule {}

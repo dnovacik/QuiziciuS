@@ -10,6 +10,8 @@ import App, { AppRoutes } from './App';
 vi.mock('./lib/api-client', () => ({ apiGet: vi.fn(() => new Promise(() => {})), apiPost: vi.fn() }));
 vi.mock('./lib/supabase-client', () => ({
   subscribeToSession: vi.fn(() => vi.fn()),
+  pendingPasswordLink: () => null,
+  clearPendingPasswordLink: vi.fn(),
   supabase: {
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null } }),

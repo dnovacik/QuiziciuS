@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
-import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
+import { RequireRole } from '../auth/require-role';
 import { CurrentTeam } from '../teams/current-team.decorator';
 import { TeamTokenGuard } from '../teams/team-token.guard';
 import { TeamTokenPayload } from '../teams/team-token.service';
@@ -18,13 +18,13 @@ export class InfractionsController {
   }
 
   @Get('sessions/:sessionId/infractions')
-  @UseGuards(SupabaseAuthGuard)
+  @RequireRole('HOST')
   list(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload) {
     return this.infractions.listForHost(sessionId, host.id);
   }
 
   @Patch('sessions/:sessionId/infractions/:infractionId/review')
-  @UseGuards(SupabaseAuthGuard)
+  @RequireRole('HOST')
   review(@Param('sessionId') sessionId: string, @Param('infractionId') infractionId: string, @CurrentHost() host: CurrentHostPayload) {
     return this.infractions.markReviewed(sessionId, infractionId, host.id);
   }

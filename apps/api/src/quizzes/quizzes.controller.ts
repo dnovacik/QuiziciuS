@@ -10,10 +10,9 @@ import {
   Param,
   Patch,
   Post,
-  UseGuards,
 } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
-import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
+import { RequireRole } from '../auth/require-role';
 import { QuizPatch, QuizRecord, QuizzesRepository } from '../data/quizzes.repository';
 import { SessionsRepository } from '../data/sessions.repository';
 import { PubsService } from '../pubs/pubs.service';
@@ -21,7 +20,7 @@ import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 
 @Controller('quizzes')
-@UseGuards(SupabaseAuthGuard)
+@RequireRole('HOST')
 export class QuizzesController {
   constructor(
     private readonly quizzes: QuizzesRepository,

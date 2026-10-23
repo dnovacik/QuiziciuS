@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { SessionsRepository } from '../data/sessions.repository';
 import { TeamsRepository } from '../data/teams.repository';
 import { RealtimeBroadcastService } from '../realtime/realtime-broadcast.service';
@@ -37,9 +37,18 @@ export class TeamsService {
     return { ready: true };
   }
 
-  async join(sessionId: string, rawName: string, registeredTeamId: string | null = null): Promise<JoinResult> {
+  async join(
+    sessionId: string,
+    rawName: string,
+    registeredTeamId: string | null = null,
+    captainId: string | null = null,
+  ): Promise<JoinResult> {
     const session = await this.sessions.findById(sessionId);
     if (!session) throw new NotFoundException('Session not found');
+    // A host may captain a team, but not in their own quiz nights.
+    if (captainId && session.host_id === captainId) {
+      throw new ForbiddenException({ code: 'OWN_QUIZ', message: 'A host cannot play their own quiz night' });
+    }
     if (session.status === 'FINISHED') throw new BadRequestException('This quiz has finished');
 
     let name = rawName.trim();

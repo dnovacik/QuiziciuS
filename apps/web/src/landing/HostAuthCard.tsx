@@ -1,18 +1,18 @@
 import { forwardRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, ChevronRight, Crown, Eye, EyeOff, Lock, Mail, Users } from 'lucide-react';
+import { ArrowRight, ChevronRight, Crown, Eye, EyeOff, Info, Lock, Mail, Users } from 'lucide-react';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase-client';
-import { FieldLabel, FormNotice, IconInput, SegmentedControl, primaryButtonClass } from '../ui/form';
+import { FieldLabel, FormNotice, IconInput, primaryButtonClass } from '../ui/form';
 import { Pending } from '../ui/Pending';
 
-type Mode = 'login' | 'register' | 'recover';
+/** Host accounts are created by a super admin, so the card only signs in and recovers passwords. */
+type Mode = 'login' | 'recover';
 type Notice = { tone: 'error' | 'success'; text: string };
 
 const COPY = {
   login: { title: 'landing.auth.loginTitle', subtitle: 'landing.auth.loginSubtitle', submit: 'landing.auth.loginSubmit' },
-  register: { title: 'landing.auth.registerTitle', subtitle: 'landing.auth.registerSubtitle', submit: 'landing.auth.registerSubmit' },
   recover: { title: 'landing.auth.recoverTitle', subtitle: 'landing.auth.recoverSubtitle', submit: 'landing.auth.recoverSubmit' },
 } as const;
 
@@ -45,13 +45,9 @@ export const HostAuthCard = forwardRef<HTMLDivElement, { highlighted: boolean; o
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         navigate('/host');
-      } else if (mode === 'register') {
-        const { data, error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        if (data.session) navigate('/host');
-        else setNotice({ tone: 'success', text: t('landing.auth.confirmEmail') });
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        // The link signs the user in on /host, where the set-password screen takes over.
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/host` });
         if (error) throw error;
         setNotice({ tone: 'success', text: t('landing.auth.recoverSent') });
       }
@@ -71,18 +67,6 @@ export const HostAuthCard = forwardRef<HTMLDivElement, { highlighted: boolean; o
       }`}
     >
       <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-purple-600/30 blur-3xl" />
-
-      <div className="mb-7">
-        <SegmentedControl
-          testIdPrefix="host-tab"
-          value={mode === 'register' ? 'register' : 'login'}
-          onChange={switchMode}
-          options={[
-            { value: 'login', label: t('landing.auth.loginTab') },
-            { value: 'register', label: t('landing.auth.registerTab') },
-          ]}
-        />
-      </div>
 
       <div className="mb-6 text-center">
         <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-500/30 bg-amber-500/10 shadow-glow-gold">
@@ -112,7 +96,7 @@ export const HostAuthCard = forwardRef<HTMLDivElement, { highlighted: boolean; o
               icon={Lock}
               data-testid="host-password"
               type={showPassword ? 'text' : 'password'}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              autoComplete="current-password"
               placeholder={t('landing.auth.passwordPlaceholder')}
               minLength={6}
               required
@@ -152,6 +136,16 @@ export const HostAuthCard = forwardRef<HTMLDivElement, { highlighted: boolean; o
         )}
 
         {notice && <FormNotice tone={notice.tone}>{notice.text}</FormNotice>}
+
+        {mode === 'login' && (
+          <p
+            className="flex items-start gap-2 rounded-xl border border-white/10 bg-dark-900/60 p-3 text-xs text-slate-400"
+            data-testid="host-invite-only"
+          >
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-purple-400" />
+            {t('landing.auth.inviteOnly')}
+          </p>
+        )}
 
         <button type="submit" data-testid="host-auth-submit" disabled={pending} className={`${primaryButtonClass} mt-2`}>
           {pending ? t('common.working') : t(copy.submit)}

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { AccountRole } from '@quizicius/shared-types';
 import { AnswerGradePatch, AnswerRecord, AnswersRepository } from '../data/answers.repository';
 import { InfractionRecord, InfractionsRepository } from '../data/infractions.repository';
 import { QuestionRecord, QuestionsRepository } from '../data/questions.repository';
@@ -6,6 +7,7 @@ import { QuizPatch, QuizRecord, QuizzesRepository } from '../data/quizzes.reposi
 import { ScoreAdjustmentRecord, ScoreAdjustmentsRepository } from '../data/score-adjustments.repository';
 import { SessionRecord, SessionsRepository, SessionStatusPatch } from '../data/sessions.repository';
 import { TeamRecord, TeamsRepository } from '../data/teams.repository';
+import { ProfileRecord, ProfilesRepository } from '../data/profiles.repository';
 import { NewPub, PubRecord, PubsRepository, pubKey, TeamPubRecord } from '../data/pubs.repository';
 
 export class InMemorySessionsRepository extends SessionsRepository {
@@ -334,5 +336,40 @@ export class InMemoryPubsRepository extends PubsRepository {
 
   async setTeamPubs(teamId: string, pubIds: string[], primaryPubId: string | null): Promise<void> {
     this.teamPubs.set(teamId, { pubIds, primary: primaryPubId });
+  }
+}
+
+export class InMemoryProfilesRepository extends ProfilesRepository {
+  readonly rows = new Map<string, ProfileRecord>();
+
+  add(id: string, role: AccountRole, email: string | null = `${id}@example.com`): ProfileRecord {
+    const record: ProfileRecord = {
+      id,
+      display_name: email ?? id,
+      email,
+      role,
+      deactivated_at: null,
+      created_at: new Date().toISOString(),
+    };
+    this.rows.set(id, record);
+    return record;
+  }
+
+  async findById(id: string): Promise<ProfileRecord | null> {
+    return this.rows.get(id) ?? null;
+  }
+
+  async findByEmail(email: string): Promise<ProfileRecord | null> {
+    return [...this.rows.values()].find((row) => row.email?.toLowerCase() === email.trim().toLowerCase()) ?? null;
+  }
+
+  async listByRoles(roles: AccountRole[]): Promise<ProfileRecord[]> {
+    return [...this.rows.values()].filter((row) => roles.includes(row.role));
+  }
+
+  async update(id: string, patch: Partial<Pick<ProfileRecord, 'role' | 'deactivated_at' | 'display_name'>>): Promise<ProfileRecord> {
+    const updated = { ...this.rows.get(id)!, ...patch };
+    this.rows.set(id, updated);
+    return updated;
   }
 }

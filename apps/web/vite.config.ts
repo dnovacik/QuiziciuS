@@ -19,6 +19,16 @@ export default defineConfig({
       },
     }),
   ],
+  // @quizicius/shared-types is a linked workspace package compiled to CommonJS (the API needs
+  // that); let Vite convert it like a regular dependency so runtime exports such as hasRole work.
+  optimizeDeps: {
+    include: ['@quizicius/shared-types'],
+  },
+  build: {
+    commonjsOptions: {
+      include: [/shared-types/, /node_modules/],
+    },
+  },
   server: {
     allowedHosts: true,
     proxy: {
