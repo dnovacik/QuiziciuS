@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { loadSeat, type TeamSeat } from '../lib/team-seat';
 import { apiPost } from '../lib/api-client';
 import { useSessionDisplay } from '../lib/use-quiz-title';
+import { usePreloadQuestionMedia } from '../lib/use-current-question-media';
 import { useSessionState } from '../lib/use-session-state';
 import { JoinScreen } from './JoinScreen';
 import { QuestionScreen } from './QuestionScreen';
@@ -28,6 +29,7 @@ const RESULTS_GRACE_MS = 2500;
 function Game({ seat }: { seat: TeamSeat }) {
   const navigate = useNavigate();
   const { state, error, refetch } = useSessionState(seat.sessionId);
+  usePreloadQuestionMedia(seat.sessionId, state?.currentQuestion?.id, state?.status);
   const display = useSessionDisplay(seat.sessionId);
   const title = display.title;
   const { answers, record } = useSubmittedAnswers(seat.sessionId);
