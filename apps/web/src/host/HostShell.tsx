@@ -13,7 +13,8 @@ import { btn, inputClass, Label } from './ui';
 
 const NAV_ITEM =
   'flex w-full items-center gap-space-sm rounded-xl px-space-md py-3 text-label-lg transition-all hover:bg-surface-container-high hover:text-on-surface';
-const NAV_ACTIVE = 'bg-primary-container text-on-primary-container shadow-[0_0_20px_-4px_rgba(160,120,255,0.4)] hover:bg-primary-container hover:text-on-primary-container';
+const NAV_ACTIVE =
+  'bg-primary-container text-on-primary-container shadow-[0_0_20px_-4px_rgba(160,120,255,0.4)] hover:bg-primary-container hover:text-on-primary-container';
 
 /** Sidebar + top bar from the Stitch host dashboard and quiz editor. */
 export function HostShell({ token, email, children }: { token: string; email: string; children: ReactNode }) {
@@ -43,7 +44,9 @@ export function HostShell({ token, email, children }: { token: string; email: st
           </div>
         </div>
         <div className="px-space-md py-space-sm">
-          <div className="mb-space-xs px-space-sm py-space-xs text-label-sm uppercase tracking-wider text-on-surface-variant">{t('host.nav.title')}</div>
+          <div className="mb-space-xs px-space-sm py-space-xs text-label-sm uppercase tracking-wider text-on-surface-variant">
+            {t('host.nav.title')}
+          </div>
           <nav className="flex flex-col gap-space-xs" onClick={() => setMenuOpen(false)}>
             <NavLink to="/host" end className={navLink} data-testid="host-nav-dashboard">
               <LayoutGrid className="h-5 w-5" />
@@ -53,7 +56,12 @@ export function HostShell({ token, email, children }: { token: string; email: st
               <NotebookPen className="h-5 w-5" />
               {t('host.nav.quizzes')}
             </NavLink>
-            <button type="button" className={`${NAV_ITEM} text-on-surface-variant`} onClick={() => setCreating(true)} data-testid="host-nav-create">
+            <button
+              type="button"
+              className={`${NAV_ITEM} text-on-surface-variant`}
+              onClick={() => setCreating(true)}
+              data-testid="host-nav-create"
+            >
               <CirclePlus className="h-5 w-5" />
               {t('host.nav.create')}
             </button>
@@ -87,7 +95,12 @@ export function HostShell({ token, email, children }: { token: string; email: st
         <div className="truncate text-body-md font-semibold text-on-surface" title={email}>
           {email}
         </div>
-        <button type="button" data-testid="host-logout" onClick={() => void supabase.auth.signOut()} className="mt-space-sm flex items-center gap-space-xs text-label-md text-on-surface-variant hover:text-error">
+        <button
+          type="button"
+          data-testid="host-logout"
+          onClick={() => void supabase.auth.signOut()}
+          className="mt-space-sm flex items-center gap-space-xs text-label-md text-on-surface-variant hover:text-error"
+        >
           <LogOut className="h-4 w-4" />
           {t('host.nav.signOut')}
         </button>
@@ -99,7 +112,10 @@ export function HostShell({ token, email, children }: { token: string; email: st
     <div className="min-h-screen bg-surface-container-lowest text-on-surface">
       <div className="fixed left-0 top-0 z-50 hidden h-full lg:block">{sidebar}</div>
       {menuOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden" onMouseDown={(event) => event.target === event.currentTarget && setMenuOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 flex lg:hidden"
+          onMouseDown={(event) => event.target === event.currentTarget && setMenuOpen(false)}
+        >
           {sidebar}
           <div className="flex-1 bg-surface-container-lowest/70 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
         </div>
@@ -108,11 +124,21 @@ export function HostShell({ token, email, children }: { token: string; email: st
       <div className="lg:pl-72">
         <header className="fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between bg-surface-container-low/80 px-space-lg backdrop-blur-xl lg:left-72">
           <div className="flex items-center gap-space-sm">
-            <button type="button" className={`${btn.icon} lg:hidden`} aria-label={t('host.nav.menu')} onClick={() => setMenuOpen((value) => !value)}>
+            <button
+              type="button"
+              className={`${btn.icon} lg:hidden`}
+              aria-label={t('host.nav.menu')}
+              onClick={() => setMenuOpen((value) => !value)}
+            >
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <span className={`h-2.5 w-2.5 rounded-full ${live ? 'bg-tertiary shadow-[0_0_8px_#4edea3]' : 'bg-secondary shadow-[0_0_8px_#ffb95f]'}`} />
-            <span className={`text-label-md uppercase tracking-wide ${live ? 'text-tertiary' : 'text-secondary'}`} data-testid="host-live-status">
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${live ? 'bg-tertiary shadow-[0_0_8px_#4edea3]' : 'bg-secondary shadow-[0_0_8px_#ffb95f]'}`}
+            />
+            <span
+              className={`text-label-md uppercase tracking-wide ${live ? 'text-tertiary' : 'text-secondary'}`}
+              data-testid="host-live-status"
+            >
               {live ? `${live} ${t('host.header.liveSessions')}` : t('host.header.ready')}
             </span>
           </div>
@@ -192,11 +218,24 @@ export function CreateQuizDialog({ token, onClose }: { token: string; onClose: (
         </div>
         <div>
           <Label htmlFor="create-quiz-name">{t('host.create.name')}</Label>
-          <input id="create-quiz-name" data-testid="create-quiz-name" className={inputClass} value={title} maxLength={120} required onChange={(event) => setTitle(event.target.value)} />
+          <input
+            id="create-quiz-name"
+            data-testid="create-quiz-name"
+            className={inputClass}
+            value={title}
+            maxLength={120}
+            required
+            onChange={(event) => setTitle(event.target.value)}
+          />
         </div>
         <div>
           <Label htmlFor="create-quiz-category">{t('host.create.category')}</Label>
-          <select id="create-quiz-category" className={inputClass} value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+          <select
+            id="create-quiz-category"
+            className={inputClass}
+            value={categoryId}
+            onChange={(event) => setCategoryId(event.target.value)}
+          >
             <option value="">{t('host.common.uncategorized')}</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -205,7 +244,11 @@ export function CreateQuizDialog({ token, onClose }: { token: string; onClose: (
             ))}
           </select>
         </div>
-        {error && <p role="alert" className="text-body-sm text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="text-body-sm text-error">
+            {error}
+          </p>
+        )}
         <div className="flex items-center justify-end gap-space-xs pt-space-xs">
           <button type="button" className={btn.ghost} onClick={onClose}>
             {t('host.common.cancel')}

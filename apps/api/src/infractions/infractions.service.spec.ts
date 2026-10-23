@@ -71,10 +71,7 @@ describe('InfractionsService.listForHost', () => {
 
   it('omits already-reviewed infractions from the host review queue', async () => {
     const { service, infractions } = buildHarness();
-    (infractions.listBySession as jest.Mock).mockResolvedValue([
-      INFRACTION,
-      { ...INFRACTION, id: 'inf2', reviewed: true },
-    ]);
+    (infractions.listBySession as jest.Mock).mockResolvedValue([INFRACTION, { ...INFRACTION, id: 'inf2', reviewed: true }]);
 
     await expect(service.listForHost('s1', 'host1')).resolves.toEqual([INFRACTION]);
   });

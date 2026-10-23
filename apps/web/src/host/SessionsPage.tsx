@@ -14,7 +14,8 @@ export function SessionsPage({ token }: { token: string }) {
   const live = library.sessions.filter((session) => session.status !== 'FINISHED');
   const finished = library.sessions.filter((session) => session.status === 'FINISHED');
   const quizTitle = (quizId: string) => library.quizzes.find((quiz) => quiz.id === quizId)?.title ?? '—';
-  const date = (iso: string | null) => (iso ? new Date(iso).toLocaleString(locale === 'sk' ? 'sk-SK' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
+  const date = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleString(locale === 'sk' ? 'sk-SK' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
   return (
     <div className="flex w-full flex-col gap-space-lg" data-testid="host-sessions">
@@ -30,7 +31,9 @@ export function SessionsPage({ token }: { token: string }) {
       {library.error !== null && <ErrorBanner>{describeError(library.error, t, 'errors.generic')}</ErrorBanner>}
 
       {live.length === 0 && !library.loading ? (
-        <div className="rounded-2xl bg-surface-container-low/70 p-space-lg text-body-md text-on-surface-variant">{t('host.dashboard.noLive')}</div>
+        <div className="rounded-2xl bg-surface-container-low/70 p-space-lg text-body-md text-on-surface-variant">
+          {t('host.dashboard.noLive')}
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-space-md xl:grid-cols-2">
           {live.map((session) => (

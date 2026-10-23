@@ -22,12 +22,7 @@ export type AnswerGradePatch = Partial<
 >;
 
 export abstract class AnswersRepository {
-  abstract upsertSubmission(input: {
-    sessionId: string;
-    questionId: string;
-    teamId: string;
-    response: unknown;
-  }): Promise<AnswerRecord>;
+  abstract upsertSubmission(input: { sessionId: string; questionId: string; teamId: string; response: unknown }): Promise<AnswerRecord>;
   abstract findById(id: string): Promise<AnswerRecord | null>;
   abstract listByQuestion(sessionId: string, questionId: string): Promise<AnswerRecord[]>;
   abstract listNeedsReview(sessionId: string): Promise<AnswerRecord[]>;
@@ -41,12 +36,7 @@ export class SupabaseAnswersRepository extends AnswersRepository {
     super();
   }
 
-  async upsertSubmission(input: {
-    sessionId: string;
-    questionId: string;
-    teamId: string;
-    response: unknown;
-  }): Promise<AnswerRecord> {
+  async upsertSubmission(input: { sessionId: string; questionId: string; teamId: string; response: unknown }): Promise<AnswerRecord> {
     const { data, error } = await this.supabase
       .getClient()
       .from('answers')
@@ -84,12 +74,7 @@ export class SupabaseAnswersRepository extends AnswersRepository {
   }
 
   async listNeedsReview(sessionId: string): Promise<AnswerRecord[]> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('answers')
-      .select()
-      .eq('session_id', sessionId)
-      .eq('needs_review', true);
+    const { data, error } = await this.supabase.getClient().from('answers').select().eq('session_id', sessionId).eq('needs_review', true);
     if (error) throw new InternalServerErrorException(error.message);
     return (data ?? []) as AnswerRecord[];
   }

@@ -31,13 +31,7 @@ export class SupabaseTeamsRepository extends TeamsRepository {
   }
 
   async findBySessionAndName(sessionId: string, name: string): Promise<TeamRecord | null> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('teams')
-      .select()
-      .eq('session_id', sessionId)
-      .eq('name', name)
-      .single();
+    const { data, error } = await this.supabase.getClient().from('teams').select().eq('session_id', sessionId).eq('name', name).single();
     if (error) return null;
     return data as TeamRecord;
   }
@@ -46,10 +40,7 @@ export class SupabaseTeamsRepository extends TeamsRepository {
     const { data, error } = await this.supabase
       .getClient()
       .from('teams')
-      .upsert(
-        { session_id: sessionId, name, is_active: true, joined_at: new Date().toISOString() },
-        { onConflict: 'session_id,name' },
-      )
+      .upsert({ session_id: sessionId, name, is_active: true, joined_at: new Date().toISOString() }, { onConflict: 'session_id,name' })
       .select()
       .single();
     if (error) throw new InternalServerErrorException(error.message);

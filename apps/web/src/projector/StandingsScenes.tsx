@@ -12,7 +12,9 @@ export function PauseScene() {
           <Beer className="h-14 w-14" />
         </div>
         <span className="text-label-lg font-extrabold uppercase tracking-widest text-secondary">{t('projector.pause.tag')}</span>
-        <h2 className="mt-space-xs text-display-lg font-extrabold uppercase tracking-tight text-on-surface">{t('projector.pause.title')}</h2>
+        <h2 className="mt-space-xs text-display-lg font-extrabold uppercase tracking-tight text-on-surface">
+          {t('projector.pause.title')}
+        </h2>
         <p className="mt-space-sm max-w-xl text-headline-sm text-on-surface-variant">{t('projector.pause.subtitle')}</p>
       </div>
     </section>
@@ -48,7 +50,11 @@ export function LeaderboardScene({ teams }: { teams: TeamSummaryDto[] }) {
       {rest.length > 0 && (
         <ol className="grid grid-cols-1 gap-space-sm md:grid-cols-2">
           {rest.map((team) => (
-            <li key={team.id} className="flex items-center justify-between rounded-xl bg-surface-container/70 px-space-lg py-space-sm shadow-sm" data-testid="projector-rank-row">
+            <li
+              key={team.id}
+              className="flex items-center justify-between rounded-xl bg-surface-container/70 px-space-lg py-space-sm shadow-sm"
+              data-testid="projector-rank-row"
+            >
               <div className="flex min-w-0 items-center gap-space-md">
                 <span className="text-label-lg font-bold text-outline">{team.rank}.</span>
                 <span className="truncate text-body-lg font-bold text-on-surface">{team.name}</span>
@@ -68,7 +74,10 @@ function PodiumCard({ team, place }: { team: { name: string; score: number }; pl
   const { t } = useI18n();
   if (place === 1) {
     return (
-      <div className="order-1 flex h-72 flex-col items-center justify-between overflow-hidden rounded-xl bg-surface-container/95 p-space-lg shadow-[0_0_36px_rgba(255,185,95,0.25)] backdrop-blur-2xl md:order-2" data-testid="projector-podium-1">
+      <div
+        className="order-1 flex h-72 flex-col items-center justify-between overflow-hidden rounded-xl bg-surface-container/95 p-space-lg shadow-[0_0_36px_rgba(255,185,95,0.25)] backdrop-blur-2xl md:order-2"
+        data-testid="projector-podium-1"
+      >
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary-container text-on-secondary-container shadow-lg">
           <Trophy className="h-8 w-8" />
         </div>
@@ -123,11 +132,16 @@ export function FinishedScene({ teams }: { teams: TeamSummaryDto[] }) {
         <h2 className="mt-space-xs text-display-lg font-extrabold uppercase text-on-surface">{t('projector.finished.title')}</h2>
 
         {champion && (
-          <div className="mt-space-lg flex w-full max-w-xl flex-col items-center rounded-2xl bg-secondary-container/20 p-space-lg shadow-[0_0_40px_rgba(255,185,95,0.25)]" data-testid="projector-champion">
+          <div
+            className="mt-space-lg flex w-full max-w-xl flex-col items-center rounded-2xl bg-secondary-container/20 p-space-lg shadow-[0_0_40px_rgba(255,185,95,0.25)]"
+            data-testid="projector-champion"
+          >
             <div className="mb-space-sm flex h-24 w-24 items-center justify-center rounded-full bg-secondary-container text-on-secondary-container shadow-xl">
               <Crown className="h-12 w-12" />
             </div>
-            <span className="text-label-sm font-extrabold uppercase tracking-widest text-secondary">{t('projector.finished.champion')}</span>
+            <span className="text-label-sm font-extrabold uppercase tracking-widest text-secondary">
+              {t('projector.finished.champion')}
+            </span>
             <h3 className="mt-1 text-display-lg text-on-surface">{champion.name}</h3>
             <span className="text-body-md text-on-surface-variant">
               {t('projector.finished.totalScore')}{' '}
@@ -141,7 +155,11 @@ export function FinishedScene({ teams }: { teams: TeamSummaryDto[] }) {
         {others.length > 0 && (
           <ol className="mt-space-md grid w-full max-w-4xl grid-cols-1 gap-space-md md:grid-cols-2">
             {others.map((team) => (
-              <li key={team.id} className="flex items-center justify-between rounded-xl bg-surface-container-high p-space-md shadow-md" data-testid="projector-final-row">
+              <li
+                key={team.id}
+                className="flex items-center justify-between rounded-xl bg-surface-container-high p-space-md shadow-md"
+                data-testid="projector-final-row"
+              >
                 <div className="flex min-w-0 items-center gap-space-sm">
                   <span className={`text-headline-sm font-bold ${team.rank === 3 ? 'text-amber-500' : 'text-outline'}`}>{team.rank}.</span>
                   <span className="truncate text-body-lg font-extrabold text-on-surface">{team.name}</span>

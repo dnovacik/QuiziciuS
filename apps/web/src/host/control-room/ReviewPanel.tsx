@@ -9,7 +9,17 @@ import { correctLabel, responseLabel } from './QuestionPanel';
 import type { ControlRoom } from './use-control-room';
 
 /** Stitch "Kontrola & Spor" plus infractions and manual (paper round) scoring. */
-export function ReviewPanel({ room, token, sessionId, onDone }: { room: ControlRoom; token: string; sessionId: string; onDone: () => void }) {
+export function ReviewPanel({
+  room,
+  token,
+  sessionId,
+  onDone,
+}: {
+  room: ControlRoom;
+  token: string;
+  sessionId: string;
+  onDone: () => void;
+}) {
   const { t } = useI18n();
   const toast = useToast();
   const state = room.state!;
@@ -19,8 +29,14 @@ export function ReviewPanel({ room, token, sessionId, onDone }: { room: ControlR
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
-    void hostApi.listDisputes(token, sessionId).then(setDisputes).catch(() => setDisputes([]));
-    void hostApi.listInfractions(token, sessionId).then(setInfractions).catch(() => setInfractions([]));
+    void hostApi
+      .listDisputes(token, sessionId)
+      .then(setDisputes)
+      .catch(() => setDisputes([]));
+    void hostApi
+      .listInfractions(token, sessionId)
+      .then(setInfractions)
+      .catch(() => setInfractions([]));
   }, [token, sessionId]);
   useEffect(load, [load, state]);
 
@@ -54,10 +70,14 @@ export function ReviewPanel({ room, token, sessionId, onDone }: { room: ControlR
           </div>
           <div>
             <span className="text-label-sm uppercase tracking-wider text-secondary">
-              {question ? `${t('host.room.evaluation')} ${room.questions.indexOf(question) + 1}/${room.questions.length}` : t('host.room.tab.review')}
+              {question
+                ? `${t('host.room.evaluation')} ${room.questions.indexOf(question) + 1}/${room.questions.length}`
+                : t('host.room.tab.review')}
             </span>
             <h2 className="text-headline-md text-on-surface" data-testid="review-summary">
-              {question ? `${correct} ${t('host.room.correctCount')} • ${wrong} ${t('host.room.wrongCount')} • ${disputes.length} ${t('host.room.disputedCount')}` : t('host.room.noQuestionYet')}
+              {question
+                ? `${correct} ${t('host.room.correctCount')} • ${wrong} ${t('host.room.wrongCount')} • ${disputes.length} ${t('host.room.disputedCount')}`
+                : t('host.room.noQuestionYet')}
             </h2>
           </div>
         </div>
@@ -85,12 +105,18 @@ export function ReviewPanel({ room, token, sessionId, onDone }: { room: ControlR
           disputes.map((dispute) => {
             const disputedQuestion = questionById(dispute.questionId);
             return (
-              <div key={dispute.id} className="flex flex-col items-start justify-between gap-space-md rounded-xl bg-surface-container p-space-md md:flex-row md:items-center" data-testid={`dispute-${dispute.id}`}>
+              <div
+                key={dispute.id}
+                className="flex flex-col items-start justify-between gap-space-md rounded-xl bg-surface-container p-space-md md:flex-row md:items-center"
+                data-testid={`dispute-${dispute.id}`}
+              >
                 <div className="flex flex-col">
                   <span className="text-headline-sm text-on-surface">{teamName(dispute.teamId)}</span>
                   <div className="mt-1 flex flex-wrap items-center gap-space-sm">
                     <span className="text-body-sm text-on-surface-variant">{t('host.room.teamText')}</span>
-                    <span className="rounded bg-surface-container-high px-space-xs py-0.5 text-label-lg text-secondary">„{responseLabel(disputedQuestion, dispute)}“</span>
+                    <span className="rounded bg-surface-container-high px-space-xs py-0.5 text-label-lg text-secondary">
+                      „{responseLabel(disputedQuestion, dispute)}“
+                    </span>
                     {disputedQuestion && (
                       <span className="text-body-sm text-outline">
                         ({t('host.room.expected')}: {correctLabel(disputedQuestion)})
@@ -154,14 +180,32 @@ export function ReviewPanel({ room, token, sessionId, onDone }: { room: ControlR
                     <tr key={answer.id} className="transition-colors hover:bg-surface-container/40">
                       <td className="p-space-sm text-label-md">{teamName(answer.teamId)}</td>
                       <td className="p-space-sm">
-                        <span className={`rounded px-space-xs py-0.5 font-bold ${ok ? 'bg-tertiary-container/20 text-tertiary' : answer.needsReview ? 'bg-secondary/15 text-secondary' : 'bg-error-container/20 text-error'}`}>
+                        <span
+                          className={`rounded px-space-xs py-0.5 font-bold ${ok ? 'bg-tertiary-container/20 text-tertiary' : answer.needsReview ? 'bg-secondary/15 text-secondary' : 'bg-error-container/20 text-error'}`}
+                        >
                           {responseLabel(question, answer)}
                         </span>
                       </td>
                       <td className="p-space-sm">
-                        <span className={`flex items-center gap-1 text-label-sm ${ok ? 'text-tertiary' : answer.needsReview ? 'text-secondary' : 'text-error'}`}>
-                          {ok ? <CheckCircle2 className="h-4 w-4" /> : answer.needsReview ? <ShieldAlert className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-                          {t(ok ? 'host.room.correct' : answer.needsReview ? 'host.room.disputed' : answer.isCorrect === null ? 'host.room.ungraded' : 'host.room.wrong')}
+                        <span
+                          className={`flex items-center gap-1 text-label-sm ${ok ? 'text-tertiary' : answer.needsReview ? 'text-secondary' : 'text-error'}`}
+                        >
+                          {ok ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : answer.needsReview ? (
+                            <ShieldAlert className="h-4 w-4" />
+                          ) : (
+                            <XCircle className="h-4 w-4" />
+                          )}
+                          {t(
+                            ok
+                              ? 'host.room.correct'
+                              : answer.needsReview
+                                ? 'host.room.disputed'
+                                : answer.isCorrect === null
+                                  ? 'host.room.ungraded'
+                                  : 'host.room.wrong',
+                          )}
                         </span>
                       </td>
                       <td className={`p-space-sm text-right text-headline-sm ${ok ? 'text-tertiary' : 'text-on-surface-variant'}`}>
@@ -194,7 +238,9 @@ export function ReviewPanel({ room, token, sessionId, onDone }: { room: ControlR
         <PaperScoreCard
           teams={state.teams}
           busy={busy}
-          onAward={(teamId, points, reason) => act(() => hostApi.addPaperScore(token, sessionId, teamId, points, reason), t('host.room.pointsAdded'))}
+          onAward={(teamId, points, reason) =>
+            act(() => hostApi.addPaperScore(token, sessionId, teamId, points, reason), t('host.room.pointsAdded'))
+          }
         />
       </div>
 
@@ -240,7 +286,12 @@ function InfractionsCard({
               <span className="text-label-md text-on-surface">
                 {teamName(infraction.team_id)} <span className="text-label-sm text-error">• {infractionLabel(infraction.type)}</span>
               </span>
-              <button type="button" className={`${btn.ghost} px-space-sm py-1 text-label-sm`} disabled={busy} onClick={() => onDismiss(infraction.id)}>
+              <button
+                type="button"
+                className={`${btn.ghost} px-space-sm py-1 text-label-sm`}
+                disabled={busy}
+                onClick={() => onDismiss(infraction.id)}
+              >
                 {t('host.room.dismiss')}
               </button>
             </li>
@@ -274,7 +325,11 @@ function PaperScoreCard({
   }
 
   return (
-    <form className="flex flex-col gap-space-sm rounded-2xl bg-surface-container-low p-space-lg shadow-xl" onSubmit={(event) => void submit(event)} data-testid="review-paper">
+    <form
+      className="flex flex-col gap-space-sm rounded-2xl bg-surface-container-low p-space-lg shadow-xl"
+      onSubmit={(event) => void submit(event)}
+      data-testid="review-paper"
+    >
       <div className="flex items-center gap-space-xs">
         <PenLine className="h-5 w-5 text-secondary" />
         <h3 className="text-headline-sm text-on-surface">{t('host.room.paperTitle')}</h3>
@@ -283,7 +338,14 @@ function PaperScoreCard({
       <div className="grid grid-cols-1 gap-space-sm sm:grid-cols-3">
         <div className="sm:col-span-2">
           <Label htmlFor="paper-team">{t('host.room.team')}</Label>
-          <select id="paper-team" data-testid="paper-team" className={inputClass} value={teamId} onChange={(event) => setTeamId(event.target.value)} required>
+          <select
+            id="paper-team"
+            data-testid="paper-team"
+            className={inputClass}
+            value={teamId}
+            onChange={(event) => setTeamId(event.target.value)}
+            required
+          >
             <option value="">—</option>
             {teams.map((team) => (
               <option key={team.id} value={team.id}>
@@ -294,12 +356,28 @@ function PaperScoreCard({
         </div>
         <div>
           <Label htmlFor="paper-points">{t('host.editor.points')}</Label>
-          <input id="paper-points" data-testid="paper-points" type="number" step={1} className={inputClass} value={points} onChange={(event) => setPoints(event.target.value)} required />
+          <input
+            id="paper-points"
+            data-testid="paper-points"
+            type="number"
+            step={1}
+            className={inputClass}
+            value={points}
+            onChange={(event) => setPoints(event.target.value)}
+            required
+          />
         </div>
       </div>
       <div>
         <Label htmlFor="paper-reason">{t('host.room.reason')}</Label>
-        <input id="paper-reason" className={inputClass} value={reason} maxLength={120} onChange={(event) => setReason(event.target.value)} placeholder={t('host.room.reasonPlaceholder')} />
+        <input
+          id="paper-reason"
+          className={inputClass}
+          value={reason}
+          maxLength={120}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder={t('host.room.reasonPlaceholder')}
+        />
       </div>
       <button type="submit" className={`${btn.secondary} self-end`} disabled={busy || !teamId || !points} data-testid="paper-submit">
         {t('host.room.addPoints')}

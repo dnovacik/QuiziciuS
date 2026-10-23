@@ -49,10 +49,15 @@ export class SupabaseSessionsRepository extends SessionsRepository {
     return data as SessionRecord;
   }
 
-  async listByHost(hostId:string):Promise<SessionRecord[]>{
-    const {data,error}=await this.supabase.getClient().from('quiz_sessions').select().eq('host_id',hostId).order('created_at',{ascending:false});
-    if(error)throw new InternalServerErrorException(error.message);
-    return (data??[]) as SessionRecord[];
+  async listByHost(hostId: string): Promise<SessionRecord[]> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('quiz_sessions')
+      .select()
+      .eq('host_id', hostId)
+      .order('created_at', { ascending: false });
+    if (error) throw new InternalServerErrorException(error.message);
+    return (data ?? []) as SessionRecord[];
   }
 
   async findById(id: string): Promise<SessionRecord | null> {
@@ -74,13 +79,7 @@ export class SupabaseSessionsRepository extends SessionsRepository {
   }
 
   async updateStatus(id: string, patch: SessionStatusPatch): Promise<SessionRecord> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('quiz_sessions')
-      .update(patch)
-      .eq('id', id)
-      .select()
-      .single();
+    const { data, error } = await this.supabase.getClient().from('quiz_sessions').update(patch).eq('id', id).select().single();
     if (error) throw new InternalServerErrorException(error.message);
     return data as SessionRecord;
   }

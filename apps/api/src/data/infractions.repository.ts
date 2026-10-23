@@ -36,22 +36,13 @@ export class SupabaseInfractionsRepository extends InfractionsRepository {
   }
 
   async findById(infractionId: string): Promise<InfractionRecord | null> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('infractions')
-      .select()
-      .eq('id', infractionId)
-      .single();
+    const { data, error } = await this.supabase.getClient().from('infractions').select().eq('id', infractionId).single();
     if (error) return null;
     return (data as InfractionRecord) ?? null;
   }
 
   async listBySession(sessionId: string): Promise<InfractionRecord[]> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('infractions')
-      .select()
-      .eq('session_id', sessionId);
+    const { data, error } = await this.supabase.getClient().from('infractions').select().eq('session_id', sessionId);
     if (error) throw new InternalServerErrorException(error.message);
     return (data ?? []) as InfractionRecord[];
   }

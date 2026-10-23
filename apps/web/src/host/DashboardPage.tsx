@@ -34,10 +34,22 @@ export function DashboardPage({ token }: { token: string }) {
       {library.error !== null && <ErrorBanner>{describeError(library.error, t, 'errors.generic')}</ErrorBanner>}
 
       <section className="grid grid-cols-1 gap-space-md sm:grid-cols-2 lg:grid-cols-4" aria-label={t('host.dashboard.statsLabel')}>
-        <StatCard icon={BookOpen} tone="primary" label={t('host.dashboard.statQuizzes')} value={library.loading ? '—' : String(library.quizzes.length)} testId="stat-quizzes">
+        <StatCard
+          icon={BookOpen}
+          tone="primary"
+          label={t('host.dashboard.statQuizzes')}
+          value={library.loading ? '—' : String(library.quizzes.length)}
+          testId="stat-quizzes"
+        >
           {readyQuizzes.length} {t('host.dashboard.statReady')}
         </StatCard>
-        <StatCard icon={Radio} tone="tertiary" label={t('host.dashboard.statLive')} value={library.loading ? '—' : String(live.length)} testId="stat-live">
+        <StatCard
+          icon={Radio}
+          tone="tertiary"
+          label={t('host.dashboard.statLive')}
+          value={library.loading ? '—' : String(live.length)}
+          testId="stat-live"
+        >
           {running > 0 && (
             <span className="flex items-center gap-1 rounded-full bg-tertiary/20 px-2 py-0.5 text-label-sm text-tertiary">
               <span className="h-1.5 w-1.5 animate-ping rounded-full bg-tertiary" />
@@ -45,7 +57,13 @@ export function DashboardPage({ token }: { token: string }) {
             </span>
           )}
         </StatCard>
-        <StatCard icon={Trophy} tone="secondary" label={t('host.dashboard.statHosted')} value={library.loading ? '—' : String(hosted)} testId="stat-hosted" />
+        <StatCard
+          icon={Trophy}
+          tone="secondary"
+          label={t('host.dashboard.statHosted')}
+          value={library.loading ? '—' : String(hosted)}
+          testId="stat-hosted"
+        />
         <Pending feature="team-ratings">
           <StatCard icon={Star} tone="secondary" label={t('host.dashboard.statRating')} value="—" />
         </Pending>
@@ -67,11 +85,21 @@ export function DashboardPage({ token }: { token: string }) {
             <p className="text-body-md text-on-surface-variant">{t('host.dashboard.heroText')}</p>
           </div>
           <div className="flex w-full flex-wrap items-center gap-space-md sm:w-auto">
-            <button type="button" className={`${btn.primary} flex-1 py-3.5 sm:flex-initial`} onClick={() => setCreating(true)} data-testid="hero-create-quiz">
+            <button
+              type="button"
+              className={`${btn.primary} flex-1 py-3.5 sm:flex-initial`}
+              onClick={() => setCreating(true)}
+              data-testid="hero-create-quiz"
+            >
               <CirclePlus className="h-5 w-5" />
               {t('host.dashboard.createQuiz')}
             </button>
-            <button type="button" className={`${btn.gold} flex-1 py-3.5 sm:flex-initial`} onClick={() => setStarting(true)} data-testid="hero-start-evening">
+            <button
+              type="button"
+              className={`${btn.gold} flex-1 py-3.5 sm:flex-initial`}
+              onClick={() => setStarting(true)}
+              data-testid="hero-start-evening"
+            >
               <CirclePlay className="h-5 w-5" />
               {t('host.dashboard.startEvening')}
             </button>
@@ -82,7 +110,9 @@ export function DashboardPage({ token }: { token: string }) {
       <section className="flex flex-col gap-space-md" aria-label={t('host.dashboard.liveTitle')}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-space-sm">
-            <span className={`h-3 w-3 rounded-full ${live.length ? 'animate-pulse bg-tertiary shadow-[0_0_12px_#4edea3]' : 'bg-outline'}`} />
+            <span
+              className={`h-3 w-3 rounded-full ${live.length ? 'animate-pulse bg-tertiary shadow-[0_0_12px_#4edea3]' : 'bg-outline'}`}
+            />
             <h2 className="text-headline-sm text-on-surface">{t('host.dashboard.liveTitle')}</h2>
           </div>
           <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">
@@ -92,11 +122,16 @@ export function DashboardPage({ token }: { token: string }) {
         <div className="grid grid-cols-1 gap-space-md lg:grid-cols-3">
           <div className="flex flex-col gap-space-md lg:col-span-2">
             {live.length === 0 ? (
-              <div className="flex items-center rounded-2xl bg-surface-container-low/70 p-space-lg text-body-md text-on-surface-variant" data-testid="no-live-sessions">
+              <div
+                className="flex items-center rounded-2xl bg-surface-container-low/70 p-space-lg text-body-md text-on-surface-variant"
+                data-testid="no-live-sessions"
+              >
                 {t('host.dashboard.noLive')}
               </div>
             ) : (
-              live.map((session) => <LiveSessionCard key={session.id} session={session} quiz={library.quizzes.find((quiz) => quiz.id === session.quiz_id)} />)
+              live.map((session) => (
+                <LiveSessionCard key={session.id} session={session} quiz={library.quizzes.find((quiz) => quiz.id === session.quiz_id)} />
+              ))
             )}
           </div>
           <Pending feature="scheduled-sessions">
@@ -122,7 +157,12 @@ export function DashboardPage({ token }: { token: string }) {
               <p className="text-body-sm text-on-surface-variant">{t('host.library.subtitle')}</p>
             </div>
           </div>
-          <button type="button" className={`${btn.primary} py-2 text-label-md`} onClick={() => setCreating(true)} data-testid="library-add-quiz">
+          <button
+            type="button"
+            className={`${btn.primary} py-2 text-label-md`}
+            onClick={() => setCreating(true)}
+            data-testid="library-add-quiz"
+          >
             <CirclePlus className="h-[18px] w-[18px]" />
             {t('host.library.add')}
           </button>
@@ -158,7 +198,10 @@ function StatCard({
   testId?: string;
 }) {
   return (
-    <div className="flex flex-col justify-between rounded-2xl bg-surface-container-low/80 p-space-lg shadow-md backdrop-blur-md" data-testid={testId}>
+    <div
+      className="flex flex-col justify-between rounded-2xl bg-surface-container-low/80 p-space-lg shadow-md backdrop-blur-md"
+      data-testid={testId}
+    >
       <div className="mb-space-xs flex items-center justify-between">
         <span className="text-label-md text-on-surface-variant">{label}</span>
         <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${TONES[tone].tile}`}>

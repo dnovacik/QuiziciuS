@@ -6,7 +6,11 @@ import { BADGE_ICON, COLOR_STYLE } from './TeamEmblem';
 export type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'invalid' | 'error';
 
 /** Debounced uniqueness check of a team name; `currentName` (when editing) always counts as available. */
-export function useNameAvailability(name: string, check: (name: string) => Promise<{ available: boolean }>, currentName?: string): Availability {
+export function useNameAvailability(
+  name: string,
+  check: (name: string) => Promise<{ available: boolean }>,
+  currentName?: string,
+): Availability {
   const [status, setStatus] = useState<Availability>('idle');
   useEffect(() => {
     const trimmed = name.trim();
@@ -53,11 +57,15 @@ export function BadgePicker({ value, onChange }: { value: Badge; onChange: (badg
             data-testid={`badge-${badge}`}
             onClick={() => onChange(badge)}
             className={`group relative flex flex-col items-center justify-center rounded-xl p-3.5 transition-all active:scale-95 ${
-              selected ? 'bg-primary/10 shadow-[0_0_16px_-4px_rgba(160,120,255,0.4)] ring-2 ring-primary' : 'bg-surface-container hover:bg-surface-container-high'
+              selected
+                ? 'bg-primary/10 shadow-[0_0_16px_-4px_rgba(160,120,255,0.4)] ring-2 ring-primary'
+                : 'bg-surface-container hover:bg-surface-container-high'
             }`}
           >
             <Icon className="h-8 w-8 text-secondary transition-transform group-hover:scale-110" />
-            <span className={`mt-1 text-[10px] ${selected ? 'text-on-surface' : 'text-on-surface-variant'}`}>{t(`team.badge.${badge}`)}</span>
+            <span className={`mt-1 text-[10px] ${selected ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+              {t(`team.badge.${badge}`)}
+            </span>
             {selected && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />}
           </button>
         );
@@ -105,7 +113,9 @@ export function CapacityPicker({ value, onChange }: { value: number; onChange: (
             data-testid={`capacity-${count}`}
             onClick={() => onChange(count)}
             className={`flex flex-col items-center justify-center rounded-xl py-3 text-headline-sm transition-all ${
-              selected ? 'bg-primary text-on-primary shadow-md ring-2 ring-primary' : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+              selected
+                ? 'bg-primary text-on-primary shadow-md ring-2 ring-primary'
+                : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
             }`}
           >
             <span>{count}</span>

@@ -95,33 +95,44 @@ beforeEach(() => {
   db.disputes = [];
   live.state = null;
   live.refetch = vi.fn();
-  vi.mocked(apiGet).mockReset().mockImplementation(async (path: string) => {
-    if (path === '/quizzes') return db.quizzes;
-    if (path === '/categories') return [{ id: 'cat1', name: 'Movies' }];
-    if (path === '/host/sessions') return db.sessions;
-    if (path === '/host/sessions/s1') return db.sessions[0];
-    if (path.startsWith('/host/sessions/s1/answers')) return db.answers;
-    if (path === '/sessions/s1/disputes') return db.disputes;
-    if (path === '/sessions/s1/infractions') return [];
-    if (path === '/sessions/s1/state') return live.state;
-    const questions = path.match(/^\/quizzes\/(\w+)\/questions$/);
-    if (questions) return db.questions[questions[1]] ?? [];
-    throw new Error(`unexpected GET ${path}`);
-  });
-  vi.mocked(apiPost).mockReset().mockImplementation(async (path: string, body: unknown) => {
-    if (path === '/quizzes') return { ...QUIZ, id: 'copy1', title: (body as { title: string }).title };
-    if (path.endsWith('/questions')) return { ...question('new1', 9), ...(body as object), id: 'new1' };
-    if (path === '/quizzes/quiz1/sessions') return session('s9', 'LOBBY');
-    return {};
-  });
-  vi.mocked(apiPatch).mockReset().mockImplementation(async (path: string, body: unknown) => {
-    const match = path.match(/\/questions\/(\w+)$/);
-    if (match) {
-      const payload = body as { prompt: string; orderIndex: number; points: number };
-      return { ...db.questions.quiz1.find((row) => row.id === match[1])!, prompt: payload.prompt, order_index: payload.orderIndex, points: payload.points };
-    }
-    return { ...QUIZ, ...(body as object) };
-  });
+  vi.mocked(apiGet)
+    .mockReset()
+    .mockImplementation(async (path: string) => {
+      if (path === '/quizzes') return db.quizzes;
+      if (path === '/categories') return [{ id: 'cat1', name: 'Movies' }];
+      if (path === '/host/sessions') return db.sessions;
+      if (path === '/host/sessions/s1') return db.sessions[0];
+      if (path.startsWith('/host/sessions/s1/answers')) return db.answers;
+      if (path === '/sessions/s1/disputes') return db.disputes;
+      if (path === '/sessions/s1/infractions') return [];
+      if (path === '/sessions/s1/state') return live.state;
+      const questions = path.match(/^\/quizzes\/(\w+)\/questions$/);
+      if (questions) return db.questions[questions[1]] ?? [];
+      throw new Error(`unexpected GET ${path}`);
+    });
+  vi.mocked(apiPost)
+    .mockReset()
+    .mockImplementation(async (path: string, body: unknown) => {
+      if (path === '/quizzes') return { ...QUIZ, id: 'copy1', title: (body as { title: string }).title };
+      if (path.endsWith('/questions')) return { ...question('new1', 9), ...(body as object), id: 'new1' };
+      if (path === '/quizzes/quiz1/sessions') return session('s9', 'LOBBY');
+      return {};
+    });
+  vi.mocked(apiPatch)
+    .mockReset()
+    .mockImplementation(async (path: string, body: unknown) => {
+      const match = path.match(/\/questions\/(\w+)$/);
+      if (match) {
+        const payload = body as { prompt: string; orderIndex: number; points: number };
+        return {
+          ...db.questions.quiz1.find((row) => row.id === match[1])!,
+          prompt: payload.prompt,
+          order_index: payload.orderIndex,
+          points: payload.points,
+        };
+      }
+      return { ...QUIZ, ...(body as object) };
+    });
   vi.mocked(apiDelete).mockReset().mockResolvedValue(undefined);
 });
 
@@ -208,7 +219,13 @@ describe('quiz editor', () => {
     await waitFor(() =>
       expect(apiPatch).toHaveBeenCalledWith(
         '/quizzes/quiz1/questions/q1',
-        expect.objectContaining({ type: 'MULTIPLE_CHOICE', prompt: 'Which 1994 film won Best Picture?', orderIndex: 0, points: 10, timeLimitSeconds: 30 }),
+        expect.objectContaining({
+          type: 'MULTIPLE_CHOICE',
+          prompt: 'Which 1994 film won Best Picture?',
+          orderIndex: 0,
+          points: 10,
+          timeLimitSeconds: 30,
+        }),
         'jwt',
       ),
     );
@@ -244,7 +261,9 @@ describe('quiz editor', () => {
     fireEvent.click(within(screen.getByTestId('editor-delete-dialog')).getByTestId('confirm-dialog-confirm'));
 
     await waitFor(() => expect(apiDelete).toHaveBeenCalledWith('/quizzes/quiz1/questions/q1', 'jwt'));
-    await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/quizzes/quiz1/questions/q2', expect.objectContaining({ orderIndex: 0 }), 'jwt'));
+    await waitFor(() =>
+      expect(apiPatch).toHaveBeenCalledWith('/quizzes/quiz1/questions/q2', expect.objectContaining({ orderIndex: 0 }), 'jwt'),
+    );
     expect(apiPatch).toHaveBeenCalledWith('/quizzes/quiz1/questions/q3', expect.objectContaining({ orderIndex: 1 }), 'jwt');
   });
 
@@ -271,18 +290,35 @@ describe('control room', () => {
     fireEvent.click(screen.getByTestId('room-start'));
     fireEvent.click(within(screen.getByTestId('room-start-dialog')).getByTestId('confirm-dialog-confirm'));
 
-    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'LOCK_IN_ROUND', questionId: 'q1' }, 'jwt'));
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'LOCK_IN_ROUND', questionId: 'q1' }, 'jwt'),
+    );
   });
 
   it('counts answers per option while the question is live', async () => {
     live.state = liveState('QUESTION_ACTIVE', 'q1');
     db.answers = [
-      { id: 'x1', sessionId: 's1', questionId: 'q1', teamId: 't1', response: { optionId: 'b' }, isCorrect: true, confidence: null, needsReview: false, gradedBy: 'AUTO', scoreAwarded: 10 },
+      {
+        id: 'x1',
+        sessionId: 's1',
+        questionId: 'q1',
+        teamId: 't1',
+        response: { optionId: 'b' },
+        isCorrect: true,
+        confidence: null,
+        needsReview: false,
+        gradedBy: 'AUTO',
+        scoreAwarded: 10,
+      },
     ];
     renderRoom();
 
     await waitFor(() => expect(screen.getByTestId('room-answered-count')).toHaveTextContent('1 / 2'));
-    expect(within(screen.getByTestId('room-distribution')).getByText(/Forrest Gump/).closest('div')!.parentElement).toHaveTextContent('1');
+    expect(
+      within(screen.getByTestId('room-distribution'))
+        .getByText(/Forrest Gump/)
+        .closest('div')!.parentElement,
+    ).toHaveTextContent('1');
     fireEvent.click(screen.getByTestId('room-action-reveal'));
     await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'QUESTION_REVEAL' }, 'jwt'));
   });
@@ -295,7 +331,9 @@ describe('control room', () => {
     await waitFor(() => expect(screen.getByTestId('room-question-q2')).toHaveAttribute('data-state', 'next'));
     expect(screen.getByTestId('room-question-q1')).toHaveAttribute('data-state', 'done');
     fireEvent.click(screen.getByTestId('room-action-next'));
-    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'LOCK_IN_ROUND', questionId: 'q2' }, 'jwt'));
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'LOCK_IN_ROUND', questionId: 'q2' }, 'jwt'),
+    );
   });
 
   it('offers to finish once every question has been played', async () => {
@@ -311,7 +349,18 @@ describe('control room', () => {
   it('lets the host accept a disputed free-text answer', async () => {
     db.questions.quiz1[0] = question('q1', 0, { type: 'FREE_TEXT', options: null, accepted_answers: ['Forrest Gump'] });
     db.disputes = [
-      { id: 'd1', sessionId: 's1', questionId: 'q1', teamId: 't2', response: { text: 'Forest Gamp' }, isCorrect: null, confidence: 0.7, needsReview: true, gradedBy: null, scoreAwarded: 0 },
+      {
+        id: 'd1',
+        sessionId: 's1',
+        questionId: 'q1',
+        teamId: 't2',
+        response: { text: 'Forest Gamp' },
+        isCorrect: null,
+        confidence: 0.7,
+        needsReview: true,
+        gradedBy: null,
+        scoreAwarded: 0,
+      },
     ];
     live.state = liveState('QUESTION_REVEAL', 'q1');
     renderRoom();

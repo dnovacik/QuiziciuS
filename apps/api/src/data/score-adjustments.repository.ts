@@ -33,11 +33,7 @@ export class SupabaseScoreAdjustmentsRepository extends ScoreAdjustmentsReposito
   }
 
   async listBySession(sessionId: string): Promise<ScoreAdjustmentRecord[]> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('score_adjustments')
-      .select()
-      .eq('session_id', sessionId);
+    const { data, error } = await this.supabase.getClient().from('score_adjustments').select().eq('session_id', sessionId);
     if (error) throw new InternalServerErrorException(error.message);
     return (data ?? []) as ScoreAdjustmentRecord[];
   }

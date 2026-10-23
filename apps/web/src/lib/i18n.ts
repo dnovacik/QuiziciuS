@@ -30,7 +30,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>(readLocale);
   useEffect(() => {
     document.documentElement.lang = locale;
-    try { localStorage.setItem(STORAGE_KEY, locale); } catch { /* storage can be disabled */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, locale);
+    } catch {
+      /* storage can be disabled */
+    }
   }, [locale]);
   return createElement(I18nContext.Provider, { value: { locale, setLocale, t: (key) => translate(locale, key) } }, children);
 }

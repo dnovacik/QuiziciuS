@@ -68,13 +68,23 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                   data-testid={`room-question-${question.id}`}
                   data-state={live ? 'live' : next ? 'next' : done ? 'done' : 'waiting'}
                   className={`flex w-full items-center justify-between gap-space-sm rounded-xl p-space-sm text-left transition-colors ${
-                    live || next ? 'bg-surface-container-high shadow-md' : done ? 'bg-surface-container hover:bg-surface-container-high' : 'bg-surface-container/60 opacity-80 hover:opacity-100'
+                    live || next
+                      ? 'bg-surface-container-high shadow-md'
+                      : done
+                        ? 'bg-surface-container hover:bg-surface-container-high'
+                        : 'bg-surface-container/60 opacity-80 hover:opacity-100'
                   } disabled:cursor-default`}
                 >
                   <div className="flex min-w-0 items-center gap-space-sm">
                     <span
                       className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-label-sm ${
-                        live ? 'bg-primary font-bold text-on-primary' : done ? 'bg-tertiary-container/30 text-tertiary' : next ? 'bg-secondary text-on-secondary' : 'bg-surface-container-highest text-on-surface-variant'
+                        live
+                          ? 'bg-primary font-bold text-on-primary'
+                          : done
+                            ? 'bg-tertiary-container/30 text-tertiary'
+                            : next
+                              ? 'bg-secondary text-on-secondary'
+                              : 'bg-surface-container-highest text-on-surface-variant'
                       }`}
                     >
                       {done ? <Check className="h-3.5 w-3.5" /> : index + 1}
@@ -91,7 +101,13 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                   </div>
                   <span
                     className={`shrink-0 rounded px-space-xs py-0.5 text-label-sm ${
-                      live ? 'bg-primary-container text-on-primary-container' : next ? 'bg-secondary/20 text-secondary' : done ? 'text-tertiary' : 'text-outline'
+                      live
+                        ? 'bg-primary-container text-on-primary-container'
+                        : next
+                          ? 'bg-secondary/20 text-secondary'
+                          : done
+                            ? 'text-tertiary'
+                            : 'text-outline'
                     }`}
                   >
                     {t(live ? 'host.room.qLive' : next ? 'host.room.qNext' : done ? 'host.room.qDone' : 'host.room.qWaiting')}
@@ -111,7 +127,9 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                 <span className="rounded-full bg-primary-container/20 px-space-sm py-1 text-label-sm uppercase tracking-wide text-primary">
                   {t(showingCurrent ? `host.status.${status}` : 'host.room.upNext')}
                 </span>
-                <span className="rounded bg-surface-container px-space-xs py-1 text-label-sm text-on-surface-variant">{t(`host.editor.typeShort.${focus.type}`)}</span>
+                <span className="rounded bg-surface-container px-space-xs py-1 text-label-sm text-on-surface-variant">
+                  {t(`host.editor.typeShort.${focus.type}`)}
+                </span>
               </div>
               <span className="rounded-full bg-surface-container px-space-sm py-1 text-label-sm text-on-surface">
                 {focus.points} {t('host.common.pointsShort')}
@@ -129,7 +147,9 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
             {(mediaUrl || status === 'QUESTION_ACTIVE') && (
               <div className="grid grid-cols-1 items-center gap-space-md rounded-2xl bg-surface-container p-space-md sm:grid-cols-12">
                 {mediaUrl && (
-                  <div className={`relative overflow-hidden rounded-xl shadow-md ${status === 'QUESTION_ACTIVE' ? 'sm:col-span-5' : 'sm:col-span-12'}`}>
+                  <div
+                    className={`relative overflow-hidden rounded-xl shadow-md ${status === 'QUESTION_ACTIVE' ? 'sm:col-span-5' : 'sm:col-span-12'}`}
+                  >
                     {focus.media_type === 'video' ? (
                       <video src={mediaUrl} controls preload="metadata" className="h-32 w-full bg-black object-contain" />
                     ) : (
@@ -138,7 +158,9 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                   </div>
                 )}
                 {status === 'QUESTION_ACTIVE' && remaining !== null && (
-                  <div className={`flex flex-col items-center justify-center gap-space-xs p-space-xs ${mediaUrl ? 'sm:col-span-7' : 'sm:col-span-12'}`}>
+                  <div
+                    className={`flex flex-col items-center justify-center gap-space-xs p-space-xs ${mediaUrl ? 'sm:col-span-7' : 'sm:col-span-12'}`}
+                  >
                     <div className="flex items-center justify-center gap-space-md">
                       <Ring seconds={remaining} total={focus.time_limit_seconds} />
                       <Pending feature="timer-controls">
@@ -182,7 +204,9 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                         </span>
                       </div>
                       {showingCurrent && (
-                        <span className={`shrink-0 text-label-sm ${option.isCorrect ? 'font-bold text-primary' : 'text-on-surface-variant'}`}>
+                        <span
+                          className={`shrink-0 text-label-sm ${option.isCorrect ? 'font-bold text-primary' : 'text-on-surface-variant'}`}
+                        >
                           {count} {t('host.room.teamsShort')}
                         </span>
                       )}
@@ -211,13 +235,25 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
 
         <div className="flex flex-wrap items-center gap-space-sm pt-space-sm" data-testid="room-actions">
           {status === 'LOBBY' && (
-            <button type="button" className={`${btn.primary} flex-1 py-3`} disabled={room.busy || !room.selectedId} onClick={() => void room.transition('LOCK_IN_ROUND')} data-testid="room-action-lock-in">
+            <button
+              type="button"
+              className={`${btn.primary} flex-1 py-3`}
+              disabled={room.busy || !room.selectedId}
+              onClick={() => void room.transition('LOCK_IN_ROUND')}
+              data-testid="room-action-lock-in"
+            >
               <Play className="h-5 w-5" />
               {t('host.room.start')}
             </button>
           )}
           {status === 'LOCK_IN_ROUND' && (
-            <button type="button" className={`${btn.primary} flex-1 py-3`} disabled={room.busy} onClick={() => void room.transition('QUESTION_ACTIVE')} data-testid="room-action-show">
+            <button
+              type="button"
+              className={`${btn.primary} flex-1 py-3`}
+              disabled={room.busy}
+              onClick={() => void room.transition('QUESTION_ACTIVE')}
+              data-testid="room-action-show"
+            >
               <Eye className="h-5 w-5" />
               {t('host.room.showQuestion')}
             </button>
@@ -230,7 +266,13 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                   {t('host.room.stopAnswers')}
                 </span>
               </Pending>
-              <button type="button" className={`${btn.primary} flex-1 py-3`} disabled={room.busy} onClick={() => void room.transition('QUESTION_REVEAL')} data-testid="room-action-reveal">
+              <button
+                type="button"
+                className={`${btn.primary} flex-1 py-3`}
+                disabled={room.busy}
+                onClick={() => void room.transition('QUESTION_REVEAL')}
+                data-testid="room-action-reveal"
+              >
                 <Eye className="h-5 w-5" />
                 {t('host.room.reveal')}
               </button>
@@ -238,11 +280,22 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
           )}
           {status === 'QUESTION_REVEAL' && (
             <>
-              <button type="button" className={`${btn.secondary} flex-1 py-3 text-tertiary`} onClick={onReview} data-testid="room-action-review">
+              <button
+                type="button"
+                className={`${btn.secondary} flex-1 py-3 text-tertiary`}
+                onClick={onReview}
+                data-testid="room-action-review"
+              >
                 <ListChecks className="h-5 w-5" />
                 {t('host.room.evaluate')}
               </button>
-              <button type="button" className={`${btn.secondary} flex-1 py-3`} disabled={room.busy} onClick={() => void room.transition('PAUSE_BREAK')} data-testid="room-action-pause">
+              <button
+                type="button"
+                className={`${btn.secondary} flex-1 py-3`}
+                disabled={room.busy}
+                onClick={() => void room.transition('PAUSE_BREAK')}
+                data-testid="room-action-pause"
+              >
                 <Coffee className="h-5 w-5 text-secondary" />
                 {t('host.room.pause')}
               </button>
@@ -250,7 +303,13 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
           )}
           {(status === 'QUESTION_REVEAL' || status === 'PAUSE_BREAK') &&
             (room.selectedId ? (
-              <button type="button" className={`${btn.primary} flex-1 py-3`} disabled={room.busy} onClick={() => void room.transition('LOCK_IN_ROUND')} data-testid="room-action-next">
+              <button
+                type="button"
+                className={`${btn.primary} flex-1 py-3`}
+                disabled={room.busy}
+                onClick={() => void room.transition('LOCK_IN_ROUND')}
+                data-testid="room-action-next"
+              >
                 {t('host.room.next')}
                 <ArrowRight className="h-5 w-5" />
               </button>
@@ -282,13 +341,24 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
           {state.teams.map((team) => {
             const answer = answers.find((row) => row.teamId === team.id);
             return (
-              <li key={team.id} className={`flex items-center justify-between rounded-lg p-space-xs px-space-sm ${answer ? 'bg-surface-container' : 'bg-secondary/10'}`}>
+              <li
+                key={team.id}
+                className={`flex items-center justify-between rounded-lg p-space-xs px-space-sm ${answer ? 'bg-surface-container' : 'bg-secondary/10'}`}
+              >
                 <div className="flex items-center gap-space-xs truncate">
-                  {answer ? <CheckCircle2 className="h-4 w-4 text-tertiary" /> : <span className="h-2 w-2 animate-pulse rounded-full bg-secondary" />}
+                  {answer ? (
+                    <CheckCircle2 className="h-4 w-4 text-tertiary" />
+                  ) : (
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-secondary" />
+                  )}
                   <span className={`truncate text-label-sm ${answer ? 'text-on-surface' : 'text-secondary'}`}>{team.name}</span>
                 </div>
                 <span className={`shrink-0 text-label-sm ${answer ? 'text-tertiary' : 'text-on-surface-variant'}`}>
-                  {answer ? responseLabel(room.currentQuestion, answer).slice(0, 18) : showingCurrent && status !== 'LOCK_IN_ROUND' ? t('host.room.thinking') : ''}
+                  {answer
+                    ? responseLabel(room.currentQuestion, answer).slice(0, 18)
+                    : showingCurrent && status !== 'LOCK_IN_ROUND'
+                      ? t('host.room.thinking')
+                      : ''}
                 </span>
               </li>
             );
@@ -299,7 +369,9 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
           <ol className="mt-1 flex flex-col gap-1">
             {ranked.slice(0, 3).map((team, index) => (
               <li key={team.id} className="flex items-center justify-between text-label-sm">
-                <span className={index === 0 ? 'font-bold text-secondary' : index === 1 ? 'font-bold text-primary' : 'text-on-surface-variant'}>
+                <span
+                  className={index === 0 ? 'font-bold text-secondary' : index === 1 ? 'font-bold text-primary' : 'text-on-surface-variant'}
+                >
                   {team.rank}. {team.name}
                 </span>
                 <span className="text-on-surface">
@@ -335,9 +407,22 @@ function Ring({ seconds, total }: { seconds: number; total: number }) {
   const { t } = useI18n();
   const fraction = total > 0 ? Math.min(1, seconds / total) : 0;
   return (
-    <div className="relative flex h-20 w-20 items-center justify-center" role="timer" aria-label={`${seconds} ${t('play.seconds')}`} data-testid="room-timer">
+    <div
+      className="relative flex h-20 w-20 items-center justify-center"
+      role="timer"
+      aria-label={`${seconds} ${t('play.seconds')}`}
+      data-testid="room-timer"
+    >
       <svg aria-hidden="true" className="h-20 w-20 -rotate-90" viewBox="0 0 36 36">
-        <circle className="text-surface-container-highest" cx="18" cy="18" r="15.9155" fill="none" stroke="currentColor" strokeWidth="3.5" />
+        <circle
+          className="text-surface-container-highest"
+          cx="18"
+          cy="18"
+          r="15.9155"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3.5"
+        />
         <circle
           className={`${seconds <= 5 ? 'text-red-400' : 'text-secondary'} transition-all duration-1000 ease-linear`}
           cx="18"
@@ -357,4 +442,3 @@ function Ring({ seconds, total }: { seconds: number; total: number }) {
     </div>
   );
 }
-

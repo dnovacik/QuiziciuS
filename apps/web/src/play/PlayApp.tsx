@@ -44,7 +44,10 @@ function Game({ seat }: { seat: TeamSeat }) {
 
   if (!state) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-surface-container-lowest p-6 text-center text-on-surface-variant" aria-busy={!error}>
+      <div
+        className="flex min-h-[100dvh] items-center justify-center bg-surface-container-lowest p-6 text-center text-on-surface-variant"
+        aria-busy={!error}
+      >
         {error ?? <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />}
       </div>
     );

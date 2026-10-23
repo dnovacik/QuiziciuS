@@ -36,9 +36,7 @@ describe('TeamTokenGuard', () => {
     const teams = { findById: jest.fn() } as unknown as TeamsRepository;
     const guard = new TeamTokenGuard(teamTokens, teams);
 
-    await expect(guard.canActivate(contextWithHeader('Bearer garbage'))).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(guard.canActivate(contextWithHeader('Bearer garbage'))).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('rejects a validly-signed token that was superseded by a later join ("last device wins")', async () => {
@@ -48,9 +46,7 @@ describe('TeamTokenGuard', () => {
     } as unknown as TeamsRepository;
     const guard = new TeamTokenGuard(teamTokens, teams);
 
-    await expect(guard.canActivate(contextWithHeader(`Bearer ${token}`))).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(guard.canActivate(contextWithHeader(`Bearer ${token}`))).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('attaches the team payload when the token hash matches the current device', async () => {

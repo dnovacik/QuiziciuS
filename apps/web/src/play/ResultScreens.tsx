@@ -1,5 +1,18 @@
 import { useState } from 'react';
-import { BadgeCheck, ChevronDown, Crown, Download, Flag, Home, Hourglass, PartyPopper, Share2, ThumbsDown, Trophy, Users } from 'lucide-react';
+import {
+  BadgeCheck,
+  ChevronDown,
+  Crown,
+  Download,
+  Flag,
+  Home,
+  Hourglass,
+  PartyPopper,
+  Share2,
+  ThumbsDown,
+  Trophy,
+  Users,
+} from 'lucide-react';
 import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto } from '@quizicius/shared-types';
 import { useI18n } from '../lib/i18n';
 import { correctAnswerText, optionLetter, rankTeams, type RankedTeam } from '../lib/quiz';
@@ -51,7 +64,11 @@ export function RevealScreen({
 
   return (
     <PlayerShell joinCode={state.joinCode} phase="reveal" testId="player-reveal">
-      <section data-testid="player-verdict" data-verdict={verdict} className={`relative overflow-hidden rounded-xl p-space-md ${style.box}`}>
+      <section
+        data-testid="player-verdict"
+        data-verdict={verdict}
+        className={`relative overflow-hidden rounded-xl p-space-md ${style.box}`}
+      >
         <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-tertiary/20 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-6 -left-6 h-28 w-28 rounded-full bg-primary/20 blur-xl" />
         <div className="relative z-10 flex flex-col items-center text-center">
@@ -123,7 +140,9 @@ export function RevealScreen({
       )}
 
       <section className="rounded-xl bg-surface-container p-space-md">
-        <span className="mb-2.5 block text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">{t('play.reveal.top3')}</span>
+        <span className="mb-2.5 block text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">
+          {t('play.reveal.top3')}
+        </span>
         <ol className="space-y-1.5">
           {ranked.slice(0, 3).map((team) => (
             <StandingRow key={team.id} team={team} isOwn={team.id === teamId} />
@@ -136,7 +155,10 @@ export function RevealScreen({
           <h3 className="text-label-md font-bold text-on-surface">{t('play.reveal.disputeTitle')}</h3>
           <p className="text-body-sm leading-relaxed text-on-surface-variant">{t('play.reveal.disputeText')}</p>
           <div className="flex justify-end">
-            <button type="button" className="flex min-h-[44px] items-center gap-1.5 rounded-lg bg-surface-container-high px-3.5 text-label-md font-bold text-on-surface">
+            <button
+              type="button"
+              className="flex min-h-[44px] items-center gap-1.5 rounded-lg bg-surface-container-high px-3.5 text-label-md font-bold text-on-surface"
+            >
               <Flag className="h-4 w-4 text-secondary" />
               {t('play.reveal.disputeButton')}
             </button>
@@ -205,11 +227,16 @@ export function ResultsScreen({
           <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-primary/20 blur-2xl" />
           <div className="relative z-10 flex items-start justify-between gap-space-sm">
             <div className="min-w-0">
-              <span className="rounded-full bg-primary/20 px-2 py-0.5 text-label-sm font-extrabold uppercase tracking-wider text-primary">{t('play.results.yourTeam')}</span>
+              <span className="rounded-full bg-primary/20 px-2 py-0.5 text-label-sm font-extrabold uppercase tracking-wider text-primary">
+                {t('play.results.yourTeam')}
+              </span>
               <h2 className="mt-1 truncate text-headline-sm font-bold text-on-surface">{own.name}</h2>
             </div>
             <div className="flex shrink-0 flex-col items-end">
-              <span className="rounded-full bg-surface-container-highest px-3 py-1 text-headline-sm font-extrabold leading-none text-on-surface" data-testid="player-final-rank">
+              <span
+                className="rounded-full bg-surface-container-highest px-3 py-1 text-headline-sm font-extrabold leading-none text-on-surface"
+                data-testid="player-final-rank"
+              >
                 {own.rank}.
               </span>
               <span className="mt-1 text-label-sm uppercase tracking-wider text-on-surface-variant">{t('play.results.place')}</span>
@@ -267,7 +294,10 @@ export function ResultsScreen({
             {t('play.results.home')}
           </button>
           <Pending feature="result-certificate">
-            <button type="button" className="flex h-12 w-full items-center justify-center gap-1.5 rounded-lg bg-surface-container-high px-2 text-label-md text-on-surface">
+            <button
+              type="button"
+              className="flex h-12 w-full items-center justify-center gap-1.5 rounded-lg bg-surface-container-high px-2 text-label-md text-on-surface"
+            >
               <Download className="h-[18px] w-[18px] text-tertiary" />
               {t('play.results.certificate')}
             </button>
@@ -300,18 +330,30 @@ function Podium({ ranked, teamId }: { ranked: RankedTeam[]; teamId: string }) {
             <div key={team.id} className="flex flex-col items-center">
               <div
                 className={`mb-1 flex items-center justify-center rounded-full ${
-                  slot === 1 ? 'h-12 w-12 bg-secondary-container/30 shadow-[0_0_16px_rgba(238,152,0,0.4)]' : 'h-10 w-10 bg-surface-container-highest shadow-md'
+                  slot === 1
+                    ? 'h-12 w-12 bg-secondary-container/30 shadow-[0_0_16px_rgba(238,152,0,0.4)]'
+                    : 'h-10 w-10 bg-surface-container-highest shadow-md'
                 }`}
               >
-                {slot === 1 ? <Crown className="h-6 w-6 text-secondary" /> : <span className="text-label-lg font-extrabold text-on-surface">{team.rank}</span>}
+                {slot === 1 ? (
+                  <Crown className="h-6 w-6 text-secondary" />
+                ) : (
+                  <span className="text-label-lg font-extrabold text-on-surface">{team.rank}</span>
+                )}
               </div>
-              <span className={`w-full truncate px-1 text-label-sm font-bold ${slot === 1 ? 'text-secondary' : 'text-on-surface'}`}>{team.name}</span>
-              <span className={`text-label-sm font-bold ${team.id === teamId ? 'text-primary' : slot === 1 ? 'text-secondary' : 'text-on-surface-variant'}`}>
+              <span className={`w-full truncate px-1 text-label-sm font-bold ${slot === 1 ? 'text-secondary' : 'text-on-surface'}`}>
+                {team.name}
+              </span>
+              <span
+                className={`text-label-sm font-bold ${team.id === teamId ? 'text-primary' : slot === 1 ? 'text-secondary' : 'text-on-surface-variant'}`}
+              >
                 {team.score} {t('play.pointsShort')}
               </span>
               <div
                 className={`mt-2 flex w-full flex-col justify-end rounded-t-lg pb-1 shadow-inner ${heights[slot]} ${
-                  slot === 1 ? 'bg-gradient-to-t from-secondary/30 via-secondary-container/20 to-surface-container-highest' : 'bg-gradient-to-t from-primary/20 to-surface-container-high'
+                  slot === 1
+                    ? 'bg-gradient-to-t from-secondary/30 via-secondary-container/20 to-surface-container-highest'
+                    : 'bg-gradient-to-t from-primary/20 to-surface-container-high'
                 }`}
               >
                 {team.id === teamId && <span className="text-label-sm font-bold uppercase text-on-surface-variant">{t('play.you')}</span>}

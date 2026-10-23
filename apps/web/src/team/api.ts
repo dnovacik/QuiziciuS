@@ -37,11 +37,13 @@ export const teamApi = {
   mine: (token: string) => apiGet<RegisteredTeam[]>('/registered-teams/mine', token),
   availability: (token: string, name: string) =>
     apiGet<{ available: boolean; code: string }>(`/registered-teams/availability/${encodeURIComponent(name.trim().toLowerCase())}`, token),
-  create: (token: string, profile: TeamProfile) => apiPost<RegisteredTeam>('/registered-teams', { ...profile, name: profile.name.trim() }, token),
+  create: (token: string, profile: TeamProfile) =>
+    apiPost<RegisteredTeam>('/registered-teams', { ...profile, name: profile.name.trim() }, token),
   update: (token: string, teamId: string, profile: TeamProfile) =>
     apiPatch<RegisteredTeam>(`/registered-teams/${teamId}`, { ...profile, name: profile.name.trim() }, token),
   players: (token: string, teamId: string) => apiGet<Player[]>(`/registered-teams/${teamId}/players`, token),
-  addPlayer: (token: string, teamId: string, name: string) => apiPost<Player>(`/registered-teams/${teamId}/players`, { name: name.trim() }, token),
+  addPlayer: (token: string, teamId: string, name: string) =>
+    apiPost<Player>(`/registered-teams/${teamId}/players`, { name: name.trim() }, token),
   renamePlayer: (token: string, teamId: string, playerId: string, name: string) =>
     apiPatch<Player>(`/registered-teams/${teamId}/players/${playerId}`, { name: name.trim() }, token),
   removePlayer: (token: string, teamId: string, playerId: string) => apiDelete(`/registered-teams/${teamId}/players/${playerId}`, token),

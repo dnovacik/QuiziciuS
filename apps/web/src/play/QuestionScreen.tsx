@@ -1,5 +1,20 @@
 import { useState, type FormEvent } from 'react';
-import { Check, CircleX, Hourglass, Image as ImageIcon, LockKeyhole, Minus, PencilLine, Plus, Send, ShieldCheck, Timer, Trophy, Video, ZoomIn } from 'lucide-react';
+import {
+  Check,
+  CircleX,
+  Hourglass,
+  Image as ImageIcon,
+  LockKeyhole,
+  Minus,
+  PencilLine,
+  Plus,
+  Send,
+  ShieldCheck,
+  Timer,
+  Trophy,
+  Video,
+  ZoomIn,
+} from 'lucide-react';
 import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto } from '@quizicius/shared-types';
 import { apiPost } from '../lib/api-client';
 import { describeError } from '../lib/errors';
@@ -73,7 +88,11 @@ export function QuestionScreen({
       <QuestionCard state={state} question={question} />
 
       {remaining === 0 ? (
-        <section role="status" data-testid="player-expired" className="flex items-center gap-3 rounded-2xl bg-surface-container-low p-4 shadow-xl">
+        <section
+          role="status"
+          data-testid="player-expired"
+          className="flex items-center gap-3 rounded-2xl bg-surface-container-low p-4 shadow-xl"
+        >
           <Timer className="h-6 w-6 shrink-0 text-red-300" />
           <p className="text-body-md font-semibold text-on-surface">{t('play.question.expired')}</p>
         </section>
@@ -103,7 +122,12 @@ function QuestionCard({ state, question }: { state: QuizSessionStateDto; questio
           className="group relative h-40 w-full overflow-hidden rounded-xl shadow-md"
           aria-label={t('play.question.zoomImage')}
         >
-          <img data-testid="player-question-image" src={media.url} alt={t('play.question.image')} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+          <img
+            data-testid="player-question-image"
+            src={media.url}
+            alt={t('play.question.image')}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
           <div className="absolute inset-0 flex items-end justify-between bg-gradient-to-t from-surface-container-lowest/90 via-surface-container-lowest/20 to-transparent p-3">
             <span className="flex items-center gap-1 rounded-lg bg-surface-container-lowest/70 px-2 py-1 text-label-sm font-medium text-on-surface backdrop-blur-md">
               <ImageIcon className="h-3.5 w-3.5 text-secondary" />
@@ -116,7 +140,10 @@ function QuestionCard({ state, question }: { state: QuizSessionStateDto; questio
         </button>
       )}
       {media?.mediaType === 'video' && (
-        <p data-testid="player-question-video" className="flex items-center gap-2 rounded-xl bg-surface-container-lowest/70 p-3 text-body-sm text-on-surface-variant">
+        <p
+          data-testid="player-question-video"
+          className="flex items-center gap-2 rounded-xl bg-surface-container-lowest/70 p-3 text-body-sm text-on-surface-variant"
+        >
           <Video className="h-4 w-4 text-secondary" />
           {t('play.question.videoOnProjector')}
         </p>
@@ -159,7 +186,11 @@ function AnswerForm({
   const options = question.options ?? [];
   const optionIndex = options.findIndex((option) => option.id === optionId);
   const ready =
-    question.type === 'MULTIPLE_CHOICE' ? optionIndex >= 0 : question.type === 'FREE_TEXT' ? text.trim() !== '' : numeric.trim() !== '' && Number.isFinite(Number(numeric));
+    question.type === 'MULTIPLE_CHOICE'
+      ? optionIndex >= 0
+      : question.type === 'FREE_TEXT'
+        ? text.trim() !== ''
+        : numeric.trim() !== '' && Number.isFinite(Number(numeric));
 
   function nudge(delta: number) {
     setNumeric((value) => String((Number(value) || 0) + delta));
@@ -169,9 +200,14 @@ function AnswerForm({
     event.preventDefault();
     if (!ready || sending) return;
     const response =
-      question.type === 'MULTIPLE_CHOICE' ? { optionId } : question.type === 'FREE_TEXT' ? { text: text.trim() } : { value: Number(numeric) };
+      question.type === 'MULTIPLE_CHOICE'
+        ? { optionId }
+        : question.type === 'FREE_TEXT'
+          ? { text: text.trim() }
+          : { value: Number(numeric) };
     const letter = question.type === 'MULTIPLE_CHOICE' ? optionLetter(optionIndex) : null;
-    const display = question.type === 'MULTIPLE_CHOICE' ? options[optionIndex].label : question.type === 'FREE_TEXT' ? text.trim() : numeric.trim();
+    const display =
+      question.type === 'MULTIPLE_CHOICE' ? options[optionIndex].label : question.type === 'FREE_TEXT' ? text.trim() : numeric.trim();
 
     setSending(true);
     setError(null);
@@ -200,7 +236,9 @@ function AnswerForm({
                 data-testid={`player-option-${option.id}`}
                 onClick={() => setOptionId(option.id)}
                 className={`relative flex min-h-[60px] w-full items-center justify-between overflow-hidden rounded-xl px-4 py-3 text-left transition-all active:scale-[0.98] ${
-                  selected ? 'bg-surface-container-high shadow-[0_0_20px_rgba(208,188,255,0.35)]' : 'bg-surface-container/60 shadow-sm hover:bg-surface-container'
+                  selected
+                    ? 'bg-surface-container-high shadow-[0_0_20px_rgba(208,188,255,0.35)]'
+                    : 'bg-surface-container/60 shadow-sm hover:bg-surface-container'
                 }`}
               >
                 {selected && <div className="absolute bottom-0 left-0 top-0 w-1.5 bg-primary" />}
@@ -243,7 +281,12 @@ function AnswerForm({
               className="h-14 w-full rounded-xl bg-surface-container-lowest pl-11 pr-12 text-headline-sm text-on-surface shadow-inner outline-none transition-all placeholder:text-on-surface-variant/40 focus:bg-surface-container"
             />
             {text && (
-              <button type="button" aria-label={t('play.question.clear')} onClick={() => setText('')} className="absolute right-3 p-1.5 text-on-surface-variant hover:text-on-surface">
+              <button
+                type="button"
+                aria-label={t('play.question.clear')}
+                onClick={() => setText('')}
+                className="absolute right-3 p-1.5 text-on-surface-variant hover:text-on-surface"
+              >
                 <CircleX className="h-[18px] w-[18px]" />
               </button>
             )}
@@ -259,7 +302,12 @@ function AnswerForm({
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-surface-container-high/90 p-4 shadow-md backdrop-blur-md">
           <span className="w-full text-label-sm uppercase tracking-wider text-on-surface-variant">{t('play.question.numericLabel')}</span>
           <div className="flex w-full items-center justify-center gap-4 py-2">
-            <button type="button" aria-label="-1" onClick={() => nudge(-1)} className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-container text-primary shadow-lg transition-transform hover:bg-surface-variant active:scale-90">
+            <button
+              type="button"
+              aria-label="-1"
+              onClick={() => nudge(-1)}
+              className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-container text-primary shadow-lg transition-transform hover:bg-surface-variant active:scale-90"
+            >
               <Minus className="h-7 w-7" strokeWidth={3} />
             </button>
             <input
@@ -273,7 +321,12 @@ function AnswerForm({
               placeholder="0"
               className="w-32 rounded-2xl bg-surface-container-lowest px-4 py-2 text-center text-display-lg-mobile text-secondary shadow-inner outline-none placeholder:text-secondary/30"
             />
-            <button type="button" aria-label="+1" onClick={() => nudge(1)} className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-container text-primary shadow-lg transition-transform hover:bg-surface-variant active:scale-90">
+            <button
+              type="button"
+              aria-label="+1"
+              onClick={() => nudge(1)}
+              className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-container text-primary shadow-lg transition-transform hover:bg-surface-variant active:scale-90"
+            >
               <Plus className="h-7 w-7" strokeWidth={3} />
             </button>
           </div>
@@ -337,7 +390,9 @@ function LockedView({
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-1">
             <h2 className="text-headline-sm font-bold leading-tight tracking-tight text-tertiary">{t('play.locked.title')}</h2>
-            {took !== null && <span className="rounded-full bg-on-tertiary/40 px-2 py-0.5 text-label-sm text-tertiary">{took.toFixed(1)} s</span>}
+            {took !== null && (
+              <span className="rounded-full bg-on-tertiary/40 px-2 py-0.5 text-label-sm text-tertiary">{took.toFixed(1)} s</span>
+            )}
           </div>
           <p className="mt-0.5 text-body-md text-on-surface">{t('play.locked.subtitle')}</p>
         </div>
@@ -345,7 +400,9 @@ function LockedView({
 
       <section className="relative w-full overflow-hidden rounded-2xl bg-surface-container/85 p-space-md shadow-2xl backdrop-blur-2xl">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-        <span className="mb-3 block text-label-md font-bold uppercase tracking-wider text-on-surface-variant">{t('play.locked.yourAnswer')}</span>
+        <span className="mb-3 block text-label-md font-bold uppercase tracking-wider text-on-surface-variant">
+          {t('play.locked.yourAnswer')}
+        </span>
         <div className="flex w-full items-center justify-between gap-space-sm rounded-xl bg-surface-container-highest/90 p-space-md shadow-[0_0_20px_rgba(208,188,255,0.15)]">
           <div className="flex min-w-0 items-center gap-3">
             {answer.letter && (
@@ -353,7 +410,10 @@ function LockedView({
                 {answer.letter}
               </div>
             )}
-            <span className="block truncate text-headline-sm font-extrabold tracking-tight text-on-surface" data-testid="player-locked-answer">
+            <span
+              className="block truncate text-headline-sm font-extrabold tracking-tight text-on-surface"
+              data-testid="player-locked-answer"
+            >
               {answer.display}
             </span>
           </div>

@@ -131,7 +131,9 @@ export async function uploadQuestionMedia(token: string, quizId: string, file: F
     { mimeType: file.type, fileSize: file.size },
     token,
   );
-  const { error } = await supabase.storage.from('question-media').uploadToSignedUrl(upload.path, upload.token, file, { contentType: file.type });
+  const { error } = await supabase.storage
+    .from('question-media')
+    .uploadToSignedUrl(upload.path, upload.token, file, { contentType: file.type });
   if (error) throw error;
   return { path: upload.path, mediaType: upload.mediaType };
 }
@@ -155,7 +157,9 @@ export async function duplicateQuiz(token: string, source: Quiz, title: string):
 export async function saveQuestionOrder(token: string, quizId: string, ordered: Question[]): Promise<Question[]> {
   return Promise.all(
     ordered.map((question, index) =>
-      question.order_index === index ? question : hostApi.updateQuestion(token, quizId, question.id, { ...stripIds(question), order_index: index }),
+      question.order_index === index
+        ? question
+        : hostApi.updateQuestion(token, quizId, question.id, { ...stripIds(question), order_index: index }),
     ),
   );
 }

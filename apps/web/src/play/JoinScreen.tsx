@@ -97,7 +97,10 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
         )}
 
         {sessionId ? (
-          <section className="mb-space-md flex w-full items-center gap-space-sm rounded-xl bg-surface-container-low p-space-sm" data-testid="player-direct-link">
+          <section
+            className="mb-space-md flex w-full items-center gap-space-sm rounded-xl bg-surface-container-low p-space-sm"
+            data-testid="player-direct-link"
+          >
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tertiary-container/30">
               <BadgeCheck className="h-5 w-5 text-tertiary" />
             </div>
@@ -120,7 +123,10 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
         )}
 
         {error && (
-          <div role="alert" className="mb-space-md flex w-full items-center gap-space-sm rounded-xl bg-error-container p-space-sm text-on-error-container shadow-lg">
+          <div
+            role="alert"
+            className="mb-space-md flex w-full items-center gap-space-sm rounded-xl bg-error-container p-space-sm text-on-error-container shadow-lg"
+          >
             <AlertCircle className="h-6 w-6 shrink-0 text-error" />
             <div className="flex min-w-0 flex-col">
               <span className="text-label-md font-bold">{t('play.join.errorTitle')}</span>
@@ -137,7 +143,10 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
               <QrCode className="mx-auto h-12 w-12 text-secondary" />
               <p className="text-body-md text-on-surface-variant">{t('play.join.linkHint')}</p>
               <Pending feature="qr-scanner">
-                <button type="button" className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-surface-container-high text-label-md text-on-surface">
+                <button
+                  type="button"
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-surface-container-high text-label-md text-on-surface"
+                >
                   <Camera className="h-5 w-5 text-secondary" />
                   {t('play.join.scanQr')}
                 </button>
@@ -180,7 +189,10 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
               )}
 
               <div className="flex flex-col gap-space-xs">
-                <label htmlFor="player-team-name" className="flex items-center justify-between text-label-md uppercase tracking-wider text-on-surface-variant">
+                <label
+                  htmlFor="player-team-name"
+                  className="flex items-center justify-between text-label-md uppercase tracking-wider text-on-surface-variant"
+                >
                   <span className="flex items-center gap-1">
                     <Users className="h-4 w-4 text-secondary" />
                     {t('play.join.teamName')}
@@ -254,7 +266,10 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
         </section>
 
         {state && (
-          <section className="flex w-full items-center gap-2 rounded-xl bg-surface-container-low p-space-sm" data-testid="player-join-teams">
+          <section
+            className="flex w-full items-center gap-2 rounded-xl bg-surface-container-low p-space-sm"
+            data-testid="player-join-teams"
+          >
             <Users className="h-4 w-4 text-primary" />
             <span className="text-body-sm text-on-surface-variant">
               {t('play.join.teamsJoined')} <strong className="text-on-surface">{state.teams.length}</strong>

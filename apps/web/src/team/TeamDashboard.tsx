@@ -1,6 +1,25 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, CalendarCheck, Check, History, Info, KeyRound, LogOut, MapPin, Pencil, QrCode, Radio, Share2, SlidersHorizontal, Star, Trophy, UserPlus, Users, X } from 'lucide-react';
+import {
+  ArrowRight,
+  CalendarCheck,
+  Check,
+  History,
+  Info,
+  KeyRound,
+  LogOut,
+  MapPin,
+  Pencil,
+  QrCode,
+  Radio,
+  Share2,
+  SlidersHorizontal,
+  Star,
+  Trophy,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
 import { ApiError } from '../lib/api-client';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
@@ -13,7 +32,8 @@ import { BadgePicker, CapacityPicker, ColorPicker, useNameAvailability } from '.
 import { TeamEmblem } from './TeamEmblem';
 
 const card = 'rounded-3xl bg-surface-container/70 p-space-md shadow-xl backdrop-blur-xl lg:p-space-lg';
-const fieldClass = 'w-full rounded-xl bg-surface-container-lowest px-space-md py-3 text-body-md text-on-surface shadow-inner focus:outline-none focus:ring-2 focus:ring-primary';
+const fieldClass =
+  'w-full rounded-xl bg-surface-container-lowest px-space-md py-3 text-body-md text-on-surface shadow-inner focus:outline-none focus:ring-2 focus:ring-primary';
 
 /** Stitch "Tímový Dashboard Kapitána". */
 export function TeamDashboard({
@@ -101,7 +121,10 @@ export function TeamDashboard({
               <div className="flex items-center gap-space-xs">
                 <Users className="h-6 w-6 text-primary" />
                 <h3 className="text-headline-sm text-on-surface">{t('team.roster.title')}</h3>
-                <span className="rounded-full bg-surface-container-high px-space-xs py-0.5 text-label-sm text-on-surface" data-testid="roster-count">
+                <span
+                  className="rounded-full bg-surface-container-high px-space-xs py-0.5 text-label-sm text-on-surface"
+                  data-testid="roster-count"
+                >
                   {players.length} / {MAX_PLAYERS}
                 </span>
               </div>
@@ -136,10 +159,21 @@ export function TeamDashboard({
                 <Star className="h-5 w-5 text-secondary" />
               </li>
               {players.map((player) => (
-                <PlayerRow key={player.id} token={token} teamId={team.id} player={player} onChanged={loadPlayers} onError={setRosterError} />
+                <PlayerRow
+                  key={player.id}
+                  token={token}
+                  teamId={team.id}
+                  player={player}
+                  onChanged={loadPlayers}
+                  onError={setRosterError}
+                />
               ))}
             </ul>
-            {players.length === 0 && <p className="mt-space-sm text-body-sm text-on-surface-variant" data-testid="roster-empty">{t('team.roster.empty')}</p>}
+            {players.length === 0 && (
+              <p className="mt-space-sm text-body-sm text-on-surface-variant" data-testid="roster-empty">
+                {t('team.roster.empty')}
+              </p>
+            )}
           </div>
           <Pending feature="team-access-pin" className="mt-space-md">
             <div className="flex items-center justify-between gap-space-sm rounded-2xl bg-surface-container-lowest/80 p-space-sm">
@@ -170,14 +204,20 @@ export function TeamDashboard({
               <p className="mt-space-xs text-body-sm text-on-surface-variant">{t('team.dashboard.upcomingText')}</p>
             </section>
           </Pending>
-          <section className={`${card} flex min-h-[320px] flex-col items-center justify-center text-center`} data-testid="team-history-empty">
+          <section
+            className={`${card} flex min-h-[320px] flex-col items-center justify-center text-center`}
+            data-testid="team-history-empty"
+          >
             <div className="mb-space-md flex h-20 w-20 items-center justify-center rounded-full bg-primary-container/20 text-primary shadow-inner">
               <History className="h-10 w-10" />
             </div>
             <h3 className="mb-space-xs text-headline-lg text-on-surface">{t('team.history.emptyTitle')}</h3>
             <p className="mb-space-lg max-w-md text-body-lg text-on-surface-variant">{t('team.history.emptyText')}</p>
             <div className="flex flex-col gap-space-sm sm:flex-row">
-              <a href="#join-quiz" className="rounded-xl bg-secondary-container px-space-lg py-space-sm text-label-lg font-bold text-on-secondary-container shadow-md transition-all hover:bg-secondary">
+              <a
+                href="#join-quiz"
+                className="rounded-xl bg-secondary-container px-space-lg py-space-sm text-label-lg font-bold text-on-secondary-container shadow-md transition-all hover:bg-secondary"
+              >
                 {t('team.history.enterCode')}
               </a>
               <button
@@ -197,7 +237,17 @@ export function TeamDashboard({
         </div>
       </div>
 
-      {editing && <EditTeamDialog token={token} team={team} onClose={() => setEditing(false)} onSaved={(updated) => { onUpdated(updated); setEditing(false); }} />}
+      {editing && (
+        <EditTeamDialog
+          token={token}
+          team={team}
+          onClose={() => setEditing(false)}
+          onSaved={(updated) => {
+            onUpdated(updated);
+            setEditing(false);
+          }}
+        />
+      )}
       {adding && (
         <AddPlayerDialog
           token={token}
@@ -237,7 +287,10 @@ function JoinQuizBar({ team }: { team: RegisteredTeam }) {
   }
 
   return (
-    <section id="join-quiz" className="relative scroll-mt-28 overflow-hidden rounded-3xl bg-gradient-to-r from-surface-container-high via-surface-container to-surface-container-low p-space-md shadow-2xl lg:p-space-lg">
+    <section
+      id="join-quiz"
+      className="relative scroll-mt-28 overflow-hidden rounded-3xl bg-gradient-to-r from-surface-container-high via-surface-container to-surface-container-low p-space-md shadow-2xl lg:p-space-lg"
+    >
       <div className="pointer-events-none absolute -left-12 -top-12 h-48 w-48 rounded-full bg-secondary/10 blur-[70px]" />
       <div className="flex flex-col items-stretch justify-between gap-space-lg xl:flex-row xl:items-center">
         <div className="flex items-start gap-space-md">
@@ -249,7 +302,11 @@ function JoinQuizBar({ team }: { team: RegisteredTeam }) {
             <p className="text-body-md text-on-surface-variant">{t('team.join.text')}</p>
           </div>
         </div>
-        <form className="flex flex-col items-center gap-space-sm sm:flex-row xl:min-w-[480px]" onSubmit={(event) => void join(event)} data-testid="team-join-form">
+        <form
+          className="flex flex-col items-center gap-space-sm sm:flex-row xl:min-w-[480px]"
+          onSubmit={(event) => void join(event)}
+          data-testid="team-join-form"
+        >
           <div className="relative w-full sm:flex-1">
             <input
               data-testid="team-join-code"
@@ -262,7 +319,12 @@ function JoinQuizBar({ team }: { team: RegisteredTeam }) {
               className="h-14 w-full rounded-xl bg-surface-container-lowest/90 px-space-md pr-10 text-headline-sm uppercase tracking-widest text-on-surface shadow-inner focus:outline-none focus:ring-2 focus:ring-primary"
             />
             {code && (
-              <button type="button" aria-label={t('play.question.clear')} onClick={() => setCode('')} className="absolute inset-y-0 right-0 flex items-center pr-space-md text-on-surface-variant hover:text-on-surface">
+              <button
+                type="button"
+                aria-label={t('play.question.clear')}
+                onClick={() => setCode('')}
+                className="absolute inset-y-0 right-0 flex items-center pr-space-md text-on-surface-variant hover:text-on-surface"
+              >
                 <X className="h-[18px] w-[18px]" />
               </button>
             )}
@@ -325,7 +387,10 @@ function PlayerRow({
   }
 
   return (
-    <li className="flex items-center justify-between gap-space-sm rounded-2xl bg-surface-container-low p-space-sm shadow-sm transition-colors hover:bg-surface-container-high" data-testid="roster-player">
+    <li
+      className="flex items-center justify-between gap-space-sm rounded-2xl bg-surface-container-low p-space-sm shadow-sm transition-colors hover:bg-surface-container-high"
+      data-testid="roster-player"
+    >
       {renaming ? (
         <form
           className="flex flex-1 items-center gap-space-xs"
@@ -342,10 +407,20 @@ function PlayerRow({
             onChange={(event) => setName(event.target.value)}
             className="min-w-0 flex-1 rounded-lg bg-surface-container-lowest px-space-sm py-1.5 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
           />
-          <button type="submit" disabled={busy} className="rounded-lg p-1.5 text-tertiary hover:bg-surface-container" aria-label={t('host.editor.save')}>
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-lg p-1.5 text-tertiary hover:bg-surface-container"
+            aria-label={t('host.editor.save')}
+          >
             <Check className="h-[18px] w-[18px]" />
           </button>
-          <button type="button" onClick={() => setRenaming(false)} className="rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container" aria-label={t('host.common.cancel')}>
+          <button
+            type="button"
+            onClick={() => setRenaming(false)}
+            className="rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container"
+            aria-label={t('host.common.cancel')}
+          >
             <X className="h-[18px] w-[18px]" />
           </button>
         </form>
@@ -358,7 +433,14 @@ function PlayerRow({
             <span className="truncate text-label-lg text-on-surface">{player.name}</span>
           </div>
           <div className="flex items-center gap-1">
-            <button type="button" disabled={busy} onClick={() => setRenaming(true)} className="p-1 text-on-surface-variant transition-colors hover:text-primary" aria-label={t('team.roster.rename')} data-testid={`roster-rename-${player.id}`}>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setRenaming(true)}
+              className="p-1 text-on-surface-variant transition-colors hover:text-primary"
+              aria-label={t('team.roster.rename')}
+              data-testid={`roster-rename-${player.id}`}
+            >
               <Pencil className="h-[18px] w-[18px]" />
             </button>
             <button
@@ -408,19 +490,39 @@ function AddPlayerDialog({ token, teamId, onClose, onAdded }: { token: string; t
           </h3>
         </div>
         <p className="text-body-sm text-on-surface-variant">{t('team.roster.addHint')}</p>
-        <input data-testid="roster-new-name" className={fieldClass} value={name} maxLength={60} onChange={(event) => setName(event.target.value)} placeholder={t('team.roster.namePlaceholder')} />
+        <input
+          data-testid="roster-new-name"
+          className={fieldClass}
+          value={name}
+          maxLength={60}
+          onChange={(event) => setName(event.target.value)}
+          placeholder={t('team.roster.namePlaceholder')}
+        />
         <Pending feature="team-invite-link">
           <div className="space-y-space-xs">
             <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">{t('team.roster.inviteEmail')}</span>
             <input className={fieldClass} type="email" placeholder="kamos@pivo.sk" />
           </div>
         </Pending>
-        {error && <p role="alert" className="text-body-sm text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="text-body-sm text-error">
+            {error}
+          </p>
+        )}
         <div className="flex items-center justify-end gap-space-sm">
-          <button type="button" onClick={onClose} className="rounded-xl bg-surface-container-high px-space-md py-space-sm text-label-md text-on-surface hover:bg-surface-bright">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl bg-surface-container-high px-space-md py-space-sm text-label-md text-on-surface hover:bg-surface-bright"
+          >
             {t('host.common.cancel')}
           </button>
-          <button type="submit" disabled={busy || !name.trim()} data-testid="roster-add-submit" className="rounded-xl bg-primary-container px-space-lg py-space-sm text-label-md font-bold text-on-primary-container shadow-md hover:bg-primary disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={busy || !name.trim()}
+            data-testid="roster-add-submit"
+            className="rounded-xl bg-primary-container px-space-lg py-space-sm text-label-md font-bold text-on-primary-container shadow-md hover:bg-primary disabled:opacity-50"
+          >
             {busy ? t('common.working') : t('team.roster.addSubmit')}
           </button>
         </div>
@@ -429,7 +531,17 @@ function AddPlayerDialog({ token, teamId, onClose, onAdded }: { token: string; t
   );
 }
 
-function EditTeamDialog({ token, team, onClose, onSaved }: { token: string; team: RegisteredTeam; onClose: () => void; onSaved: (team: RegisteredTeam) => void }) {
+function EditTeamDialog({
+  token,
+  team,
+  onClose,
+  onSaved,
+}: {
+  token: string;
+  team: RegisteredTeam;
+  onClose: () => void;
+  onSaved: (team: RegisteredTeam) => void;
+}) {
   const { t } = useI18n();
   const [profile, setProfile] = useState<TeamProfile>(() => profileOf(team));
   const [busy, setBusy] = useState(false);
@@ -462,11 +574,24 @@ function EditTeamDialog({ token, team, onClose, onSaved }: { token: string; team
         <NameField value={profile.name} onChange={(name) => set({ name })} availability={availability} />
         <label className="block space-y-1">
           <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">{t('team.form.motto')}</span>
-          <textarea data-testid="edit-motto" rows={2} maxLength={160} className={`${fieldClass} resize-none`} value={profile.description} onChange={(event) => set({ description: event.target.value })} />
+          <textarea
+            data-testid="edit-motto"
+            rows={2}
+            maxLength={160}
+            className={`${fieldClass} resize-none`}
+            value={profile.description}
+            onChange={(event) => set({ description: event.target.value })}
+          />
         </label>
         <label className="block space-y-1">
           <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">{t('team.form.homePub')}</span>
-          <input data-testid="edit-home-pub" maxLength={100} className={fieldClass} value={profile.homePub} onChange={(event) => set({ homePub: event.target.value })} />
+          <input
+            data-testid="edit-home-pub"
+            maxLength={100}
+            className={fieldClass}
+            value={profile.homePub}
+            onChange={(event) => set({ homePub: event.target.value })}
+          />
         </label>
         <BadgePicker value={profile.badge} onChange={(badge) => set({ badge })} />
         <div className="flex items-center justify-between gap-space-sm">
@@ -474,9 +599,17 @@ function EditTeamDialog({ token, team, onClose, onSaved }: { token: string; team
           <ColorPicker value={profile.color} onChange={(color) => set({ color })} />
         </div>
         <CapacityPicker value={profile.expectedMembers} onChange={(expectedMembers) => set({ expectedMembers })} />
-        {error && <p role="alert" className="text-body-sm text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="text-body-sm text-error">
+            {error}
+          </p>
+        )}
         <div className="flex items-center justify-end gap-space-sm pt-space-xs">
-          <button type="button" onClick={onClose} className="rounded-xl bg-surface-container-high px-space-md py-space-sm text-label-md text-on-surface hover:bg-surface-bright">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl bg-surface-container-high px-space-md py-space-sm text-label-md text-on-surface hover:bg-surface-bright"
+          >
             {t('host.common.cancel')}
           </button>
           <button

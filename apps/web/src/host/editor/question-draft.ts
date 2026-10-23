@@ -61,5 +61,7 @@ export function validate(draft: QuestionDraft): TranslationKey[] {
 
 /** Empty alternatives are dropped before saving. */
 export function cleanForSave(draft: QuestionDraft): QuestionDraft {
-  return draft.type === 'FREE_TEXT' ? { ...draft, accepted_answers: (draft.accepted_answers ?? []).filter((answer) => answer.trim()) } : draft;
+  return draft.type === 'FREE_TEXT'
+    ? { ...draft, accepted_answers: (draft.accepted_answers ?? []).filter((answer) => answer.trim()) }
+    : draft;
 }

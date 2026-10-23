@@ -39,11 +39,7 @@ export function IconInput({
   );
 }
 
-export function IconSelect({
-  icon,
-  children,
-  ...props
-}: SelectHTMLAttributes<HTMLSelectElement> & { icon: Icon; children: ReactNode }) {
+export function IconSelect({ icon, children, ...props }: SelectHTMLAttributes<HTMLSelectElement> & { icon: Icon; children: ReactNode }) {
   return (
     <span className="relative block">
       <LeadingIcon icon={icon} />

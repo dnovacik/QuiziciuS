@@ -35,7 +35,10 @@ export default function TeamApp() {
   if (!session || !token) {
     return (
       <TeamShell email={null} teamName={null}>
-        <div className="mx-auto flex max-w-lg flex-col items-center gap-space-md rounded-3xl bg-surface-container-low/90 p-space-xl text-center shadow-2xl" data-testid="team-signed-out">
+        <div
+          className="mx-auto flex max-w-lg flex-col items-center gap-space-md rounded-3xl bg-surface-container-low/90 p-space-xl text-center shadow-2xl"
+          data-testid="team-signed-out"
+        >
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-container/20 text-primary">
             <LogIn className="h-8 w-8" />
           </div>
@@ -61,7 +64,12 @@ export default function TeamApp() {
         </p>
       )}
       {team ? (
-        <TeamDashboard token={token} team={team} email={email} onUpdated={(updated) => setTeams((list) => (list ?? []).map((row) => (row.id === updated.id ? updated : row)))} />
+        <TeamDashboard
+          token={token}
+          team={team}
+          email={email}
+          onUpdated={(updated) => setTeams((list) => (list ?? []).map((row) => (row.id === updated.id ? updated : row)))}
+        />
       ) : (
         <OnboardingPage
           token={token}
@@ -88,11 +96,17 @@ function TeamShell({ email, teamName, children }: { email: string | null; teamNa
       <header className="fixed left-0 right-0 top-0 z-50 bg-surface-container-lowest/80 shadow-[0_1px_8px_rgba(0,0,0,0.5)] backdrop-blur-xl">
         <div className="flex h-20 w-full items-center justify-between gap-space-md px-space-md sm:px-space-lg">
           <Logo to="/" />
-          <nav className="hidden items-center gap-space-xs rounded-2xl bg-surface-container-low/70 p-1.5 lg:flex" aria-label={t('team.nav.label')}>
+          <nav
+            className="hidden items-center gap-space-xs rounded-2xl bg-surface-container-low/70 p-1.5 lg:flex"
+            aria-label={t('team.nav.label')}
+          >
             <Pending feature="pub-leaderboard" badge="inline">
               <span className="rounded-xl px-space-md py-space-sm text-label-lg text-on-surface-variant">{t('team.nav.leaderboard')}</span>
             </Pending>
-            <span aria-current="page" className="rounded-xl bg-primary-container px-space-md py-space-sm text-label-lg text-on-primary-container">
+            <span
+              aria-current="page"
+              className="rounded-xl bg-primary-container px-space-md py-space-sm text-label-lg text-on-primary-container"
+            >
               {t('team.nav.myTeam')}
             </span>
             <Pending feature="scheduled-sessions" badge="inline">
@@ -124,7 +138,13 @@ function TeamShell({ email, teamName, children }: { email: string | null; teamNa
                     </span>
                   )}
                 </div>
-                <button type="button" className="ml-1 text-on-surface-variant hover:text-error" aria-label={t('host.nav.signOut')} onClick={() => void supabase.auth.signOut()} data-testid="team-logout">
+                <button
+                  type="button"
+                  className="ml-1 text-on-surface-variant hover:text-error"
+                  aria-label={t('host.nav.signOut')}
+                  onClick={() => void supabase.auth.signOut()}
+                  data-testid="team-logout"
+                >
                   <LogOut className="h-[18px] w-[18px]" />
                 </button>
               </div>

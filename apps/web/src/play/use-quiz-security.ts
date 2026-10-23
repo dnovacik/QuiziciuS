@@ -32,10 +32,7 @@ function exitFullscreenIfActive(): void {
   }
 }
 
-export function useQuizSecurity(
-  status: QuizState,
-  teamToken: string | null,
-): { requestFullscreenNow: () => void } {
+export function useQuizSecurity(status: QuizState, teamToken: string | null): { requestFullscreenNow: () => void } {
   const wakeLockRef = useRef<Promise<WakeLockSentinel> | null>(null);
 
   useEffect(() => {

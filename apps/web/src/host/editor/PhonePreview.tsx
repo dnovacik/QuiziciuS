@@ -4,16 +4,31 @@ import { optionLetter } from '../../lib/quiz';
 import type { QuestionDraft } from '../api';
 
 /** "Živý náhľad pre hráčov" — the question as a player's phone shows it, correct answer highlighted. */
-export function PhonePreview({ draft, index, total, mediaUrl }: { draft: QuestionDraft; index: number; total: number; mediaUrl: string | null }) {
+export function PhonePreview({
+  draft,
+  index,
+  total,
+  mediaUrl,
+}: {
+  draft: QuestionDraft;
+  index: number;
+  total: number;
+  mediaUrl: string | null;
+}) {
   const { t } = useI18n();
   return (
-    <div className="flex flex-col items-center rounded-2xl bg-surface-container-low/90 p-space-md shadow-xl backdrop-blur-xl" data-testid="editor-preview">
+    <div
+      className="flex flex-col items-center rounded-2xl bg-surface-container-low/90 p-space-md shadow-xl backdrop-blur-xl"
+      data-testid="editor-preview"
+    >
       <div className="flex w-full items-center justify-between pb-space-sm">
         <div className="flex items-center gap-2">
           <Smartphone className="h-[18px] w-[18px] text-primary" />
           <span className="text-label-md text-on-surface">{t('host.editor.preview')}</span>
         </div>
-        <span className="rounded-full bg-surface-container-highest px-2 py-0.5 text-[10px] uppercase text-tertiary">{t('host.editor.mobile')}</span>
+        <span className="rounded-full bg-surface-container-highest px-2 py-0.5 text-[10px] uppercase text-tertiary">
+          {t('host.editor.mobile')}
+        </span>
       </div>
       <div className="relative flex w-full max-w-[290px] flex-col rounded-[36px] bg-[#090b10] p-3 shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_0_2px_rgba(255,255,255,0.1)]">
         <div className="mx-auto mb-2 flex h-4 w-24 items-center justify-center rounded-full bg-surface-container-lowest">
@@ -34,7 +49,9 @@ export function PhonePreview({ draft, index, total, mediaUrl }: { draft: Questio
           </div>
           <div className="my-auto flex flex-col gap-2">
             {mediaUrl && draft.media_type === 'image' && <img src={mediaUrl} alt="" className="h-24 w-full rounded-lg object-cover" />}
-            {mediaUrl && draft.media_type === 'video' && <video src={mediaUrl} muted className="h-24 w-full rounded-lg bg-black object-cover" />}
+            {mediaUrl && draft.media_type === 'video' && (
+              <video src={mediaUrl} muted className="h-24 w-full rounded-lg bg-black object-cover" />
+            )}
             <div className="rounded-xl bg-surface-container/70 p-2.5">
               <p className="text-center text-[15px] font-bold leading-snug text-on-surface" data-testid="preview-prompt">
                 {draft.prompt || t('host.editor.promptPlaceholderShort')}
@@ -46,7 +63,9 @@ export function PhonePreview({ draft, index, total, mediaUrl }: { draft: Questio
                   <div
                     key={option.id}
                     className={`flex items-center gap-2 rounded-xl p-2 text-left text-xs ${
-                      option.isCorrect ? 'bg-tertiary-container/30 font-bold text-tertiary shadow-[0_0_12px_rgba(78,222,163,0.3)]' : 'bg-surface-container-high/80 text-on-surface'
+                      option.isCorrect
+                        ? 'bg-tertiary-container/30 font-bold text-tertiary shadow-[0_0_12px_rgba(78,222,163,0.3)]'
+                        : 'bg-surface-container-high/80 text-on-surface'
                     }`}
                   >
                     <span
@@ -63,7 +82,9 @@ export function PhonePreview({ draft, index, total, mediaUrl }: { draft: Questio
               {draft.type === 'FREE_TEXT' && (
                 <div className="flex flex-col gap-1.5 rounded-xl bg-surface-container p-2.5">
                   <span className="text-[10px] uppercase text-on-surface-variant">{t('host.editor.teamInput')}</span>
-                  <div className="rounded-lg bg-surface-container-high p-2 text-xs text-on-surface-variant">{t('play.question.textPlaceholder')}</div>
+                  <div className="rounded-lg bg-surface-container-high p-2 text-xs text-on-surface-variant">
+                    {t('play.question.textPlaceholder')}
+                  </div>
                   <span className="pt-0.5 text-[10px] text-tertiary">
                     {t('host.editor.accepted')}: {draft.accepted_answers?.find((answer) => answer.trim()) ?? '…'}
                   </span>

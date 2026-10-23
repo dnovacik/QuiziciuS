@@ -64,7 +64,9 @@ export function ControlRoomPage({ token }: { token: string }) {
             <div className="flex min-w-0 flex-col">
               <div className="flex items-center gap-space-xs">
                 <span className="text-headline-sm tracking-tight text-on-surface">QuiziciuS</span>
-                <span className="rounded-full bg-secondary/15 px-space-xs py-0.5 text-label-sm uppercase tracking-wider text-secondary">Host Live</span>
+                <span className="rounded-full bg-secondary/15 px-space-xs py-0.5 text-label-sm uppercase tracking-wider text-secondary">
+                  Host Live
+                </span>
               </div>
               <span className="text-label-sm text-on-surface-variant">
                 {t('projector.room')} #{state?.joinCode ?? room.session?.join_code ?? '…'}
@@ -72,17 +74,30 @@ export function ControlRoomPage({ token }: { token: string }) {
             </div>
             <div className="hidden items-center gap-space-xs rounded-full bg-surface-container-high/60 px-space-sm py-1 sm:flex">
               <span className={`h-2 w-2 rounded-full ${room.stateError ? 'bg-error' : 'animate-pulse bg-tertiary'}`} />
-              <span className={`text-label-sm ${room.stateError ? 'text-error' : 'text-tertiary'}`}>{room.stateError ? t('projector.offline') : 'SYNCED'}</span>
+              <span className={`text-label-sm ${room.stateError ? 'text-error' : 'text-tertiary'}`}>
+                {room.stateError ? t('projector.offline') : 'SYNCED'}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-space-sm">
-            <a className={`${btn.secondary} hidden px-space-sm py-1.5 md:inline-flex`} href={projectorUrl} target="_blank" rel="noreferrer" data-testid="room-projector">
+            <a
+              className={`${btn.secondary} hidden px-space-sm py-1.5 md:inline-flex`}
+              href={projectorUrl}
+              target="_blank"
+              rel="noreferrer"
+              data-testid="room-projector"
+            >
               <MonitorPlay className="h-[18px] w-[18px] text-secondary" />
               {t('host.session.projector')}
             </a>
             <LanguageSwitcher />
             {!finished && (
-              <button type="button" className={`${btn.secondary} px-space-sm py-1.5 text-on-surface-variant hover:bg-error/20 hover:text-error`} onClick={() => setEnding(true)} data-testid="room-end">
+              <button
+                type="button"
+                className={`${btn.secondary} px-space-sm py-1.5 text-on-surface-variant hover:bg-error/20 hover:text-error`}
+                onClick={() => setEnding(true)}
+                data-testid="room-end"
+              >
                 <LogOut className="h-[18px] w-[18px]" />
                 <span className="hidden sm:inline">{t('host.room.end')}</span>
               </button>
@@ -113,7 +128,9 @@ export function ControlRoomPage({ token }: { token: string }) {
                   data-testid={`room-tab-${value}`}
                   onClick={() => setTab(value)}
                   className={`flex items-center gap-1.5 rounded-lg px-space-md py-1.5 text-label-md transition-all ${
-                    tab === value ? 'bg-primary-container text-on-primary-container shadow-sm' : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                    tab === value
+                      ? 'bg-primary-container text-on-primary-container shadow-sm'
+                      : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
                   }`}
                 >
                   <Icon className="h-[18px] w-[18px]" />
@@ -157,7 +174,10 @@ export function ControlRoomPage({ token }: { token: string }) {
           </div>
           <div className="flex shrink-0 items-center gap-space-md">
             {remaining !== null && (
-              <span className="flex items-center gap-1.5 rounded-lg bg-surface-container px-space-sm py-1 font-bold text-secondary" data-testid="room-bottom-timer">
+              <span
+                className="flex items-center gap-1.5 rounded-lg bg-surface-container px-space-sm py-1 font-bold text-secondary"
+                data-testid="room-bottom-timer"
+              >
                 <Timer className="h-4 w-4" />
                 {remaining}s
               </span>

@@ -26,12 +26,7 @@ export class AnswersService {
     private readonly broadcast: RealtimeBroadcastService,
   ) {}
 
-  async submit(
-    sessionId: string,
-    teamId: string,
-    questionId: string,
-    response: SubmitResponseInput,
-  ): Promise<AnswerSummaryDto> {
+  async submit(sessionId: string, teamId: string, questionId: string, response: SubmitResponseInput): Promise<AnswerSummaryDto> {
     const session = await this.sessions.findById(sessionId);
     if (!session) throw new NotFoundException('Session not found');
     if (session.status !== 'QUESTION_ACTIVE' || session.current_question_id !== questionId) {

@@ -44,10 +44,18 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
             <div className="flex min-w-0 flex-col gap-space-xs">
               <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">{t('host.room.pin')}</span>
               <div className="flex items-center gap-space-sm">
-                <span className="rounded-xl bg-surface-container-high px-space-md py-1 text-display-lg tracking-widest text-secondary shadow-md" data-testid="room-join-code">
+                <span
+                  className="rounded-xl bg-surface-container-high px-space-md py-1 text-display-lg tracking-widest text-secondary shadow-md"
+                  data-testid="room-join-code"
+                >
                   #{state.joinCode}
                 </span>
-                <button type="button" className={`${btn.icon} bg-surface-container-high`} aria-label={t('host.session.copyCode')} onClick={() => copy(state.joinCode)}>
+                <button
+                  type="button"
+                  className={`${btn.icon} bg-surface-container-high`}
+                  aria-label={t('host.session.copyCode')}
+                  onClick={() => copy(state.joinCode)}
+                >
                   <Copy className="h-5 w-5" />
                 </button>
               </div>
@@ -91,7 +99,11 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
           </div>
           <div className="flex flex-col items-stretch justify-between gap-space-md pt-space-lg sm:flex-row sm:items-center">
             {inLobby && (
-              <button type="button" className={`${btn.secondary} py-3 text-on-surface-variant hover:bg-error-container/20 hover:text-error`} onClick={onCancel}>
+              <button
+                type="button"
+                className={`${btn.secondary} py-3 text-on-surface-variant hover:bg-error-container/20 hover:text-error`}
+                onClick={onCancel}
+              >
                 <XCircle className="h-[18px] w-[18px]" />
                 {t('host.room.cancel')}
               </button>
@@ -135,7 +147,11 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
         ) : (
           <ul className="grid grid-cols-1 gap-space-sm sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
             {state.teams.map((team, index) => (
-              <li key={team.id} className="flex flex-col justify-between gap-space-xs rounded-xl bg-surface-container p-space-sm shadow-sm transition-colors hover:bg-surface-container-high" data-testid={`room-team-${team.id}`}>
+              <li
+                key={team.id}
+                className="flex flex-col justify-between gap-space-xs rounded-xl bg-surface-container p-space-sm shadow-sm transition-colors hover:bg-surface-container-high"
+                data-testid={`room-team-${team.id}`}
+              >
                 <div className="flex items-center justify-between">
                   <span
                     className={`flex h-8 w-8 items-center justify-center rounded-lg text-headline-sm font-bold ${
@@ -148,7 +164,9 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
                 </div>
                 <h4 className="truncate text-label-lg text-on-surface">{team.name}</h4>
                 <div className="flex items-center justify-between pt-1 text-label-sm">
-                  <span className={team.isActive ? 'text-tertiary' : 'text-outline'}>{t(team.isActive ? 'host.room.online' : 'host.room.offlineOne')}</span>
+                  <span className={team.isActive ? 'text-tertiary' : 'text-outline'}>
+                    {t(team.isActive ? 'host.room.online' : 'host.room.offlineOne')}
+                  </span>
                   {team.infractionCount > 0 && (
                     <span className="text-error">
                       {team.infractionCount} {t('host.room.infractions')}

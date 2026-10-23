@@ -27,7 +27,9 @@ export class InMemorySessionsRepository extends SessionsRepository {
     return record;
   }
 
-  async listByHost(hostId:string):Promise<SessionRecord[]>{return [...this.rows.values()].filter(row=>row.host_id===hostId)}
+  async listByHost(hostId: string): Promise<SessionRecord[]> {
+    return [...this.rows.values()].filter((row) => row.host_id === hostId);
+  }
 
   async findById(id: string): Promise<SessionRecord | null> {
     return this.rows.get(id) ?? null;
@@ -54,9 +56,7 @@ export class InMemoryQuestionsRepository extends QuestionsRepository {
   }
 
   async listByQuiz(quizId: string): Promise<QuestionRecord[]> {
-    return [...this.rows.values()]
-      .filter((q) => q.quiz_id === quizId)
-      .sort((a, b) => a.order_index - b.order_index);
+    return [...this.rows.values()].filter((q) => q.quiz_id === quizId).sort((a, b) => a.order_index - b.order_index);
   }
 
   async create(quizId: string, input: Omit<QuestionRecord, 'id' | 'quiz_id'>): Promise<QuestionRecord> {
@@ -64,16 +64,16 @@ export class InMemoryQuestionsRepository extends QuestionsRepository {
     this.rows.set(record.id, record);
     return record;
   }
-  async update(quizId:string,id:string,input:Omit<QuestionRecord,'id'|'quiz_id'>):Promise<QuestionRecord|null>{
-    const record=this.rows.get(id);
-    if(!record||record.quiz_id!==quizId)return null;
-    const updated={...record,...input};
-    this.rows.set(id,updated);
+  async update(quizId: string, id: string, input: Omit<QuestionRecord, 'id' | 'quiz_id'>): Promise<QuestionRecord | null> {
+    const record = this.rows.get(id);
+    if (!record || record.quiz_id !== quizId) return null;
+    const updated = { ...record, ...input };
+    this.rows.set(id, updated);
     return updated;
   }
-  async remove(quizId:string,id:string):Promise<boolean>{
-    const record=this.rows.get(id);
-    if(!record||record.quiz_id!==quizId)return false;
+  async remove(quizId: string, id: string): Promise<boolean> {
+    const record = this.rows.get(id);
+    if (!record || record.quiz_id !== quizId) return false;
     return this.rows.delete(id);
   }
 }
@@ -124,12 +124,7 @@ export class InMemoryTeamsRepository extends TeamsRepository {
 export class InMemoryAnswersRepository extends AnswersRepository {
   private rows = new Map<string, AnswerRecord>();
 
-  async upsertSubmission(input: {
-    sessionId: string;
-    questionId: string;
-    teamId: string;
-    response: unknown;
-  }): Promise<AnswerRecord> {
+  async upsertSubmission(input: { sessionId: string; questionId: string; teamId: string; response: unknown }): Promise<AnswerRecord> {
     const existing = [...this.rows.values()].find(
       (a) => a.session_id === input.sessionId && a.question_id === input.questionId && a.team_id === input.teamId,
     );

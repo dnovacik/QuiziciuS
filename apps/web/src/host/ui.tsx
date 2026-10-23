@@ -73,7 +73,11 @@ export function ConfirmDialog({
   testId?: string;
 }) {
   const { t } = useI18n();
-  const tile = { primary: 'bg-primary-container/20 text-primary', danger: 'bg-error-container/20 text-error', success: 'bg-tertiary-container/20 text-tertiary' }[tone];
+  const tile = {
+    primary: 'bg-primary-container/20 text-primary',
+    danger: 'bg-error-container/20 text-error',
+    success: 'bg-tertiary-container/20 text-tertiary',
+  }[tone];
   const confirmClass = tone === 'danger' ? btn.danger : btn.primary;
   return (
     <Modal tone="surface" labelledBy="confirm-dialog-title" onClose={onClose} className="max-w-md" testId={testId}>

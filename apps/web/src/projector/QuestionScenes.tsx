@@ -19,7 +19,9 @@ export function LockInScene({ question }: { question: QuestionPublicDto | null }
             {t('play.question.number')} {question.orderIndex + 1} • {question.points} {t('projector.points')}
           </span>
         )}
-        <h2 className="mt-space-xs text-display-lg font-extrabold uppercase tracking-tight text-on-surface">{t('projector.lockIn.title')}</h2>
+        <h2 className="mt-space-xs text-display-lg font-extrabold uppercase tracking-tight text-on-surface">
+          {t('projector.lockIn.title')}
+        </h2>
         <div className="mt-space-xl h-4 w-full overflow-hidden rounded-full bg-surface-container-lowest p-0.5">
           <div className="h-full w-3/4 animate-pulse rounded-full bg-gradient-to-r from-primary via-secondary to-tertiary" />
         </div>
@@ -56,9 +58,13 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
       )}
 
       <div className="grid grid-cols-1 items-center gap-space-lg lg:grid-cols-12">
-        <div className={`flex min-h-[180px] flex-col justify-between rounded-xl bg-surface-container/90 p-space-xl shadow-2xl backdrop-blur-2xl ${revealed ? 'lg:col-span-12' : 'lg:col-span-9'}`}>
+        <div
+          className={`flex min-h-[180px] flex-col justify-between rounded-xl bg-surface-container/90 p-space-xl shadow-2xl backdrop-blur-2xl ${revealed ? 'lg:col-span-12' : 'lg:col-span-9'}`}
+        >
           <div>
-            <span className="mb-space-xs block text-label-sm uppercase tracking-widest text-outline">{t('projector.question.promptLabel')}</span>
+            <span className="mb-space-xs block text-label-sm uppercase tracking-widest text-outline">
+              {t('projector.question.promptLabel')}
+            </span>
             <h2 className="text-display-lg leading-tight text-on-surface xl:text-[52px] xl:leading-[62px]" data-testid="projector-prompt">
               {question.prompt}
             </h2>
@@ -78,7 +84,12 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
       </div>
 
       {media?.mediaType === 'image' && media.url && (
-        <img data-testid="projector-image" src={media.url} alt={t('play.question.image')} className="mx-auto max-h-[40vh] max-w-full rounded-xl object-contain shadow-2xl" />
+        <img
+          data-testid="projector-image"
+          src={media.url}
+          alt={t('play.question.image')}
+          className="mx-auto max-h-[40vh] max-w-full rounded-xl object-contain shadow-2xl"
+        />
       )}
       {media?.mediaType === 'video' && media.url && (
         <video
@@ -108,9 +119,13 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
                 className="relative flex items-center justify-between gap-space-lg overflow-hidden rounded-xl bg-tertiary-container/30 p-space-lg shadow-[0_0_32px_rgba(78,222,163,0.35)] backdrop-blur-xl"
               >
                 <div className="flex min-w-0 items-center gap-space-lg">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-tertiary text-headline-lg font-extrabold text-on-tertiary">{optionLetter(index)}</div>
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-tertiary text-headline-lg font-extrabold text-on-tertiary">
+                    {optionLetter(index)}
+                  </div>
                   <div>
-                    <span className="block text-label-sm font-extrabold uppercase tracking-wider text-tertiary">{t('projector.reveal.winning')}</span>
+                    <span className="block text-label-sm font-extrabold uppercase tracking-wider text-tertiary">
+                      {t('projector.reveal.winning')}
+                    </span>
                     <span className="text-headline-md font-extrabold text-on-surface">{option.label}</span>
                   </div>
                 </div>
@@ -140,15 +155,26 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
       ) : revealed ? (
         <div className="flex flex-col items-center rounded-xl bg-tertiary-container/30 p-space-xl text-center shadow-[0_0_32px_rgba(78,222,163,0.35)]">
           <span className="text-label-lg font-extrabold uppercase tracking-widest text-tertiary">{t('projector.reveal.answer')}</span>
-          <span className="mt-space-xs text-display-lg text-on-surface xl:text-[56px] xl:leading-[64px]" data-testid="projector-correct-answer">
+          <span
+            className="mt-space-xs text-display-lg text-on-surface xl:text-[56px] xl:leading-[64px]"
+            data-testid="projector-correct-answer"
+          >
             {correctAnswerText(question) ?? '—'}
           </span>
         </div>
       ) : (
         <div className="flex flex-col items-center rounded-xl bg-surface-container/90 p-space-xl text-center">
-          {question.type === 'FREE_TEXT' ? <PencilLine className="mb-space-sm h-12 w-12 text-primary" /> : <Hash className="mb-space-sm h-12 w-12 text-secondary" />}
-          <h3 className="text-headline-lg font-bold uppercase text-on-surface">{t(`projector.question.${question.type === 'FREE_TEXT' ? 'text' : 'numeric'}Title`)}</h3>
-          <p className="mt-space-xs max-w-xl text-body-lg text-on-surface-variant">{t(`projector.question.${question.type === 'FREE_TEXT' ? 'text' : 'numeric'}Hint`)}</p>
+          {question.type === 'FREE_TEXT' ? (
+            <PencilLine className="mb-space-sm h-12 w-12 text-primary" />
+          ) : (
+            <Hash className="mb-space-sm h-12 w-12 text-secondary" />
+          )}
+          <h3 className="text-headline-lg font-bold uppercase text-on-surface">
+            {t(`projector.question.${question.type === 'FREE_TEXT' ? 'text' : 'numeric'}Title`)}
+          </h3>
+          <p className="mt-space-xs max-w-xl text-body-lg text-on-surface-variant">
+            {t(`projector.question.${question.type === 'FREE_TEXT' ? 'text' : 'numeric'}Hint`)}
+          </p>
         </div>
       )}
     </section>
@@ -163,7 +189,12 @@ function BigTimer({ endsAt, total }: { endsAt: string; total: number }) {
   const fraction = total > 0 ? Math.min(1, seconds / total) : 0;
   const urgent = seconds <= 5;
   return (
-    <div className="relative flex h-36 w-36 items-center justify-center" role="timer" aria-label={`${seconds} ${t('play.seconds')}`} data-testid="projector-timer">
+    <div
+      className="relative flex h-36 w-36 items-center justify-center"
+      role="timer"
+      aria-label={`${seconds} ${t('play.seconds')}`}
+      data-testid="projector-timer"
+    >
       <svg aria-hidden="true" className="h-full w-full -rotate-90" viewBox="0 0 100 100">
         <circle className="text-surface-container-highest" cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="8" />
         <circle
@@ -180,7 +211,9 @@ function BigTimer({ endsAt, total }: { endsAt: string; total: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`text-display-lg font-extrabold ${urgent ? 'text-red-300' : 'text-on-surface'}`}>{String(seconds).padStart(2, '0')}</span>
+        <span className={`text-display-lg font-extrabold ${urgent ? 'text-red-300' : 'text-on-surface'}`}>
+          {String(seconds).padStart(2, '0')}
+        </span>
         <span className="text-label-sm uppercase tracking-wider text-outline">{t('play.seconds')}</span>
       </div>
     </div>

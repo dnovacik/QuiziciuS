@@ -56,23 +56,33 @@ beforeEach(() => {
   data.teams = [];
   data.players = [{ id: 'p1', name: 'Jana', created_at: '2026-10-02T18:00:00Z' }];
   data.taken = ['pub mozarts'];
-  vi.mocked(apiGet).mockReset().mockImplementation(async (path: string) => {
-    if (path === '/registered-teams/mine') return data.teams;
-    if (path.startsWith('/registered-teams/availability/')) {
-      const name = decodeURIComponent(path.split('/').pop()!);
-      return { available: !data.taken.includes(name), code: 'X' };
-    }
-    if (path === '/registered-teams/rt1/players') return data.players;
-    if (path === '/sessions/by-code/A7F3') return { id: 's1' };
-    throw new Error(`unexpected GET ${path}`);
-  });
-  vi.mocked(apiPost).mockReset().mockImplementation(async (path: string, body: unknown) => {
-    if (path === '/registered-teams') return { ...TEAM, name: (body as { name: string }).name };
-    if (path === '/registered-teams/rt1/players') return { id: 'p2', name: (body as { name: string }).name, created_at: 'now' };
-    if (path === '/sessions/s1/teams/join') return { teamId: 'session-team', token: 'team-token' };
-    throw new Error(`unexpected POST ${path}`);
-  });
-  vi.mocked(apiPatch).mockReset().mockImplementation(async (_path: string, body: unknown) => ({ ...TEAM, ...(body as object), name: (body as { name?: string }).name ?? TEAM.name }));
+  vi.mocked(apiGet)
+    .mockReset()
+    .mockImplementation(async (path: string) => {
+      if (path === '/registered-teams/mine') return data.teams;
+      if (path.startsWith('/registered-teams/availability/')) {
+        const name = decodeURIComponent(path.split('/').pop()!);
+        return { available: !data.taken.includes(name), code: 'X' };
+      }
+      if (path === '/registered-teams/rt1/players') return data.players;
+      if (path === '/sessions/by-code/A7F3') return { id: 's1' };
+      throw new Error(`unexpected GET ${path}`);
+    });
+  vi.mocked(apiPost)
+    .mockReset()
+    .mockImplementation(async (path: string, body: unknown) => {
+      if (path === '/registered-teams') return { ...TEAM, name: (body as { name: string }).name };
+      if (path === '/registered-teams/rt1/players') return { id: 'p2', name: (body as { name: string }).name, created_at: 'now' };
+      if (path === '/sessions/s1/teams/join') return { teamId: 'session-team', token: 'team-token' };
+      throw new Error(`unexpected POST ${path}`);
+    });
+  vi.mocked(apiPatch)
+    .mockReset()
+    .mockImplementation(async (_path: string, body: unknown) => ({
+      ...TEAM,
+      ...(body as object),
+      name: (body as { name?: string }).name ?? TEAM.name,
+    }));
   vi.mocked(apiDelete).mockReset().mockResolvedValue(undefined);
 });
 

@@ -1,5 +1,19 @@
 import { useRef, useState } from 'react';
-import { Calculator, Check, Copy, Hash, Image as ImageIcon, Info, LayoutGrid, Minus, Plus, SpellCheck, Trash2, Type, X } from 'lucide-react';
+import {
+  Calculator,
+  Check,
+  Copy,
+  Hash,
+  Image as ImageIcon,
+  Info,
+  LayoutGrid,
+  Minus,
+  Plus,
+  SpellCheck,
+  Trash2,
+  Type,
+  X,
+} from 'lucide-react';
 import type { QuestionType } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
 import { optionLetter } from '../../lib/quiz';
@@ -69,15 +83,34 @@ export function QuestionForm({
         </div>
         <div className="flex items-center gap-space-sm">
           {dirty && (
-            <span className="flex items-center gap-1 rounded-full bg-secondary-container/20 px-2.5 py-1 text-label-sm text-secondary" data-testid="editor-dirty">
+            <span
+              className="flex items-center gap-1 rounded-full bg-secondary-container/20 px-2.5 py-1 text-label-sm text-secondary"
+              data-testid="editor-dirty"
+            >
               <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
               {t('host.editor.unsaved')}
             </span>
           )}
-          <button type="button" className={`${btn.icon} bg-surface-container`} onClick={onDuplicate} disabled={isNew || busy} title={t('host.editor.duplicate')} aria-label={t('host.editor.duplicate')} data-testid="editor-duplicate">
+          <button
+            type="button"
+            className={`${btn.icon} bg-surface-container`}
+            onClick={onDuplicate}
+            disabled={isNew || busy}
+            title={t('host.editor.duplicate')}
+            aria-label={t('host.editor.duplicate')}
+            data-testid="editor-duplicate"
+          >
             <Copy className="h-[18px] w-[18px]" />
           </button>
-          <button type="button" className={`${btn.icon} bg-surface-container text-error hover:bg-error-container/30 hover:text-error`} onClick={onDelete} disabled={busy} title={t('host.editor.delete')} aria-label={t('host.editor.delete')} data-testid="editor-delete">
+          <button
+            type="button"
+            className={`${btn.icon} bg-surface-container text-error hover:bg-error-container/30 hover:text-error`}
+            onClick={onDelete}
+            disabled={busy}
+            title={t('host.editor.delete')}
+            aria-label={t('host.editor.delete')}
+            data-testid="editor-delete"
+          >
             <Trash2 className="h-[18px] w-[18px]" />
           </button>
         </div>
@@ -95,7 +128,9 @@ export function QuestionForm({
               data-testid={`editor-type-${type}`}
               onClick={() => onChange(withType(draft, type))}
               className={`flex items-center justify-center gap-2 rounded-lg px-2 py-2.5 text-label-sm transition-all ${
-                draft.type === type ? 'bg-primary-container text-on-primary-container shadow-md' : 'text-on-surface-variant hover:text-on-surface'
+                draft.type === type
+                  ? 'bg-primary-container text-on-primary-container shadow-md'
+                  : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
@@ -132,7 +167,13 @@ export function QuestionForm({
             <span className="text-label-sm text-on-surface-variant">({t('common.optional')})</span>
           </div>
           {!draft.media_path && (
-            <button type="button" className="text-label-sm text-primary hover:underline disabled:opacity-50" disabled={mediaBusy} onClick={() => fileRef.current?.click()} data-testid="editor-media-add">
+            <button
+              type="button"
+              className="text-label-sm text-primary hover:underline disabled:opacity-50"
+              disabled={mediaBusy}
+              onClick={() => fileRef.current?.click()}
+              data-testid="editor-media-add"
+            >
               {mediaBusy ? t('host.editor.uploading') : `+ ${t('host.editor.addMedia')}`}
             </button>
           )}
@@ -152,17 +193,42 @@ export function QuestionForm({
         {draft.media_path && (
           <div className="flex flex-col items-center gap-space-md pt-2 sm:flex-row">
             <div className="group relative h-28 w-full shrink-0 overflow-hidden rounded-xl bg-surface-container-high sm:w-48">
-              {mediaUrl && draft.media_type === 'image' && <img src={mediaUrl} alt={t('play.question.image')} className="h-full w-full object-cover" data-testid="editor-media-image" />}
-              {mediaUrl && draft.media_type === 'video' && <video src={mediaUrl} controls preload="metadata" className="h-full w-full bg-black object-contain" data-testid="editor-media-video" />}
+              {mediaUrl && draft.media_type === 'image' && (
+                <img
+                  src={mediaUrl}
+                  alt={t('play.question.image')}
+                  className="h-full w-full object-cover"
+                  data-testid="editor-media-image"
+                />
+              )}
+              {mediaUrl && draft.media_type === 'video' && (
+                <video
+                  src={mediaUrl}
+                  controls
+                  preload="metadata"
+                  className="h-full w-full bg-black object-contain"
+                  data-testid="editor-media-video"
+                />
+              )}
             </div>
             <div className="flex flex-1 flex-col gap-1 text-body-sm text-on-surface-variant">
               <span className="text-label-md text-on-surface">{draft.media_path.split('/').pop()}</span>
               <span>{t('host.editor.mediaHint')}</span>
               <div className="mt-2 flex gap-space-md">
-                <button type="button" className="text-label-sm text-primary hover:underline" disabled={mediaBusy} onClick={() => fileRef.current?.click()}>
+                <button
+                  type="button"
+                  className="text-label-sm text-primary hover:underline"
+                  disabled={mediaBusy}
+                  onClick={() => fileRef.current?.click()}
+                >
                   {t('host.editor.changeMedia')}
                 </button>
-                <button type="button" className="text-label-sm text-error hover:underline" onClick={onRemoveMedia} data-testid="editor-media-remove">
+                <button
+                  type="button"
+                  className="text-label-sm text-error hover:underline"
+                  onClick={onRemoveMedia}
+                  data-testid="editor-media-remove"
+                >
                   {t('host.editor.removeMedia')}
                 </button>
               </div>
@@ -216,7 +282,9 @@ export function QuestionForm({
                 </label>
                 <input
                   value={option.label}
-                  onChange={(event) => setOptions(options.map((item) => (item.id === option.id ? { ...item, label: event.target.value } : item)))}
+                  onChange={(event) =>
+                    setOptions(options.map((item) => (item.id === option.id ? { ...item, label: event.target.value } : item)))
+                  }
                   placeholder={`${t('host.editor.optionPlaceholder')} ${optionLetter(optionIndex)}…`}
                   className="w-full bg-transparent px-2 py-1.5 text-body-md text-on-surface focus:outline-none"
                   data-testid={`editor-option-${optionIndex}`}
@@ -267,13 +335,20 @@ export function QuestionForm({
                 <span className="px-2 text-label-sm text-primary">#{answerIndex + 1}</span>
                 <input
                   value={answer}
-                  onChange={(event) => onChange({ accepted_answers: accepted.map((item, i) => (i === answerIndex ? event.target.value : item)) })}
+                  onChange={(event) =>
+                    onChange({ accepted_answers: accepted.map((item, i) => (i === answerIndex ? event.target.value : item)) })
+                  }
                   placeholder={t('host.editor.acceptedPlaceholder')}
                   className="w-full bg-transparent px-2 py-1 text-body-md text-on-surface focus:outline-none"
                   data-testid={`editor-accepted-${answerIndex}`}
                 />
                 {accepted.length > 1 && (
-                  <button type="button" className="p-1 text-on-surface-variant hover:text-error" aria-label={t('host.editor.removeOption')} onClick={() => onChange({ accepted_answers: accepted.filter((_, i) => i !== answerIndex) })}>
+                  <button
+                    type="button"
+                    className="p-1 text-on-surface-variant hover:text-error"
+                    aria-label={t('host.editor.removeOption')}
+                    onClick={() => onChange({ accepted_answers: accepted.filter((_, i) => i !== answerIndex) })}
+                  >
                     <X className="h-[18px] w-[18px]" />
                   </button>
                 )}
@@ -313,7 +388,12 @@ export function QuestionForm({
             <Pending feature="numeric-unit">
               <div className="flex flex-col gap-1.5">
                 <Label>{t('host.editor.unit')}</Label>
-                <input value={unit} onChange={(event) => setUnit(event.target.value)} placeholder={t('host.editor.unitPlaceholder')} className={`${inputClass} p-space-md`} />
+                <input
+                  value={unit}
+                  onChange={(event) => setUnit(event.target.value)}
+                  placeholder={t('host.editor.unitPlaceholder')}
+                  className={`${inputClass} p-space-md`}
+                />
               </div>
             </Pending>
           </div>
@@ -329,7 +409,12 @@ export function QuestionForm({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" aria-label="-5" className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high" onClick={() => onChange({ points: Math.max(1, draft.points - 5) })}>
+            <button
+              type="button"
+              aria-label="-5"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high"
+              onClick={() => onChange({ points: Math.max(1, draft.points - 5) })}
+            >
               <Minus className="h-4 w-4" />
             </button>
             <input
@@ -342,7 +427,12 @@ export function QuestionForm({
               onChange={(event) => onChange({ points: Math.max(1, Math.round(Number(event.target.value) || 1)) })}
               className="flex-1 rounded-xl bg-surface-container py-2 text-center text-headline-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
             />
-            <button type="button" aria-label="+5" className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high" onClick={() => onChange({ points: draft.points + 5 })}>
+            <button
+              type="button"
+              aria-label="+5"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high"
+              onClick={() => onChange({ points: draft.points + 5 })}
+            >
               <Plus className="h-4 w-4" />
             </button>
           </div>
@@ -369,12 +459,23 @@ export function QuestionForm({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-space-sm pt-space-sm">
-        <button type="button" className={`${btn.ghost} text-error hover:bg-error-container/20 hover:text-error`} onClick={onDelete} disabled={busy}>
+        <button
+          type="button"
+          className={`${btn.ghost} text-error hover:bg-error-container/20 hover:text-error`}
+          onClick={onDelete}
+          disabled={busy}
+        >
           <Trash2 className="h-[18px] w-[18px]" />
           {t('host.editor.delete')}
         </button>
         <div className="flex items-center gap-space-sm">
-          <button type="button" className={`${btn.ghost} bg-surface-container`} onClick={onRevert} disabled={!dirty || busy} data-testid="editor-revert">
+          <button
+            type="button"
+            className={`${btn.ghost} bg-surface-container`}
+            onClick={onRevert}
+            disabled={!dirty || busy}
+            data-testid="editor-revert"
+          >
             {t('host.editor.revert')}
           </button>
           <button

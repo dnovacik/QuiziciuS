@@ -1,12 +1,40 @@
 import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, BadgeCheck, CheckCircle2, Clock, GripVertical, Hash, HelpCircle, Lightbulb, LayoutGrid, Pencil, Plus, Save, SlidersHorizontal, Trash2, Trophy, TriangleAlert, Type } from 'lucide-react';
+import {
+  ArrowLeft,
+  BadgeCheck,
+  CheckCircle2,
+  Clock,
+  GripVertical,
+  Hash,
+  HelpCircle,
+  Lightbulb,
+  LayoutGrid,
+  Pencil,
+  Plus,
+  Save,
+  SlidersHorizontal,
+  Trash2,
+  Trophy,
+  TriangleAlert,
+  Type,
+} from 'lucide-react';
 import type { QuestionType } from '@quizicius/shared-types';
 import { describeError } from '../../lib/errors';
 import { useI18n } from '../../lib/i18n';
 import { Modal } from '../../ui/Modal';
 import { Pending } from '../../ui/Pending';
-import { hostApi, isAcceptedMedia, saveQuestionOrder, stripIds, uploadQuestionMedia, type Category, type Question, type QuestionDraft, type Quiz } from '../api';
+import {
+  hostApi,
+  isAcceptedMedia,
+  saveQuestionOrder,
+  stripIds,
+  uploadQuestionMedia,
+  type Category,
+  type Question,
+  type QuestionDraft,
+  type Quiz,
+} from '../api';
 import { btn, Card, ConfirmDialog, ErrorBanner, inputClass, Label, useToast } from '../ui';
 import { PhonePreview } from './PhonePreview';
 import { QuestionForm } from './QuestionForm';
@@ -139,7 +167,9 @@ export function QuizEditorPage({ token }: { token: string }) {
         return;
       }
       const draft = cleanForSave(editing.draft);
-      const saved = editing.id ? await hostApi.updateQuestion(token, quizId, editing.id, draft) : await hostApi.createQuestion(token, quizId, draft);
+      const saved = editing.id
+        ? await hostApi.updateQuestion(token, quizId, editing.id, draft)
+        : await hostApi.createQuestion(token, quizId, draft);
       setQuestions((list) => [...list.filter((question) => question.id !== saved.id), saved]);
       startEditing(saved, saved.order_index);
       toast(t('host.editor.saved'));
@@ -158,7 +188,9 @@ export function QuizEditorPage({ token }: { token: string }) {
           return;
         }
         const draft = cleanForSave(editing.draft);
-        const saved = editing.id ? await hostApi.updateQuestion(token, quizId, editing.id, draft) : await hostApi.createQuestion(token, quizId, draft);
+        const saved = editing.id
+          ? await hostApi.updateQuestion(token, quizId, editing.id, draft)
+          : await hostApi.createQuestion(token, quizId, draft);
         setQuestions((list) => [...list.filter((question) => question.id !== saved.id), saved]);
         startEditing(saved, saved.order_index);
       }
@@ -211,7 +243,12 @@ export function QuizEditorPage({ token }: { token: string }) {
       const saved = await saveQuestionOrder(token, quizId, next);
       setQuestions(saved);
       const current = saved.find((question) => question.id === editing?.id);
-      if (current && editing) setEditing({ ...editing, original: { ...editing.original, order_index: current.order_index }, draft: { ...editing.draft, order_index: current.order_index } });
+      if (current && editing)
+        setEditing({
+          ...editing,
+          original: { ...editing.original, order_index: current.order_index },
+          draft: { ...editing.draft, order_index: current.order_index },
+        });
     });
   }
 
@@ -244,7 +281,11 @@ export function QuizEditorPage({ token }: { token: string }) {
     <div className="flex w-full flex-col pb-16 text-on-surface" data-testid="quiz-editor">
       <header className="mb-space-lg flex flex-col gap-space-md">
         <div className="flex flex-wrap items-center gap-space-xs text-body-sm text-on-surface-variant">
-          <Link to="/host/quizzes" className="group flex items-center gap-1 text-primary transition-colors hover:text-white" data-testid="editor-back">
+          <Link
+            to="/host/quizzes"
+            className="group flex items-center gap-1 text-primary transition-colors hover:text-white"
+            data-testid="editor-back"
+          >
             <ArrowLeft className="h-[18px] w-[18px] transition-transform group-hover:-translate-x-0.5" />
             {t('host.nav.quizzes')}
           </Link>
@@ -258,7 +299,9 @@ export function QuizEditorPage({ token }: { token: string }) {
           <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
           <div className="z-10 flex min-w-0 flex-1 flex-col gap-space-xs">
             <div className="flex flex-wrap items-center gap-space-sm">
-              <span className="rounded-full bg-surface-container-highest px-2.5 py-0.5 text-label-sm uppercase tracking-wider text-secondary">{categoryName}</span>
+              <span className="rounded-full bg-surface-container-highest px-2.5 py-0.5 text-label-sm uppercase tracking-wider text-secondary">
+                {categoryName}
+              </span>
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-label-sm ${
                   ordered.length ? 'bg-tertiary-container/30 text-tertiary-fixed' : 'bg-surface-container-highest text-on-surface-variant'
@@ -303,10 +346,21 @@ export function QuizEditorPage({ token }: { token: string }) {
               <SlidersHorizontal className="h-5 w-5" />
               {t('host.editor.settings')}
             </button>
-            <button type="button" className={`${btn.ghost} hover:bg-error-container/20 hover:text-error`} disabled={!dirty} onClick={discardAll}>
+            <button
+              type="button"
+              className={`${btn.ghost} hover:bg-error-container/20 hover:text-error`}
+              disabled={!dirty}
+              onClick={discardAll}
+            >
               {t('host.editor.discard')}
             </button>
-            <button type="button" className={btn.primary} disabled={!dirty || busy} onClick={() => void saveAll()} data-testid="editor-save-all">
+            <button
+              type="button"
+              className={btn.primary}
+              disabled={!dirty || busy}
+              onClick={() => void saveAll()}
+              data-testid="editor-save-all"
+            >
               <Save className="h-5 w-5" />
               {t('host.editor.saveAll')}
             </button>
@@ -337,7 +391,10 @@ export function QuizEditorPage({ token }: { token: string }) {
       </div>
 
       {loading ? (
-        <div className="flex h-96 w-full animate-pulse flex-col items-center justify-center gap-4 rounded-2xl bg-surface-container-low/50" data-testid="editor-loading">
+        <div
+          className="flex h-96 w-full animate-pulse flex-col items-center justify-center gap-4 rounded-2xl bg-surface-container-low/50"
+          data-testid="editor-loading"
+        >
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <span className="text-headline-sm text-on-surface">{t('host.editor.loading')}</span>
         </div>
@@ -350,13 +407,22 @@ export function QuizEditorPage({ token }: { token: string }) {
                   <span className="text-headline-sm text-on-surface">{t('host.editor.questions')}</span>
                   <span className="rounded-full bg-surface-container-highest px-2 py-0.5 text-label-sm text-primary">{ordered.length}</span>
                 </div>
-                <button type="button" className={`${btn.primary} px-3 py-1.5 text-label-sm`} onClick={addQuestion} data-testid="editor-add-question">
+                <button
+                  type="button"
+                  className={`${btn.primary} px-3 py-1.5 text-label-sm`}
+                  onClick={addQuestion}
+                  data-testid="editor-add-question"
+                >
                   <Plus className="h-4 w-4" />
                   {t('host.editor.add')}
                 </button>
               </div>
               <ol className="flex max-h-[calc(100vh-320px)] flex-col gap-2 overflow-y-auto pr-1">
-                {ordered.length === 0 && <li className="rounded-xl bg-surface-container p-4 text-center text-body-sm text-on-surface-variant">{t('host.editor.noQuestions')}</li>}
+                {ordered.length === 0 && (
+                  <li className="rounded-xl bg-surface-container p-4 text-center text-body-sm text-on-surface-variant">
+                    {t('host.editor.noQuestions')}
+                  </li>
+                )}
                 {ordered.map((question, index) => {
                   const active = question.id === editing?.id;
                   const valid = validate(stripIds(question)).length === 0;
@@ -372,10 +438,15 @@ export function QuizEditorPage({ token }: { token: string }) {
                       onClick={() => select(question)}
                       data-testid={`editor-question-${question.id}`}
                       className={`group relative flex cursor-pointer select-none items-center gap-2.5 rounded-xl p-2.5 transition-all ${
-                        active ? 'bg-surface-container-high text-on-surface shadow-[0_0_16px_rgba(160,120,255,0.25)]' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high/60 hover:text-on-surface'
+                        active
+                          ? 'bg-surface-container-high text-on-surface shadow-[0_0_16px_rgba(160,120,255,0.25)]'
+                          : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high/60 hover:text-on-surface'
                       } ${dragId === question.id ? 'opacity-40' : ''}`}
                     >
-                      <GripVertical className="h-4 w-4 cursor-grab text-on-surface-variant/40 group-hover:text-on-surface-variant" aria-label={t('host.editor.reorder')} />
+                      <GripVertical
+                        className="h-4 w-4 cursor-grab text-on-surface-variant/40 group-hover:text-on-surface-variant"
+                        aria-label={t('host.editor.reorder')}
+                      />
                       <span
                         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-label-sm font-bold ${
                           active ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-highest text-on-surface-variant'
@@ -418,7 +489,9 @@ export function QuizEditorPage({ token }: { token: string }) {
                 })}
                 {editing && !editing.id && (
                   <li className="flex items-center gap-2.5 rounded-xl bg-surface-container-high p-2.5 text-on-surface shadow-[0_0_16px_rgba(160,120,255,0.25)]">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary-container text-label-sm font-bold text-on-primary-container">#{ordered.length + 1}</span>
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary-container text-label-sm font-bold text-on-primary-container">
+                      #{ordered.length + 1}
+                    </span>
                     <span className="truncate text-label-md">{editing.draft.prompt || t('host.editor.newQuestion')}</span>
                   </li>
                 )}
@@ -444,7 +517,9 @@ export function QuizEditorPage({ token }: { token: string }) {
                 mediaBusy={mediaBusy}
                 onChange={(patch) => setEditing((current) => current && { ...current, draft: { ...current.draft, ...patch } })}
                 onUploadMedia={(file) => void uploadMedia(file)}
-                onRemoveMedia={() => setEditing((current) => current && { ...current, draft: { ...current.draft, media_path: null, media_type: null } })}
+                onRemoveMedia={() =>
+                  setEditing((current) => current && { ...current, draft: { ...current.draft, media_path: null, media_type: null } })
+                }
                 onSave={() => void saveQuestion()}
                 onRevert={() => setEditing((current) => current && { ...current, draft: current.original })}
                 onDuplicate={() => void duplicateQuestion()}
@@ -466,7 +541,9 @@ export function QuizEditorPage({ token }: { token: string }) {
           </section>
 
           <aside className={`w-full flex-col gap-space-md xl:col-span-3 ${hidden('preview')} flex`}>
-            {editing && <PhonePreview draft={editing.draft} index={editingIndex} total={ordered.length + (editing.id ? 0 : 1)} mediaUrl={mediaUrl} />}
+            {editing && (
+              <PhonePreview draft={editing.draft} index={editingIndex} total={ordered.length + (editing.id ? 0 : 1)} mediaUrl={mediaUrl} />
+            )}
             {editing && (
               <Card className="flex flex-col gap-2 p-space-md" testId="editor-validation">
                 <div className="flex items-center gap-2">
@@ -590,12 +667,24 @@ function QuizSettingsDialog({
         </h3>
         <div>
           <Label htmlFor="settings-title">{t('host.create.name')}</Label>
-          <input id="settings-title" data-testid="settings-title" className={`${inputClass} p-space-md`} value={title} onChange={(event) => setTitle(event.target.value)} />
+          <input
+            id="settings-title"
+            data-testid="settings-title"
+            className={`${inputClass} p-space-md`}
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+          />
         </div>
         <div className="grid grid-cols-2 gap-space-md">
           <div>
             <Label htmlFor="settings-category">{t('host.create.category')}</Label>
-            <select id="settings-category" data-testid="settings-category" className={`${inputClass} p-space-md`} value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+            <select
+              id="settings-category"
+              data-testid="settings-category"
+              className={`${inputClass} p-space-md`}
+              value={categoryId}
+              onChange={(event) => setCategoryId(event.target.value)}
+            >
               <option value="">{t('host.common.uncategorized')}</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
@@ -619,12 +708,22 @@ function QuizSettingsDialog({
             <input readOnly value="—" className={`${inputClass} p-space-md`} />
           </div>
         </Pending>
-        {error && <p role="alert" className="text-body-sm text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="text-body-sm text-error">
+            {error}
+          </p>
+        )}
         <div className="flex items-center justify-end gap-space-sm pt-space-sm">
           <button type="button" className={btn.ghost} onClick={onClose}>
             {t('host.common.cancel')}
           </button>
-          <button type="button" className={btn.primary} disabled={busy || !title.trim()} onClick={() => void save()} data-testid="settings-save">
+          <button
+            type="button"
+            className={btn.primary}
+            disabled={busy || !title.trim()}
+            onClick={() => void save()}
+            data-testid="settings-save"
+          >
             {busy ? t('common.working') : t('host.editor.applySettings')}
           </button>
         </div>

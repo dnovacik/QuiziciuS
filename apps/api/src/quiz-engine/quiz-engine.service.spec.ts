@@ -98,9 +98,7 @@ describe('QuizEngineService.transitionState', () => {
   it('rejects an illegal transition without persisting or broadcasting', async () => {
     const { service, sessions, broadcast } = buildHarness({ session: { status: 'LOBBY' } });
 
-    await expect(service.transitionState('s1', 'host1', 'QUESTION_ACTIVE')).rejects.toBeInstanceOf(
-      InvalidTransitionError,
-    );
+    await expect(service.transitionState('s1', 'host1', 'QUESTION_ACTIVE')).rejects.toBeInstanceOf(InvalidTransitionError);
     expect(sessions.updateStatus).not.toHaveBeenCalled();
     expect(broadcast.publish).not.toHaveBeenCalled();
   });
@@ -117,9 +115,7 @@ describe('QuizEngineService.transitionState', () => {
     const { service, sessions } = buildHarness();
     (sessions.findById as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.transitionState('missing', 'host1', 'LOCK_IN_ROUND')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(service.transitionState('missing', 'host1', 'LOCK_IN_ROUND')).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('sets question_ends_at from the question time limit on entering QUESTION_ACTIVE', async () => {
@@ -132,10 +128,7 @@ describe('QuizEngineService.transitionState', () => {
     const endsAt = new Date(result.question_ends_at as string).getTime();
 
     expect(endsAt).toBeGreaterThanOrEqual(before + NUMERIC_QUESTION.time_limit_seconds * 1000);
-    expect(sessions.updateStatus).toHaveBeenCalledWith(
-      's1',
-      expect.objectContaining({ status: 'QUESTION_ACTIVE' }),
-    );
+    expect(sessions.updateStatus).toHaveBeenCalledWith('s1', expect.objectContaining({ status: 'QUESTION_ACTIVE' }));
     expect(broadcast.publish).toHaveBeenCalledWith('s1', 'STATE_CHANGE', expect.any(Object));
   });
 
@@ -150,32 +143,24 @@ describe('QuizEngineService.transitionState', () => {
 
     await service.transitionState('s1', 'host1', 'QUESTION_REVEAL');
 
-    expect(answers.updateGrade).toHaveBeenCalledWith(
-      'a1',
-      expect.objectContaining({ is_correct: true, graded_by: 'AUTO' }),
-    );
-    expect(answers.updateGrade).toHaveBeenCalledWith(
-      'a2',
-      expect.objectContaining({ is_correct: false, graded_by: 'AUTO' }),
-    );
+    expect(answers.updateGrade).toHaveBeenCalledWith('a1', expect.objectContaining({ is_correct: true, graded_by: 'AUTO' }));
+    expect(answers.updateGrade).toHaveBeenCalledWith('a2', expect.objectContaining({ is_correct: false, graded_by: 'AUTO' }));
     expect(broadcast.publish).toHaveBeenCalledWith('s1', 'SCORE_UPDATE', expect.any(Object));
   });
 
   it('requires a questionId when transitioning into LOCK_IN_ROUND', async () => {
     const { service } = buildHarness({ session: { status: 'LOBBY' } });
 
-    await expect(service.transitionState('s1', 'host1', 'LOCK_IN_ROUND')).rejects.toThrow(
-      'questionId is required',
-    );
+    await expect(service.transitionState('s1', 'host1', 'LOCK_IN_ROUND')).rejects.toThrow('questionId is required');
   });
 
   it('rejects a LOCK_IN_ROUND question that belongs to another quiz', async () => {
     const { service, sessions, questions, broadcast } = buildHarness({ session: { status: 'LOBBY' } });
     (questions.findById as jest.Mock).mockResolvedValue({ ...NUMERIC_QUESTION, id: 'q-foreign', quiz_id: 'other-quiz' });
 
-    await expect(
-      service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'q-foreign' }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'q-foreign' })).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
     expect(sessions.updateStatus).not.toHaveBeenCalled();
     expect(broadcast.publish).not.toHaveBeenCalled();
   });
@@ -184,9 +169,9 @@ describe('QuizEngineService.transitionState', () => {
     const { service, sessions, questions } = buildHarness({ session: { status: 'LOBBY' } });
     (questions.findById as jest.Mock).mockResolvedValue(null);
 
-    await expect(
-      service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'missing' }),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'missing' })).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
     expect(sessions.updateStatus).not.toHaveBeenCalled();
   });
 
@@ -367,9 +352,7 @@ describe('QuizEngineService.addPaperScore', () => {
   it('rejects a host who does not own the session', async () => {
     const { service } = buildHarness();
 
-    await expect(service.addPaperScore('s1', 'someone-else', 't1', 3, null)).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(service.addPaperScore('s1', 'someone-else', 't1', 3, null)).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
 
@@ -407,10 +390,7 @@ describe('QuizEngineService.resolveDispute', () => {
 
     await service.resolveDispute('a1', 'host1', 'REJECT');
 
-    expect(answers.updateGrade).toHaveBeenCalledWith(
-      'a1',
-      expect.objectContaining({ is_correct: false, score_awarded: 0 }),
-    );
+    expect(answers.updateGrade).toHaveBeenCalledWith('a1', expect.objectContaining({ is_correct: false, score_awarded: 0 }));
   });
 
   it('rejects a dispute resolution requested by a host who does not own the session', async () => {
@@ -423,9 +403,7 @@ describe('QuizEngineService.resolveDispute', () => {
       needs_review: true,
     });
 
-    await expect(service.resolveDispute('a1', 'someone-else', 'APPROVE')).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
+    await expect(service.resolveDispute('a1', 'someone-else', 'APPROVE')).rejects.toBeInstanceOf(ForbiddenException);
     expect(answers.updateGrade).not.toHaveBeenCalled();
   });
 
@@ -433,9 +411,7 @@ describe('QuizEngineService.resolveDispute', () => {
     const { service, answers } = buildHarness();
     (answers.findById as jest.Mock).mockResolvedValue(null);
 
-    await expect(service.resolveDispute('missing', 'host1', 'APPROVE')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(service.resolveDispute('missing', 'host1', 'APPROVE')).rejects.toBeInstanceOf(NotFoundException);
     expect(answers.updateGrade).not.toHaveBeenCalled();
   });
 });

@@ -41,10 +41,14 @@ export default function ProjectorApp() {
           <div className="flex items-center gap-space-lg">
             <div className="hidden items-center gap-space-xs rounded-full bg-surface-container-high px-space-md py-space-xs sm:flex">
               <span className="relative flex h-2.5 w-2.5">
-                <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${error ? 'bg-error' : 'animate-ping bg-tertiary'}`} />
+                <span
+                  className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${error ? 'bg-error' : 'animate-ping bg-tertiary'}`}
+                />
                 <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${error ? 'bg-error' : 'bg-tertiary'}`} />
               </span>
-              <span className={`text-label-sm uppercase ${error ? 'text-error' : 'text-tertiary'}`}>{error ? t('projector.offline') : 'LIVE'}</span>
+              <span className={`text-label-sm uppercase ${error ? 'text-error' : 'text-tertiary'}`}>
+                {error ? t('projector.offline') : 'LIVE'}
+              </span>
             </div>
             <LanguageSwitcher />
           </div>
@@ -65,7 +69,11 @@ export default function ProjectorApp() {
         </div>
 
         {error && state && (
-          <div className="absolute inset-0 z-40 flex items-center justify-center bg-surface-container-lowest/90 p-space-lg backdrop-blur-2xl" data-testid="projector-offline" role="alert">
+          <div
+            className="absolute inset-0 z-40 flex items-center justify-center bg-surface-container-lowest/90 p-space-lg backdrop-blur-2xl"
+            data-testid="projector-offline"
+            role="alert"
+          >
             <div className="flex w-full max-w-md flex-col items-center rounded-xl bg-surface-container-high p-space-xl text-center shadow-2xl">
               <div className="mb-space-md flex h-16 w-16 animate-pulse items-center justify-center rounded-full bg-error-container text-on-error-container">
                 <CloudOff className="h-9 w-9" />
@@ -88,7 +96,15 @@ export default function ProjectorApp() {
   );
 }
 
-function Scene({ state, sessionId, title }: { state: NonNullable<ReturnType<typeof useSessionState>['state']>; sessionId: string; title: string | null }) {
+function Scene({
+  state,
+  sessionId,
+  title,
+}: {
+  state: NonNullable<ReturnType<typeof useSessionState>['state']>;
+  sessionId: string;
+  title: string | null;
+}) {
   const question = state.currentQuestion;
   switch (state.status) {
     case 'LOBBY':

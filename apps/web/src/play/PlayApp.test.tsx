@@ -97,12 +97,14 @@ beforeEach(() => {
   localStorage.clear();
   session.state = null;
   session.mine = [];
-  vi.mocked(apiGet).mockReset().mockImplementation(async (path: string) => {
-    if (path.endsWith('/display')) return { title: 'Friday Movie Quiz' };
-    if (path.endsWith('/answers/mine')) return session.mine;
-    if (path.endsWith('/media')) return { mediaType: null, url: null };
-    throw new Error(`unexpected GET ${path}`);
-  });
+  vi.mocked(apiGet)
+    .mockReset()
+    .mockImplementation(async (path: string) => {
+      if (path.endsWith('/display')) return { title: 'Friday Movie Quiz' };
+      if (path.endsWith('/answers/mine')) return session.mine;
+      if (path.endsWith('/media')) return { mediaType: null, url: null };
+      throw new Error(`unexpected GET ${path}`);
+    });
   vi.mocked(apiPost).mockReset();
 });
 
@@ -117,12 +119,9 @@ describe('joining', () => {
     renderPlay('/play');
 
     fireEvent.paste(screen.getByTestId('player-pin-0'), { clipboardData: { getData: () => 'a7-f3' } });
-    expect(['player-pin-0', 'player-pin-1', 'player-pin-2', 'player-pin-3'].map((id) => (screen.getByTestId(id) as HTMLInputElement).value)).toEqual([
-      'A',
-      '7',
-      'F',
-      '3',
-    ]);
+    expect(
+      ['player-pin-0', 'player-pin-1', 'player-pin-2', 'player-pin-3'].map((id) => (screen.getByTestId(id) as HTMLInputElement).value),
+    ).toEqual(['A', '7', 'F', '3']);
     fireEvent.change(screen.getByTestId('player-team-name'), { target: { value: 'Wise Ducks' } });
     fireEvent.submit(screen.getByTestId('player-join-form'));
 
@@ -217,7 +216,11 @@ describe('answering', () => {
     fireEvent.change(screen.getByTestId('player-text-answer'), { target: { value: '  forrest gump ' } });
     fireEvent.submit(screen.getByTestId('player-answer-form'));
     await screen.findByTestId('player-locked');
-    expect(apiPost).toHaveBeenLastCalledWith('/sessions/s1/answers', { questionId: 'q1', response: { text: 'forrest gump' } }, 'team-token');
+    expect(apiPost).toHaveBeenLastCalledWith(
+      '/sessions/s1/answers',
+      { questionId: 'q1', response: { text: 'forrest gump' } },
+      'team-token',
+    );
     unmount();
 
     localStorage.removeItem('quizicius:answers:s1');

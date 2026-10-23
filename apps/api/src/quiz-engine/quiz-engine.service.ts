@@ -88,12 +88,7 @@ export class QuizEngineService {
     };
   }
 
-  async transitionState(
-    sessionId: string,
-    hostId: string,
-    newState: QuizState,
-    options: TransitionOptions = {},
-  ): Promise<SessionRecord> {
+  async transitionState(sessionId: string, hostId: string, newState: QuizState, options: TransitionOptions = {}): Promise<SessionRecord> {
     const session = await this.requireOwnedSession(sessionId, hostId);
     assertValidTransition(session.status, newState);
 

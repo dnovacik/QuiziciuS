@@ -6,10 +6,7 @@ export type BroadcastEvent = 'STATE_CHANGE' | 'SCORE_UPDATE';
 type SendResult = 'ok' | 'error' | 'timed out';
 
 interface BroadcastChannel {
-  send(
-    args: { type: 'broadcast'; event: string; payload: Record<string, unknown> },
-    opts?: { timeout?: number },
-  ): Promise<string>;
+  send(args: { type: 'broadcast'; event: string; payload: Record<string, unknown> }, opts?: { timeout?: number }): Promise<string>;
 }
 
 // `channel.send()` is never called on a subscribed channel here, so it takes the
@@ -30,30 +27,19 @@ export class RealtimeBroadcastService {
     const first = await this.trySend(channel, event, payload);
     if (first === 'ok') return;
 
-    this.logger.warn(
-      `Realtime publish of ${event} for session ${sessionId} returned "${first}" — retrying once`,
-    );
+    this.logger.warn(`Realtime publish of ${event} for session ${sessionId} returned "${first}" — retrying once`);
 
     const second = await this.trySend(channel, event, payload);
     if (second !== 'ok') {
-      this.logger.warn(
-        `Realtime publish retry of ${event} for session ${sessionId} also failed ("${second}") — giving up`,
-      );
+      this.logger.warn(`Realtime publish retry of ${event} for session ${sessionId} also failed ("${second}") — giving up`);
     }
   }
 
-  private async trySend(
-    channel: BroadcastChannel,
-    event: BroadcastEvent,
-    payload: Record<string, unknown>,
-  ): Promise<SendResult> {
+  private async trySend(channel: BroadcastChannel, event: BroadcastEvent, payload: Record<string, unknown>): Promise<SendResult> {
     try {
       // send() resolves to 'ok' | 'error' | 'timed out' rather than throwing, but a
       // transport-level throw must not take down the caller's state transition either.
-      const result = await channel.send(
-        { type: 'broadcast', event, payload },
-        { timeout: SEND_TIMEOUT_MS },
-      );
+      const result = await channel.send({ type: 'broadcast', event, payload }, { timeout: SEND_TIMEOUT_MS });
       return result === 'ok' ? 'ok' : ((result as SendResult) ?? 'error');
     } catch (err) {
       this.logger.warn(`Realtime publish of ${event} threw: ${err instanceof Error ? err.message : String(err)}`);

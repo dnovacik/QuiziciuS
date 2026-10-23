@@ -98,10 +98,7 @@ describe('AnswersService.submit', () => {
 
     await service.submit('s1', 't1', 'q1', { optionId: 'b' });
 
-    expect(answers.updateGrade).toHaveBeenCalledWith(
-      'ans1',
-      expect.objectContaining({ is_correct: false, score_awarded: 0 }),
-    );
+    expect(answers.updateGrade).toHaveBeenCalledWith('ans1', expect.objectContaining({ is_correct: false, score_awarded: 0 }));
   });
 
   it('sends a low-confidence free-text answer to the dispute queue instead of auto-grading', async () => {
@@ -144,9 +141,7 @@ describe('AnswersService.submit', () => {
   it('rejects a submission after the grace window has closed', async () => {
     const { service } = buildHarness({ session: { question_ends_at: new Date(Date.now() - 10_000).toISOString() } });
 
-    await expect(service.submit('s1', 't1', 'q1', { optionId: 'a' })).rejects.toBeInstanceOf(
-      UnprocessableEntityException,
-    );
+    await expect(service.submit('s1', 't1', 'q1', { optionId: 'a' })).rejects.toBeInstanceOf(UnprocessableEntityException);
   });
 
   it('rejects a submission for an unknown session', async () => {
@@ -159,7 +154,14 @@ describe('AnswersService.submit', () => {
 
 describe('AnswersService.listForTeam', () => {
   const graded = (questionId: string, teamId = 't1') =>
-    buildAnswerRecord({ id: `${questionId}-${teamId}`, question_id: questionId, team_id: teamId, is_correct: true, graded_by: 'AUTO', score_awarded: 3 });
+    buildAnswerRecord({
+      id: `${questionId}-${teamId}`,
+      question_id: questionId,
+      team_id: teamId,
+      is_correct: true,
+      graded_by: 'AUTO',
+      score_awarded: 3,
+    });
 
   it('hides the grade of the open question but keeps earlier results', async () => {
     const { service, answers } = buildHarness();

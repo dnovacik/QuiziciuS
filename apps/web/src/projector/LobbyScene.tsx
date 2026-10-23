@@ -13,7 +13,10 @@ export function LobbyScene({ state, sessionId, title }: { state: QuizSessionStat
       <div className="flex flex-col justify-between gap-space-md md:flex-row md:items-end">
         <div>
           <span className="text-label-lg uppercase tracking-widest text-primary">{t('projector.lobby.tag')}</span>
-          <h1 className="mt-1 text-display-lg tracking-tight text-on-surface xl:text-[56px] xl:leading-[64px]" data-testid="projector-title">
+          <h1
+            className="mt-1 text-display-lg tracking-tight text-on-surface xl:text-[56px] xl:leading-[64px]"
+            data-testid="projector-title"
+          >
             {title ?? t('play.join.eventFallback')}
           </h1>
         </div>
@@ -29,7 +32,9 @@ export function LobbyScene({ state, sessionId, title }: { state: QuizSessionStat
         <div className="relative flex flex-col justify-between overflow-hidden rounded-xl bg-surface-container/90 p-space-lg shadow-2xl backdrop-blur-xl lg:col-span-5">
           <div className="pointer-events-none absolute right-0 top-0 h-44 w-44 rounded-full bg-secondary/10 blur-3xl" />
           <div>
-            <span className="mb-space-sm block text-label-sm font-extrabold uppercase tracking-widest text-secondary">{t('projector.lobby.howToJoin')}</span>
+            <span className="mb-space-sm block text-label-sm font-extrabold uppercase tracking-widest text-secondary">
+              {t('projector.lobby.howToJoin')}
+            </span>
             <p className="text-headline-sm font-semibold text-on-surface">
               {t('projector.lobby.scanOrVisit')} <span className="font-bold text-primary">{joinUrl.host}</span>
             </p>
@@ -71,9 +76,15 @@ export function LobbyScene({ state, sessionId, title }: { state: QuizSessionStat
             ) : (
               <ul className="grid grid-cols-1 gap-space-sm pt-space-md sm:grid-cols-2 md:grid-cols-3">
                 {state.teams.map((team) => (
-                  <li key={team.id} className="flex items-center gap-space-xs rounded-lg bg-surface-container-high/80 p-space-sm shadow-sm" data-testid="projector-team">
+                  <li
+                    key={team.id}
+                    className="flex items-center gap-space-xs rounded-lg bg-surface-container-high/80 p-space-sm shadow-sm"
+                    data-testid="projector-team"
+                  >
                     <span className={`h-2 w-2 shrink-0 rounded-full ${team.isActive ? 'bg-tertiary' : 'bg-outline'}`} />
-                    <span className={`truncate text-body-md font-bold ${team.isActive ? 'text-on-surface' : 'text-outline'}`}>{team.name}</span>
+                    <span className={`truncate text-body-md font-bold ${team.isActive ? 'text-on-surface' : 'text-outline'}`}>
+                      {team.name}
+                    </span>
                   </li>
                 ))}
               </ul>

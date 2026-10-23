@@ -97,7 +97,11 @@ export function QuizLibrary({
       .filter((quiz) => category === 'all' || (category === 'none' ? !quiz.category_id : quiz.category_id === category))
       .filter((quiz) => quiz.title.toLocaleLowerCase().includes(needle))
       .sort((a, b) =>
-        sort === 'az' ? a.title.localeCompare(b.title) : sort === 'recent' ? b.created_at.localeCompare(a.created_at) : a.created_at.localeCompare(b.created_at),
+        sort === 'az'
+          ? a.title.localeCompare(b.title)
+          : sort === 'recent'
+            ? b.created_at.localeCompare(a.created_at)
+            : a.created_at.localeCompare(b.created_at),
       );
   }, [quizzes, category, search, sort]);
 
@@ -109,7 +113,9 @@ export function QuizLibrary({
       type="button"
       onClick={() => setCategory(value)}
       className={`whitespace-nowrap rounded-full px-3 py-1.5 text-label-sm ${
-        category === value ? 'bg-primary-container text-on-primary-container shadow-sm' : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
+        category === value
+          ? 'bg-primary-container text-on-primary-container shadow-sm'
+          : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
       }`}
     >
       {label} ({count})
@@ -124,7 +130,8 @@ export function QuizLibrary({
           {categories
             .filter((row) => quizzes.some((quiz) => quiz.category_id === row.id))
             .map((row) => chip(row.id, row.name, quizzes.filter((quiz) => quiz.category_id === row.id).length))}
-          {quizzes.some((quiz) => !quiz.category_id) && chip('none', t('host.common.uncategorized'), quizzes.filter((quiz) => !quiz.category_id).length)}
+          {quizzes.some((quiz) => !quiz.category_id) &&
+            chip('none', t('host.common.uncategorized'), quizzes.filter((quiz) => !quiz.category_id).length)}
         </div>
         <div className="flex items-center gap-space-xs">
           <div className="relative flex-1 sm:w-64">
@@ -156,7 +163,10 @@ export function QuizLibrary({
           ))}
         </div>
       ) : visible.length === 0 ? (
-        <div className="flex flex-col items-center rounded-2xl bg-surface-container-low/70 px-space-lg py-space-xl text-center" data-testid="quiz-library-empty">
+        <div
+          className="flex flex-col items-center rounded-2xl bg-surface-container-low/70 px-space-lg py-space-xl text-center"
+          data-testid="quiz-library-empty"
+        >
           <p className="text-body-lg text-on-surface-variant">{t(quizzes.length ? 'host.library.noMatch' : 'host.library.empty')}</p>
           {!quizzes.length && (
             <button type="button" className={`${btn.primary} mt-space-md`} onClick={onCreate}>
@@ -195,7 +205,9 @@ export function QuizLibrary({
                         {t('host.library.draft')}
                       </span>
                     )}
-                    <span className="text-body-sm text-on-surface-variant">{new Date(quiz.created_at).toLocaleDateString(locale === 'sk' ? 'sk-SK' : 'en-GB')}</span>
+                    <span className="text-body-sm text-on-surface-variant">
+                      {new Date(quiz.created_at).toLocaleDateString(locale === 'sk' ? 'sk-SK' : 'en-GB')}
+                    </span>
                   </div>
                   <h3 className="text-headline-sm text-on-surface transition-colors group-hover:text-primary">{quiz.title}</h3>
                   <span className="text-label-sm uppercase tracking-wider text-secondary">{categoryName(quiz.category_id)}</span>
@@ -219,21 +231,44 @@ export function QuizLibrary({
                 </div>
                 <div className="mt-space-sm flex items-center justify-between pt-space-md">
                   {ready ? (
-                    <button type="button" className={`${btn.primary} py-2 text-label-md`} onClick={() => setStarting(quiz)} data-testid={`quiz-start-${quiz.id}`}>
+                    <button
+                      type="button"
+                      className={`${btn.primary} py-2 text-label-md`}
+                      onClick={() => setStarting(quiz)}
+                      data-testid={`quiz-start-${quiz.id}`}
+                    >
                       <Play className="h-[18px] w-[18px]" />
                       {t('host.library.start')}
                     </button>
                   ) : (
-                    <button type="button" className={`${btn.secondary} py-2 text-primary`} onClick={() => navigate(`/host/quizzes/${quiz.id}`)}>
+                    <button
+                      type="button"
+                      className={`${btn.secondary} py-2 text-primary`}
+                      onClick={() => navigate(`/host/quizzes/${quiz.id}`)}
+                    >
                       <Pencil className="h-[18px] w-[18px]" />
                       {t('host.library.finish')}
                     </button>
                   )}
                   <div className="flex items-center gap-1">
-                    <button type="button" className={btn.icon} title={t('host.library.edit')} aria-label={t('host.library.edit')} onClick={() => navigate(`/host/quizzes/${quiz.id}`)} data-testid={`quiz-edit-${quiz.id}`}>
+                    <button
+                      type="button"
+                      className={btn.icon}
+                      title={t('host.library.edit')}
+                      aria-label={t('host.library.edit')}
+                      onClick={() => navigate(`/host/quizzes/${quiz.id}`)}
+                      data-testid={`quiz-edit-${quiz.id}`}
+                    >
                       <Pencil className="h-[18px] w-[18px]" />
                     </button>
-                    <button type="button" className={btn.icon} title={t('host.library.duplicate')} aria-label={t('host.library.duplicate')} onClick={() => setDuplicating(quiz)} data-testid={`quiz-duplicate-${quiz.id}`}>
+                    <button
+                      type="button"
+                      className={btn.icon}
+                      title={t('host.library.duplicate')}
+                      aria-label={t('host.library.duplicate')}
+                      onClick={() => setDuplicating(quiz)}
+                      data-testid={`quiz-duplicate-${quiz.id}`}
+                    >
                       <Copy className="h-[18px] w-[18px]" />
                     </button>
                     <button
@@ -311,7 +346,13 @@ export function StartSessionDialog({
           <div>
             <Label htmlFor="start-session-quiz">{t('host.start.pickQuiz')}</Label>
             {choices.length ? (
-              <select id="start-session-quiz" data-testid="start-session-quiz" className={inputClass} value={picked} onChange={(event) => setPicked(event.target.value)}>
+              <select
+                id="start-session-quiz"
+                data-testid="start-session-quiz"
+                className={inputClass}
+                value={picked}
+                onChange={(event) => setPicked(event.target.value)}
+              >
                 {choices.map((choice) => (
                   <option key={choice.id} value={choice.id}>
                     {choice.title}
@@ -333,12 +374,22 @@ export function StartSessionDialog({
           <HelpCircle className="h-5 w-5 shrink-0 text-primary" />
           {t('host.start.info')}
         </div>
-        {error && <p role="alert" className="text-body-sm text-error">{error}</p>}
+        {error && (
+          <p role="alert" className="text-body-sm text-error">
+            {error}
+          </p>
+        )}
         <div className="flex items-center justify-end gap-space-xs pt-space-xs">
           <button type="button" className={btn.ghost} onClick={onClose}>
             {t('host.common.cancel')}
           </button>
-          <button type="button" className={btn.gold} disabled={busy || !picked} onClick={() => void launch()} data-testid="start-session-confirm">
+          <button
+            type="button"
+            className={btn.gold}
+            disabled={busy || !picked}
+            onClick={() => void launch()}
+            data-testid="start-session-confirm"
+          >
             <Radio className="h-[18px] w-[18px]" />
             {busy ? t('common.working') : t('host.start.confirm')}
           </button>
@@ -383,9 +434,19 @@ function DuplicateQuizDialog({ token, quiz, onClose, onDone }: { token: string; 
     >
       <div>
         <Label htmlFor="duplicate-title">{t('host.duplicate.name')}</Label>
-        <input id="duplicate-title" data-testid="duplicate-title" className={inputClass} value={title} onChange={(event) => setTitle(event.target.value)} />
+        <input
+          id="duplicate-title"
+          data-testid="duplicate-title"
+          className={inputClass}
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+        />
       </div>
-      {error && <p role="alert" className="text-body-sm text-error">{error}</p>}
+      {error && (
+        <p role="alert" className="text-body-sm text-error">
+          {error}
+        </p>
+      )}
     </ConfirmDialog>
   );
 }
@@ -426,7 +487,11 @@ function DeleteQuizDialog({ token, quiz, onClose, onDone }: { token: string; qui
       onClose={onClose}
       testId="delete-quiz-dialog"
     >
-      {error && <p role="alert" className="text-body-sm text-error">{error}</p>}
+      {error && (
+        <p role="alert" className="text-body-sm text-error">
+          {error}
+        </p>
+      )}
     </ConfirmDialog>
   );
 }

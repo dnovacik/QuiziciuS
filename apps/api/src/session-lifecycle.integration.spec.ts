@@ -100,10 +100,7 @@ describe('Session lifecycle (integration)', () => {
     expect(joinRes.status).toBe(201);
     const teamToken: string = joinRes.body.token;
 
-    await request(server)
-      .post(`/sessions/${sessionId}/transition`)
-      .send({ status: 'LOCK_IN_ROUND', questionId })
-      .expect(201);
+    await request(server).post(`/sessions/${sessionId}/transition`).send({ status: 'LOCK_IN_ROUND', questionId }).expect(201);
 
     await request(server).post(`/sessions/${sessionId}/transition`).send({ status: 'QUESTION_ACTIVE' }).expect(201);
 
@@ -148,9 +145,7 @@ describe('Session lifecycle (integration)', () => {
     expect(listed.body).toHaveLength(1);
     const infractionId: string = listed.body[0].id;
 
-    const reviewRes = await request(server).patch(
-      `/sessions/${sessionId}/infractions/${infractionId}/review`,
-    );
+    const reviewRes = await request(server).patch(`/sessions/${sessionId}/infractions/${infractionId}/review`);
     expect(reviewRes.status).toBe(200);
     expect(reviewRes.body.reviewed).toBe(true);
 

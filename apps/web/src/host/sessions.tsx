@@ -27,7 +27,10 @@ export function StatusPill({ status }: { status: QuizState }) {
   const { t } = useI18n();
   const live = status !== 'LOBBY' && status !== 'FINISHED' && status !== 'PAUSE_BREAK';
   return (
-    <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-label-sm uppercase tracking-wide ${STATUS_STYLE[status]}`} data-testid="session-status">
+    <span
+      className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-label-sm uppercase tracking-wide ${STATUS_STYLE[status]}`}
+      data-testid="session-status"
+    >
       <span className={`h-2 w-2 rounded-full ${live ? 'animate-ping bg-tertiary' : 'bg-current'}`} />
       {t(`host.status.${status}`)}
     </span>
@@ -51,7 +54,10 @@ export function LiveSessionCard({ session, quiz }: { session: HostSession; quiz:
   const teams = state?.teams ?? [];
   const leader = rankTeams(teams)[0];
   return (
-    <article className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-surface-container-low/90 p-space-lg shadow-xl backdrop-blur-xl" data-testid={`live-session-${session.id}`}>
+    <article
+      className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-surface-container-low/90 p-space-lg shadow-xl backdrop-blur-xl"
+      data-testid={`live-session-${session.id}`}
+    >
       <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-tertiary via-primary-container to-tertiary" />
       <div>
         <div className="mb-space-md flex flex-wrap items-center justify-between gap-space-sm">
@@ -95,7 +101,12 @@ export function LiveSessionCard({ session, quiz }: { session: HostSession; quiz:
           <MonitorPlay className="h-[18px] w-[18px] text-secondary" />
           {t('host.session.projector')}
         </a>
-        <button type="button" className={btn.primary} onClick={() => navigate(`/host/sessions/${session.id}`)} data-testid={`session-open-${session.id}`}>
+        <button
+          type="button"
+          className={btn.primary}
+          onClick={() => navigate(`/host/sessions/${session.id}`)}
+          data-testid={`session-open-${session.id}`}
+        >
           <SlidersHorizontal className="h-5 w-5" />
           {t('host.session.controlRoom')}
         </button>
