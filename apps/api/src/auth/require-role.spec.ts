@@ -15,7 +15,9 @@ function contextFor(role: AccountRole | null, handler = () => undefined, cls: ob
   return {
     getHandler: () => handler,
     getClass: () => cls,
-    switchToHttp: () => ({ getRequest: () => ({ authHost: role ? { id: 'u1', role, deactivated: false } : undefined }) }),
+    switchToHttp: () => ({
+      getRequest: () => ({ authHost: role ? { id: 'u1', role, deactivated: false, subscription: null } : undefined }),
+    }),
   } as unknown as ExecutionContext;
 }
 

@@ -8,14 +8,22 @@ export interface ProfileRecord {
   email: string | null;
   role: AccountRole;
   deactivated_at: string | null;
+  /** Last day (inclusive, `YYYY-MM-DD`) the host may launch quiz nights. */
+  subscribed_until: string | null;
+  subscription_forever: boolean;
+  subscription_trial: boolean;
   created_at: string;
 }
+
+export type ProfilePatch = Partial<
+  Pick<ProfileRecord, 'role' | 'deactivated_at' | 'display_name' | 'subscribed_until' | 'subscription_forever' | 'subscription_trial'>
+>;
 
 export abstract class ProfilesRepository {
   abstract findById(id: string): Promise<ProfileRecord | null>;
   abstract findByEmail(email: string): Promise<ProfileRecord | null>;
   abstract listByRoles(roles: AccountRole[]): Promise<ProfileRecord[]>;
-  abstract update(id: string, patch: Partial<Pick<ProfileRecord, 'role' | 'deactivated_at' | 'display_name'>>): Promise<ProfileRecord>;
+  abstract update(id: string, patch: ProfilePatch): Promise<ProfileRecord>;
 }
 
 @Injectable()
@@ -42,7 +50,7 @@ export class SupabaseProfilesRepository extends ProfilesRepository {
     return (data ?? []) as ProfileRecord[];
   }
 
-  async update(id: string, patch: Partial<Pick<ProfileRecord, 'role' | 'deactivated_at' | 'display_name'>>): Promise<ProfileRecord> {
+  async update(id: string, patch: ProfilePatch): Promise<ProfileRecord> {
     const { data, error } = await this.supabase.getClient().from('profiles').update(patch).eq('id', id).select().single();
     if (error) throw new InternalServerErrorException(error.message);
     return data as ProfileRecord;

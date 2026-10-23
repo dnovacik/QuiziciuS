@@ -43,3 +43,26 @@ per hour); configure custom SMTP in Supabase before inviting many hosts.
 In `/host/admin`, enter the host's e-mail (and optionally a name). A new address gets an invite
 e-mail; the link signs them in and asks them to set a password. An address that already has an
 account (for example a captain) is turned into a host straight away, without an e-mail.
+
+## Subscriptions
+
+One price for every host, set by hand for now (no payment provider yet).
+
+| Status | Meaning | Can launch quiz nights |
+|---|---|---|
+| `TRIAL` | The automatic 14 days a new host gets (invite or promotion of a captain) | yes |
+| `ACTIVE` | Paid until a date a super admin set; the date itself still counts | yes |
+| `FOREVER` | Never expires: set by a super admin; super admins are always forever | yes |
+| `EXPIRED` | The date has passed | no (`403 SUBSCRIPTION_EXPIRED`) |
+
+- Dates are Slovak calendar days: "until 30. 11." means through that evening.
+- In `/host/admin` a super admin can, per host: **+1 month** (from today, or from the current end
+  date if it is later), set an end date, or switch **forever** on and off. Switching forever off
+  falls back to the stored date.
+- An expired host keeps signing in, editing quizzes and pubs, and seeing past results; only a new
+  quiz night is refused. A quiz night already running always finishes.
+- Hosts see their status in the sidebar, and a banner during the last 7 days and once expired.
+- Someone who becomes a host again keeps their earlier date instead of getting a new trial.
+- Deactivation is separate and stronger: it blocks launching regardless of the subscription.
+- Columns: `profiles.subscribed_until`, `subscription_forever`, `subscription_trial`
+  (migration `0014_host_subscriptions.sql`).

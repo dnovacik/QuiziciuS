@@ -1,10 +1,10 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
 import { AccountDto } from '@quizicius/shared-types';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { RequireRole } from '../auth/require-role';
 import { AccountsService, AdminHostDto } from './accounts.service';
 import { AdminTeamDto, AdminTeamsService } from './admin-teams.service';
-import { RenameTeamDto, SetHostActiveDto } from './dto/admin-patch.dto';
+import { RenameTeamDto, SetHostActiveDto, SetSubscriptionDto } from './dto/admin-patch.dto';
 import { InviteHostDto } from './dto/invite-host.dto';
 
 @Controller()
@@ -40,6 +40,15 @@ export class AdminController {
   @Patch('hosts/:hostId')
   setHostActive(@Param('hostId') hostId: string, @Body() dto: SetHostActiveDto): Promise<AccountDto> {
     return this.accounts.setHostActive(hostId, dto.active);
+  }
+
+  @Patch('hosts/:hostId/subscription')
+  setSubscription(@Param('hostId') hostId: string, @Body() dto: SetSubscriptionDto): Promise<AccountDto> {
+    const given = [dto.extendMonths, dto.until, dto.forever].filter((value) => value !== undefined).length;
+    if (given !== 1) throw new BadRequestException({ code: 'INVALID_SUBSCRIPTION', message: 'Send exactly one change' });
+    if (dto.forever !== undefined) return this.accounts.setSubscription(hostId, { forever: dto.forever });
+    if (dto.until !== undefined) return this.accounts.setSubscription(hostId, { until: dto.until });
+    return this.accounts.setSubscription(hostId, { extendMonths: dto.extendMonths! });
   }
 
   @Get('teams')

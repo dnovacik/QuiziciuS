@@ -8,7 +8,7 @@ import { QuizPatch, QuizRecord, QuizzesRepository } from '../data/quizzes.reposi
 import { ScoreAdjustmentRecord, ScoreAdjustmentsRepository } from '../data/score-adjustments.repository';
 import { SessionRecord, SessionsRepository, SessionStatusPatch } from '../data/sessions.repository';
 import { TeamRecord, TeamsRepository } from '../data/teams.repository';
-import { ProfileRecord, ProfilesRepository } from '../data/profiles.repository';
+import { ProfilePatch, ProfileRecord, ProfilesRepository } from '../data/profiles.repository';
 import {
   MAX_ROSTER,
   NewRegisteredTeam,
@@ -358,6 +358,9 @@ export class InMemoryProfilesRepository extends ProfilesRepository {
       email,
       role,
       deactivated_at: null,
+      subscribed_until: null,
+      subscription_forever: false,
+      subscription_trial: false,
       created_at: new Date().toISOString(),
     };
     this.rows.set(id, record);
@@ -376,7 +379,7 @@ export class InMemoryProfilesRepository extends ProfilesRepository {
     return [...this.rows.values()].filter((row) => roles.includes(row.role));
   }
 
-  async update(id: string, patch: Partial<Pick<ProfileRecord, 'role' | 'deactivated_at' | 'display_name'>>): Promise<ProfileRecord> {
+  async update(id: string, patch: ProfilePatch): Promise<ProfileRecord> {
     const updated = { ...this.rows.get(id)!, ...patch };
     this.rows.set(id, updated);
     return updated;

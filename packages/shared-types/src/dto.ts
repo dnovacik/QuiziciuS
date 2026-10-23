@@ -64,4 +64,23 @@ export interface AccountDto {
   role: AccountRole;
   /** A deactivated host can sign in and edit quizzes but cannot launch quiz nights. */
   deactivated: boolean;
+  /** Null for team captains, who need no subscription. */
+  subscription: SubscriptionDto | null;
+}
+
+/** Days of the automatic trial a new host gets. */
+export const TRIAL_DAYS = 14;
+/** Hosts are reminded this many days before their subscription ends. */
+export const SUBSCRIPTION_WARNING_DAYS = 7;
+
+export const SUBSCRIPTION_STATUSES = ['FOREVER', 'TRIAL', 'ACTIVE', 'EXPIRED'] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+
+/** A host's subscription. Only FOREVER, TRIAL and ACTIVE may launch quiz nights. */
+export interface SubscriptionDto {
+  status: SubscriptionStatus;
+  /** Last day (inclusive, `YYYY-MM-DD`, Slovak time) the host may launch quiz nights; null when never set. */
+  until: string | null;
+  /** Whether the forever flag is set (super admins are FOREVER without it). */
+  forever: boolean;
 }

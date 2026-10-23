@@ -56,7 +56,12 @@ describe('Session lifecycle (integration)', () => {
       .overrideGuard(SupabaseAuthGuard)
       .useValue({
         canActivate: (ctx: ExecutionContext) => {
-          ctx.switchToHttp().getRequest().authHost = { id: 'host1' };
+          ctx.switchToHttp().getRequest().authHost = {
+            id: 'host1',
+            role: 'HOST',
+            deactivated: false,
+            subscription: { status: 'ACTIVE', until: '2099-12-31', forever: false },
+          };
           return true;
         },
       })

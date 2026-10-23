@@ -22,8 +22,7 @@ Missing for a paid product:
 
 | Gap | Why it matters |
 |---|---|
-| No organizations | A quiz company with several hosts cannot share quizzes, pubs or billing |
-| No billing | No way to charge, trial or stop access |
+| No online payment | Subscriptions are set by hand (see Phase 2); hosts cannot pay by card yet |
 | No plan limits | Realtime traffic and media storage grow with every customer |
 | No branding | Hosts usually pay to show *their* brand on the projector and phones |
 | Production setup | Hosting, monitoring, backups, rate limits, error tracking, support tooling |
@@ -39,26 +38,26 @@ Missing for a paid product:
 - Rate limiting on public endpoints (join, by-code lookup, answers).
 - A short security review now that strangers' data will sit side by side.
 
-### Phase 1 — Accounts, roles and organizations (2 weeks)
+### Phase 1 — Accounts and roles (done)
 
-**Roles are done** (see `ACCOUNTS.md`): `SUPER_ADMIN`, `HOST` (invited by a super admin) and
-self-registered `TEAM_CAPTAIN`, with host deactivation and team moderation in `/host/admin`.
-Organizations below are still open.
+`SUPER_ADMIN`, `HOST` (invited by a super admin) and self-registered `TEAM_CAPTAIN`, with host
+deactivation and team moderation in `/host/admin` (see `ACCOUNTS.md`). Only hosts can create pubs.
 
-- `organizations` and `organization_members (role: owner | host)`. A solo host is a one-person
-  organization, so nothing changes for them.
-- Quizzes, sessions and pub lists move from `host_id` to `organization_id` (with `created_by`
-  kept). Hosts of one organization share quizzes and pubs.
-- Account type at sign-up: **host** (creates an organization) or **team captain** (no host
-  features). Invitations for extra hosts by e-mail.
-- Pub creation limited to hosts (today any signed-in user could call the API).
+**Organizations are dropped for now** (decided 2026-10-23). The typical customer is one host who
+runs quiz nights at several pubs through the week; a stand-in uses the host's own login. Each host
+account is the customer: it owns its quizzes, pubs and quiz nights, and carries the subscription.
+Revisit if quiz companies with several hosts sharing one library become customers.
 
-### Phase 2 — Billing (1.5–2 weeks)
+### Phase 2 — Subscriptions and billing
 
-- Stripe Checkout for sign-up, Stripe Customer Portal for card changes, invoices and cancelling.
-- Webhooks keep a `subscriptions` table in sync (status, plan, period end).
-- Free trial (e.g. 14 days), then launching a quiz night requires an active subscription. Editing
-  quizzes stays available, so a lapsed host never loses work. A grace period for failed payments.
+**Manual subscriptions are done** (see `ACCOUNTS.md`): one price, no plans. New hosts get a 14-day
+trial; a super admin extends a host's subscription, sets its end date, or marks it "forever".
+An expired host can still edit and see results but cannot launch quiz nights.
+
+Still open — online payment (1–1.5 weeks):
+
+- Stripe Checkout and Customer Portal; webhooks set the same `subscribed_until` date the admin sets
+  by hand today. A grace period for failed payments.
 - EU VAT: Stripe Tax or a fixed setup for Slovakia + OSS; invoices with company details.
 
 ### Phase 3 — Plans and limits (1 week)
@@ -112,8 +111,8 @@ paper), how many nights per month they run, and whether branding or leagues are 
 
 ## Decisions needed
 
-1. Organizations from the start, or solo hosts only for the beta? (Roles are in place; hosts are invite-only.)
+1. ~~Organizations from the start?~~ Decided: no — one host account is the customer.
 2. Trial length, and whether a permanently free tier exists (e.g. one quiz night per month).
-3. Who owns cross-host leagues: organizations, or the platform?
+3. Who owns cross-host leagues? Without organizations, most likely the platform (super admin).
 4. Company / invoicing setup (Slovak s.r.o., VAT registration) before taking payments.
 5. Which hosts to talk to first about pricing.
