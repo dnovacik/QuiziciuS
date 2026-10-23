@@ -12,6 +12,15 @@
 - **Session teams are linked to registered teams.** When a captain joins from `/team`,
   `teams.registered_team_id` is set. One-off teams cannot take that name in the same session.
 
+## League decisions already made
+
+Carried over from the earlier project tracker (marked "locked" there):
+
+- League memberships are league-scoped; teams compete across weekly nights with persistent results.
+- **Super League qualification:** the top 3 eligible teams per pub, taken from the finalized local
+  season standings.
+- **Championship:** played at a single venue, using the existing quiz engine.
+
 ## How leagues should use this (not built yet)
 
 Results are recorded per session, so standings can be derived without asking teams anything:
@@ -34,5 +43,6 @@ Why several pubs do not clash:
   season starts.
 
 Open decisions before building leagues: season boundaries, the scoring formula (points per
-placing vs. raw score, best N of M nights), how many teams per pub qualify for the super league,
-and whether one-off (unregistered) teams appear in pub tables.
+placing vs. raw score, best N of M nights), what makes a team "eligible" (registered, a minimum
+number of nights), and whether one-off (unregistered) teams appear in pub tables. Qualification
+itself is decided: the top 3 per pub, with each team qualifying only through its primary pub.

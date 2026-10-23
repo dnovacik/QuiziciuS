@@ -15,7 +15,7 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 | `qr-scanner` | Player join | In-app camera QR scanner (phones can already scan the projector QR with the camera app) | |
 | `answer-dispute` | Player reveal | Endpoint for a team to dispute its graded answer + host review queue entry | |
 | `result-certificate` | Player final results | Generated certificate (PDF/image) for a team's result | |
-| `leagues` | Host sidebar | Leagues & venues section | |
+| `leagues` | Host sidebar | Leagues section (pub leagues, seasons, super leagues — see PUBS_AND_LEAGUES.md) | |
 | `host-settings` | Host sidebar | Host account / venue settings page | |
 | `notifications` | Host top bar | Notification feed (new teams, disputes) | |
 | `team-ratings` | Host dashboard stat | Teams rate the night after it ends | |

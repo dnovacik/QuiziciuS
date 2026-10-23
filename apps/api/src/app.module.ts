@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { RegisteredTeamsController } from './registered-teams.controller';
 import { ConfigModule } from '@nestjs/config';
 import { AnswersModule } from './answers/answers.module';
 import { CategoriesModule } from './categories/categories.module';
@@ -11,12 +10,12 @@ import { QuestionsModule } from './questions/questions.module';
 import { QuizEngineModule } from './quiz-engine/quiz-engine.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { RegisteredTeamsModule } from './registered-teams/registered-teams.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { TeamsModule } from './teams/teams.module';
 
 @Module({
-  controllers: [RegisteredTeamsController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     SupabaseModule,
@@ -31,6 +30,7 @@ import { TeamsModule } from './teams/teams.module';
     SessionsModule,
     CategoriesModule,
     PubsModule,
+    RegisteredTeamsModule,
   ],
 })
 export class AppModule {}

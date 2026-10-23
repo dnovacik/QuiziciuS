@@ -12,34 +12,13 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common';
-import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Length, Max, Min, ValidateIf } from 'class-validator';
-import { CurrentHost, CurrentHostPayload } from './auth/current-host.decorator';
-import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
-import { MAX_TEAM_PUBS, PubsService } from './pubs/pubs.service';
-import { SupabaseService } from './supabase/supabase.service';
-import { JoinResult, TeamsService } from './teams/teams.service';
+import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
+import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
+import { PubsService } from '../pubs/pubs.service';
+import { SupabaseService } from '../supabase/supabase.service';
+import { JoinResult, TeamsService } from '../teams/teams.service';
+import { EditTeamDto, PlayerDto, RegisterTeamDto } from './dto/registered-team.dto';
 
-class RegisterTeamDto {
-  @IsString() @Length(3, 30) name!: string;
-  @IsOptional() @IsString() @Length(0, 160) description?: string;
-  @IsOptional() @IsIn(['shield', 'crown', 'bolt', 'star', 'brain', 'trophy']) badge?: string;
-  @IsOptional() @IsIn(['purple', 'amber', 'cyan', 'green', 'pink']) color?: string;
-  @IsInt() @Min(2) @Max(6) expectedMembers!: number;
-  @IsOptional() @IsArray() @ArrayMaxSize(MAX_TEAM_PUBS) @IsString({ each: true }) pubIds?: string[];
-  @IsOptional() @ValidateIf((_, value) => value !== null) @IsString() primaryPubId?: string | null;
-}
-class PlayerDto {
-  @IsString() @Length(1, 60) name!: string;
-}
-class EditTeamDto {
-  @IsOptional() @IsString() @Length(3, 30) name?: string;
-  @IsOptional() @IsString() @Length(0, 160) description?: string;
-  @IsOptional() @IsIn(['shield', 'crown', 'bolt', 'star', 'brain', 'trophy']) badge?: string;
-  @IsOptional() @IsIn(['purple', 'amber', 'cyan', 'green', 'pink']) color?: string;
-  @IsOptional() @IsInt() @Min(2) @Max(6) expectedMembers?: number;
-  @IsOptional() @IsArray() @ArrayMaxSize(MAX_TEAM_PUBS) @IsString({ each: true }) pubIds?: string[];
-  @IsOptional() @ValidateIf((_, value) => value !== null) @IsString() primaryPubId?: string | null;
-}
 @Controller('registered-teams')
 @UseGuards(SupabaseAuthGuard)
 export class RegisteredTeamsController {
