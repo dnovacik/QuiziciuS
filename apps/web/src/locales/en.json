@@ -879,5 +879,9 @@
   "host.editor.stopPart": "Stop",
   "host.editor.openYoutube": "Open on YouTube",
   "play.media.listen": "Listen to the projector",
-  "play.media.watch": "Watch the projector"
+  "play.media.watch": "Watch the projector",
+  "projector.sound.title": "Turn on sound",
+  "projector.sound.text": "Click anywhere so the projector can play sound and videos. Once per night is enough.",
+  "projector.media.playing": "Playing",
+  "projector.media.ready": "Sound ready"
 }

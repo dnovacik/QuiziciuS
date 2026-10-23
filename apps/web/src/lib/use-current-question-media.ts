@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { QuizState, ResolvedMediaDto } from '@quizicius/shared-types';
 import { apiGet } from './api-client';
+import { loadYouTubeApi } from './youtube';
 
 /** What the server serves for the current question: reveal media only at the reveal. */
 export interface QuestionMedia {
@@ -31,13 +32,15 @@ function cached(key: string): QuestionMedia | null {
 
 /**
  * Starts the browser download, so showing the media later is instant (served from its cache).
- * Phones only ever show images; the projector also warms audio and video files.
+ * Phones only ever show images; the projector also warms audio and video files and loads YouTube's player.
  */
 function warm(media: ResolvedMediaDto | null, clips: boolean): void {
   if (!media) return;
   if (media.kind === 'image') {
     const image = new Image();
     image.src = media.url;
+  } else if (clips && media.kind === 'youtube') {
+    void loadYouTubeApi().catch(() => undefined);
   } else if (clips && (media.kind === 'audio' || media.kind === 'video')) {
     const element = document.createElement(media.kind);
     element.preload = 'auto';

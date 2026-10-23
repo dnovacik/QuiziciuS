@@ -7,6 +7,7 @@ import { I18nProvider } from '../lib/i18n';
 import ProjectorApp from './ProjectorApp';
 
 vi.mock('../lib/api-client', () => ({ apiGet: vi.fn() }));
+vi.mock('../lib/media-channel', () => ({ subscribeToMediaControl: vi.fn(() => vi.fn()), sendMediaStatus: vi.fn() }));
 
 const session = vi.hoisted(() => ({ state: null as QuizSessionStateDto | null, error: null as string | null, refetch: vi.fn() }));
 vi.mock('../lib/use-session-state', () => ({
@@ -193,5 +194,15 @@ describe('ProjectorApp', () => {
     renderProjector();
     fireEvent.click(within(screen.getByTestId('projector-offline')).getByRole('button'));
     expect(session.refetch).toHaveBeenCalled();
+  });
+
+  it('asks once for a click to turn on sound, and any click does it', () => {
+    setState('LOBBY');
+    renderProjector();
+    expect(screen.getByTestId('projector-sound-overlay')).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+
+    expect(screen.queryByTestId('projector-sound-overlay')).not.toBeInTheDocument();
   });
 });

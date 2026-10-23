@@ -879,5 +879,9 @@
   "host.editor.stopPart": "Zastaviť",
   "host.editor.openYoutube": "Otvoriť na YouTube",
   "play.media.listen": "Počúvajte projektor",
-  "play.media.watch": "Sledujte projektor"
+  "play.media.watch": "Sledujte projektor",
+  "projector.sound.title": "Zapnúť zvuk",
+  "projector.sound.text": "Kliknite kamkoľvek, aby projekcia mohla prehrávať zvuk a videá. Stačí raz za večer.",
+  "projector.media.playing": "Hrá zvuk",
+  "projector.media.ready": "Zvuk je pripravený"
 }
