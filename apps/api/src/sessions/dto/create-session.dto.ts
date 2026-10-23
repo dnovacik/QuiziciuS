@@ -6,4 +6,10 @@ export class CreateSessionDto {
   @ValidateIf((_, value) => value !== null)
   @IsString()
   pubId?: string | null;
+
+  /** The league this night counts for; it must be run by this host at this pub. */
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  leagueId?: string | null;
 }

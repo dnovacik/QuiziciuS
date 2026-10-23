@@ -37,6 +37,29 @@ export class TeamsService {
     return { ready: true };
   }
 
+  /**
+   * A one-off team registers before the quiz starts: its session team (same seat, same token) is
+   * linked to the registered team and takes its name. Closed once the first question has started.
+   */
+  async claim(sessionId: string, teamId: string, registeredTeamId: string, name: string): Promise<{ teamId: string; name: string }> {
+    const session = await this.sessions.findById(sessionId);
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.status !== 'LOBBY') {
+      throw new ConflictException({ code: 'REGISTRATION_CLOSED', message: 'Registration closes when the first question starts' });
+    }
+    const linked = await this.teams.findBySessionAndRegisteredTeam(sessionId, registeredTeamId);
+    if (linked && linked.id !== teamId) {
+      throw new ConflictException({ code: 'ALREADY_IN_SESSION', message: 'This team already plays in this quiz night' });
+    }
+    const sameName = await this.teams.findBySessionAndName(sessionId, name);
+    if (sameName && sameName.id !== teamId) {
+      throw new ConflictException({ code: 'TEAM_NAME_RESERVED', message: 'Another team in this quiz night uses this name' });
+    }
+    const team = await this.teams.linkRegistered(teamId, registeredTeamId, name);
+    await this.broadcast.publish(sessionId, 'STATE_CHANGE', { teamId: team.id });
+    return { teamId: team.id, name: team.name };
+  }
+
   async join(
     sessionId: string,
     rawName: string,

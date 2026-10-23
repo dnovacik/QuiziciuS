@@ -9,6 +9,7 @@ const SESSION: SessionRecord = {
   host_id: 'host1',
   join_code: 'AB12',
   pub_id: null,
+  league_id: null,
   status: 'QUESTION_ACTIVE',
   current_question_id: 'q1',
   question_ends_at: null,

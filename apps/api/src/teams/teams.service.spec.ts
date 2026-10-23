@@ -13,6 +13,7 @@ const SESSION: SessionRecord = {
   host_id: 'host1',
   join_code: 'AB12',
   pub_id: null,
+  league_id: null,
   status: 'LOBBY',
   current_question_id: null,
   question_ends_at: null,
@@ -43,6 +44,7 @@ function buildHarness() {
     setDeviceTokenHash: jest.fn().mockResolvedValue(TEAM),
     markReady: jest.fn().mockResolvedValue(undefined),
     listBySession: jest.fn(),
+    linkRegistered: jest.fn(),
   };
   const teamTokens = new TeamTokenService(new JwtService({ secret: 'test-secret' }));
   const broadcast = { publish: jest.fn().mockResolvedValue(undefined) } as unknown as RealtimeBroadcastService;

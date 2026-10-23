@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { RequireRole } from '../auth/require-role';
-import { EditTeamDto, PlayerDto, RegisterTeamDto } from './dto/registered-team.dto';
+import { ClaimSeatDto, EditTeamDto, PlayerDto, RegisterTeamDto } from './dto/registered-team.dto';
 import { RegisteredTeamsService } from './registered-teams.service';
 
 @Controller('registered-teams')
@@ -32,6 +32,31 @@ export class RegisteredTeamsController {
   @Post(':id/sessions/:sessionId/join')
   joinSession(@CurrentHost() user: CurrentHostPayload, @Param('id') id: string, @Param('sessionId') sessionId: string) {
     return this.teams.joinSession(user.id, id, sessionId);
+  }
+
+  @Post(':id/sessions/:sessionId/claim')
+  claimSeat(
+    @CurrentHost() user: CurrentHostPayload,
+    @Param('id') id: string,
+    @Param('sessionId') sessionId: string,
+    @Body() dto: ClaimSeatDto,
+  ) {
+    return this.teams.claimSeat(user.id, id, sessionId, dto.teamToken);
+  }
+
+  @Get(':id/leagues')
+  leagues(@CurrentHost() user: CurrentHostPayload, @Param('id') id: string) {
+    return this.teams.leagues(user.id, id);
+  }
+
+  @Post(':id/leagues/:leagueId/join')
+  joinLeague(@CurrentHost() user: CurrentHostPayload, @Param('id') id: string, @Param('leagueId') leagueId: string) {
+    return this.teams.respondToLeague(user.id, id, leagueId, true);
+  }
+
+  @Post(':id/leagues/:leagueId/decline')
+  declineLeague(@CurrentHost() user: CurrentHostPayload, @Param('id') id: string, @Param('leagueId') leagueId: string) {
+    return this.teams.respondToLeague(user.id, id, leagueId, false);
   }
 
   @Get(':id/players')

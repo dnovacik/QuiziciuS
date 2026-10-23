@@ -29,8 +29,8 @@ export class QuizEngineService {
     private readonly broadcast: RealtimeBroadcastService,
   ) {}
 
-  async createSession(quizId: string, hostId: string, pubId: string | null = null): Promise<SessionRecord> {
-    return this.sessions.create(quizId, hostId, generateJoinCode(), pubId);
+  async createSession(quizId: string, hostId: string, pubId: string | null = null, leagueId: string | null = null): Promise<SessionRecord> {
+    return this.sessions.create(quizId, hostId, generateJoinCode(), pubId, leagueId);
   }
 
   async getState(sessionId: string): Promise<QuizSessionStateDto> {

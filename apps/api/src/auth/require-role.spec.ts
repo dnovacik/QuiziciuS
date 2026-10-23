@@ -1,3 +1,4 @@
+import { LeaguesController } from '../leagues/leagues.controller';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AccountRole } from '@quizicius/shared-types';
@@ -54,7 +55,7 @@ describe('role requirements on endpoints', () => {
       (name) => name !== 'constructor' && Reflect.getMetadata('path', (cls.prototype as Record<string, object>)[name]) !== undefined,
     );
 
-  it.each([QuizzesController, QuestionsController, CategoriesController])('every %p route requires HOST', (cls) => {
+  it.each([QuizzesController, QuestionsController, CategoriesController, LeaguesController])('every %p route requires HOST', (cls) => {
     for (const method of routes(cls)) expect([method, roleOf(cls, method)]).toEqual([method, 'HOST']);
   });
 

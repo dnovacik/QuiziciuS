@@ -23,6 +23,8 @@ export abstract class TeamsRepository {
   abstract setDeviceTokenHash(teamId: string, tokenHash: string): Promise<TeamRecord>;
   abstract markReady(teamId: string, questionId: string, fullscreen: boolean): Promise<TeamRecord>;
   abstract listBySession(sessionId: string): Promise<TeamRecord[]>;
+  /** Links a session team to a registered team and gives it the registered name. */
+  abstract linkRegistered(teamId: string, registeredTeamId: string, name: string): Promise<TeamRecord>;
 }
 
 @Injectable()
@@ -53,6 +55,18 @@ export class SupabaseTeamsRepository extends TeamsRepository {
       .maybeSingle();
     if (error) return null;
     return data as TeamRecord | null;
+  }
+
+  async linkRegistered(teamId: string, registeredTeamId: string, name: string): Promise<TeamRecord> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('teams')
+      .update({ registered_team_id: registeredTeamId, name })
+      .eq('id', teamId)
+      .select()
+      .single();
+    if (error) throw new InternalServerErrorException(error.message);
+    return data as TeamRecord;
   }
 
   async upsertJoin(sessionId: string, name: string, registeredTeamId: string | null = null): Promise<TeamRecord> {

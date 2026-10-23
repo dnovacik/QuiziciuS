@@ -1,9 +1,13 @@
 import { JwtService } from '@nestjs/jwt';
+import { LeaguesService } from '../leagues/leagues.service';
 import { PubsService } from '../pubs/pubs.service';
+import { QuizEngineService } from '../quiz-engine/quiz-engine.service';
 import { RealtimeBroadcastService } from '../realtime/realtime-broadcast.service';
 import { TeamTokenService } from '../teams/team-token.service';
 import { TeamsService } from '../teams/teams.service';
 import {
+  InMemoryLeaguesRepository,
+  InMemoryProfilesRepository,
   InMemoryPubsRepository,
   InMemoryRegisteredTeamsRepository,
   InMemorySessionsRepository,
@@ -22,9 +26,14 @@ function build() {
   const sessions = new InMemorySessionsRepository();
   const sessionTeams = new InMemoryTeamsRepository();
   const broadcast = { publish: jest.fn().mockResolvedValue(undefined) } as unknown as RealtimeBroadcastService;
-  const teamsService = new TeamsService(sessions, sessionTeams, new TeamTokenService(new JwtService({ secret: 'test' })), broadcast);
-  const service = new RegisteredTeamsService(registered, new PubsService(pubsRepo), teamsService);
-  return { service, registered, pubsRepo, sessions, sessionTeams, teamsService };
+  const tokens = new TeamTokenService(new JwtService({ secret: 'test' }));
+  const teamsService = new TeamsService(sessions, sessionTeams, tokens, broadcast);
+  const leaguesRepo = new InMemoryLeaguesRepository();
+  const profiles = new InMemoryProfilesRepository();
+  const engine = { getState: async () => ({ teams: [] }) } as unknown as QuizEngineService;
+  const leagues = new LeaguesService(leaguesRepo, sessions, pubsRepo, profiles, registered, engine);
+  const service = new RegisteredTeamsService(registered, new PubsService(pubsRepo), teamsService, leagues, tokens);
+  return { service, registered, pubsRepo, sessions, sessionTeams, teamsService, leagues, leaguesRepo, profiles, tokens };
 }
 
 function dto(overrides: Partial<RegisterTeamDto> = {}): RegisterTeamDto {
@@ -224,6 +233,106 @@ describe('RegisteredTeamsService', () => {
       const team = await service.create(CAPTAIN, dto());
 
       await expect(service.joinSession(CAPTAIN, team.id, session.id)).rejects.toMatchObject({ response: { code: 'OWN_QUIZ' } });
+    });
+  });
+
+  describe('league invitations', () => {
+    async function invited() {
+      const harness = build();
+      const { service, pubsRepo, leagues, leaguesRepo, profiles } = harness;
+      profiles.add(HOST, 'HOST');
+      const hoffman = await pubsRepo.create({ name: 'KC Hoffman', city: 'Žilina', address: null });
+      await pubsRepo.linkHost(HOST, hoffman.id);
+      const team = await service.create(CAPTAIN, dto({ pubIds: [hoffman.id] }));
+      leaguesRepo.teamPubs.set(team.id, { pubIds: [hoffman.id], primary: hoffman.id });
+      const league = await leagues.create(HOST, { name: 'Zimná liga', pubIds: [hoffman.id], startsOn: '2026-10-01', endsOn: null });
+      return { ...harness, team, league, hoffman: hoffman.id };
+    }
+
+    it('shows the invitation, and joining fixes the pub the team represents', async () => {
+      const { service, team, league, hoffman } = await invited();
+
+      expect((await service.leagues(CAPTAIN, team.id)).map((l) => [l.league.name, l.status])).toEqual([['Zimná liga', 'INVITED']]);
+      const joined = await service.respondToLeague(CAPTAIN, team.id, league.id, true);
+
+      expect(joined.status).toBe('JOINED');
+      expect(joined.standings).toEqual([expect.objectContaining({ registeredTeamId: team.id, pubId: hoffman, points: 0 })]);
+    });
+
+    it('can decline', async () => {
+      const { service, team, league } = await invited();
+
+      expect((await service.respondToLeague(CAPTAIN, team.id, league.id, false)).status).toBe('DECLINED');
+    });
+
+    it("cannot answer for another captain's team or a league it was never invited to", async () => {
+      const { service, team, league } = await invited();
+      const stranger = await service.create(OTHER_CAPTAIN, dto({ name: 'Quiz Owls' }));
+
+      await expect(service.respondToLeague(OTHER_CAPTAIN, team.id, league.id, true)).rejects.toMatchObject({
+        response: { code: 'TEAM_NOT_FOUND' },
+      });
+      await expect(service.respondToLeague(OTHER_CAPTAIN, stranger.id, league.id, true)).rejects.toMatchObject({
+        response: { code: 'LEAGUE_NOT_FOUND' },
+      });
+    });
+  });
+
+  describe('claiming a seat from the phone', () => {
+    async function lobby() {
+      const harness = build();
+      const session = await harness.sessions.create('quiz-1', HOST, 'AB12');
+      const seat = await harness.teamsService.join(session.id, 'wise ducks fans');
+      const team = await harness.service.create(CAPTAIN, dto());
+      return { ...harness, session, seat, team };
+    }
+
+    it('links the one-off team to the registered team and renames it, keeping the same seat', async () => {
+      const { service, sessionTeams, tokens, session, seat, team } = await lobby();
+
+      const claimed = await service.claimSeat(CAPTAIN, team.id, session.id, seat.token);
+
+      expect(claimed).toEqual({ teamId: seat.teamId, name: 'Wise Ducks', token: seat.token });
+      expect(await sessionTeams.findById(seat.teamId)).toMatchObject({ registered_team_id: team.id, name: 'Wise Ducks' });
+      expect(tokens.verify(claimed.token)).toMatchObject({ sessionId: session.id, teamId: seat.teamId });
+    });
+
+    it('closes once the first question has started', async () => {
+      const { service, sessions, session, seat, team } = await lobby();
+      await sessions.updateStatus(session.id, { status: 'LOCK_IN_ROUND' });
+
+      await expect(service.claimSeat(CAPTAIN, team.id, session.id, seat.token)).rejects.toMatchObject({
+        status: 409,
+        response: { code: 'REGISTRATION_CLOSED' },
+      });
+    });
+
+    it('refuses when the registered team already plays in this session', async () => {
+      const { service, teamsService, session, seat, team } = await lobby();
+      await teamsService.join(session.id, 'Wise Ducks', team.id, CAPTAIN);
+
+      await expect(service.claimSeat(CAPTAIN, team.id, session.id, seat.token)).rejects.toMatchObject({
+        response: { code: 'ALREADY_IN_SESSION' },
+      });
+    });
+
+    it('refuses when another team in the session already uses the name, and leaves the seat as it was', async () => {
+      const { service, teamsService, sessionTeams, session, seat, team } = await lobby();
+      await teamsService.join(session.id, 'Wise Ducks');
+
+      await expect(service.claimSeat(CAPTAIN, team.id, session.id, seat.token)).rejects.toMatchObject({
+        status: 409,
+        response: { code: 'TEAM_NAME_RESERVED' },
+      });
+      expect(await sessionTeams.findById(seat.teamId)).toMatchObject({ registered_team_id: null, name: 'wise ducks fans' });
+    });
+
+    it('refuses a token from another session', async () => {
+      const { service, sessions, teamsService, team, session } = await lobby();
+      const other = await sessions.create('quiz-1', HOST, 'CD34');
+      const foreign = await teamsService.join(other.id, 'Visitors');
+
+      await expect(service.claimSeat(CAPTAIN, team.id, session.id, foreign.token)).rejects.toMatchObject({ status: 403 });
     });
   });
 });

@@ -4,7 +4,6 @@ import { QuizRecord, SupabaseQuizzesRepository } from './quizzes.repository';
 const RECORD: QuizRecord = {
   id: 'quiz1',
   host_id: 'host1',
-  league_id: null,
   category_id: null,
   pub_id: null,
   title: 'Wednesday Night Quiz',
