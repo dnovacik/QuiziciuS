@@ -41,9 +41,19 @@ export class TeamsService {
    * A one-off team registers before the quiz starts: its session team (same seat, same token) is
    * linked to the registered team and takes its name. Closed once the first question has started.
    */
-  async claim(sessionId: string, teamId: string, registeredTeamId: string, name: string): Promise<{ teamId: string; name: string }> {
+  async claim(
+    sessionId: string,
+    teamId: string,
+    registeredTeamId: string,
+    name: string,
+    captainId: string,
+  ): Promise<{ teamId: string; name: string }> {
     const session = await this.sessions.findById(sessionId);
     if (!session) throw new NotFoundException('Session not found');
+    // Same rule as joining: a host's team cannot play the host's own quiz night.
+    if (session.host_id === captainId) {
+      throw new ForbiddenException({ code: 'OWN_QUIZ', message: 'A host cannot play their own quiz night' });
+    }
     if (session.status !== 'LOBBY') {
       throw new ConflictException({ code: 'REGISTRATION_CLOSED', message: 'Registration closes when the first question starts' });
     }
