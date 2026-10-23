@@ -27,3 +27,8 @@ export class EditTeamDto {
 export class PlayerDto {
   @IsString() @Length(1, 60) name!: string;
 }
+
+export class ClaimSeatDto {
+  /** The team token the phone joined the quiz night with. */
+  @IsString() @Length(10, 2000) teamToken!: string;
+}

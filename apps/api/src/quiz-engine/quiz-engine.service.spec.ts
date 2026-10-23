@@ -63,6 +63,7 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
     setDeviceTokenHash: jest.fn(),
     markReady: jest.fn().mockResolvedValue(undefined),
     listBySession: jest.fn().mockResolvedValue([] as TeamRecord[]),
+    linkRegistered: jest.fn(),
   };
   const answers: AnswersRepository = {
     upsertSubmission: jest.fn(),

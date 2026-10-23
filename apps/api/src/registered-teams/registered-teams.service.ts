@@ -1,11 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { TeamLeagueDto } from '@quizicius/shared-types';
 import {
   RegisteredTeamPatch,
   RegisteredTeamPlayerRecord,
   RegisteredTeamRecord,
   RegisteredTeamsRepository,
 } from '../data/registered-teams.repository';
+import { LeaguesService } from '../leagues/leagues.service';
 import { PubsService } from '../pubs/pubs.service';
+import { TeamTokenService } from '../teams/team-token.service';
 import { JoinResult, TeamsService } from '../teams/teams.service';
 import { EditTeamDto, RegisterTeamDto } from './dto/registered-team.dto';
 
@@ -39,6 +42,8 @@ export class RegisteredTeamsService {
     private readonly teams: RegisteredTeamsRepository,
     private readonly pubs: PubsService,
     private readonly sessionTeams: TeamsService,
+    private readonly leaguesService: LeaguesService,
+    private readonly teamTokens: TeamTokenService,
   ) {}
 
   private async withPubs(team: RegisteredTeamRecord): Promise<RegisteredTeamView> {
@@ -128,5 +133,31 @@ export class RegisteredTeamsService {
     await this.own(teamId, captainId);
     if (!(await this.teams.removePlayer(teamId, playerId))) throw PLAYER_NOT_FOUND();
     return { deleted: true };
+  }
+
+  /** The team's league invitations and leagues, with standings. */
+  async leagues(captainId: string, teamId: string): Promise<TeamLeagueDto[]> {
+    await this.own(teamId, captainId);
+    return this.leaguesService.forTeam(teamId);
+  }
+
+  async respondToLeague(captainId: string, teamId: string, leagueId: string, join: boolean): Promise<TeamLeagueDto> {
+    await this.own(teamId, captainId);
+    return this.leaguesService.respondAsTeam(teamId, leagueId, join);
+  }
+
+  /** Registers the phone's one-off team (identified by its team token) as this team, before the quiz starts. */
+  async claimSeat(captainId: string, teamId: string, sessionId: string, teamToken: string): Promise<JoinResult> {
+    const team = await this.own(teamId, captainId);
+    let seat: { sessionId: string; teamId: string };
+    try {
+      seat = this.teamTokens.verify(teamToken);
+    } catch {
+      throw new ForbiddenException({ code: 'INVALID_TEAM_TOKEN', message: 'Invalid team token' });
+    }
+    if (seat.sessionId !== sessionId)
+      throw new ForbiddenException({ code: 'INVALID_TEAM_TOKEN', message: 'Token does not match this session' });
+    const claimed = await this.sessionTeams.claim(sessionId, seat.teamId, team.id, team.name);
+    return { ...claimed, token: teamToken };
   }
 }

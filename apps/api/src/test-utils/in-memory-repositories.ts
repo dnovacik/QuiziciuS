@@ -175,6 +175,12 @@ export class InMemoryTeamsRepository extends TeamsRepository {
   async listBySession(sessionId: string): Promise<TeamRecord[]> {
     return [...this.rows.values()].filter((t) => t.session_id === sessionId);
   }
+
+  async linkRegistered(teamId: string, registeredTeamId: string, name: string): Promise<TeamRecord> {
+    const updated = { ...this.rows.get(teamId)!, registered_team_id: registeredTeamId, name };
+    this.rows.set(teamId, updated);
+    return updated;
+  }
 }
 
 export class InMemoryAnswersRepository extends AnswersRepository {
