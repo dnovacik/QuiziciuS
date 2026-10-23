@@ -10,6 +10,7 @@ import { RealtimeBroadcastService } from '../realtime/realtime-broadcast.service
 import { gradeNumericNearest } from './grading/numeric-grader';
 import { generateJoinCode } from './join-code';
 import { assertValidTransition } from './state-transitions';
+import { isAnswerResultVisible } from './result-visibility';
 
 export interface TransitionOptions {
   questionId?: string;
@@ -43,6 +44,7 @@ export class QuizEngineService {
 
     const scoreByTeam = new Map<string, number>();
     for (const answer of answers) {
+      if (!isAnswerResultVisible(answer, session)) continue;
       scoreByTeam.set(answer.team_id, (scoreByTeam.get(answer.team_id) ?? 0) + answer.score_awarded);
     }
     for (const adjustment of scoreAdjustments) {

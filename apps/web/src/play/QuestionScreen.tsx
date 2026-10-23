@@ -176,8 +176,8 @@ function AnswerForm({
     setSending(true);
     setError(null);
     try {
-      const result = await apiPost<AnswerSummaryDto>(`/sessions/${sessionId}/answers`, { questionId: question.id, response }, seat.token);
-      onSubmitted({ display, letter, submittedAt: Date.now(), result });
+      await apiPost<AnswerSummaryDto>(`/sessions/${sessionId}/answers`, { questionId: question.id, response }, seat.token);
+      onSubmitted({ display, letter, submittedAt: Date.now() });
     } catch (err) {
       setError(describeError(err, t, 'play.question.submitFailed'));
     } finally {

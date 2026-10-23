@@ -288,6 +288,36 @@ describe('QuizEngineService.getState', () => {
     expect(state.teams).toEqual([{ id: 't1', name: 'Team A', isActive: true, score: 3, infractionCount: 0 }]);
   });
 
+  it('leaves the open question out of team scores until its results are public', async () => {
+    const { service, teams, answers } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q2', question_ends_at: new Date(Date.now() + 10_000).toISOString() },
+    });
+    (teams.listBySession as jest.Mock).mockResolvedValue([
+      { id: 't1', session_id: 's1', name: 'Team A', device_token_hash: null, joined_at: 'now', is_active: true },
+    ]);
+    (answers.listBySession as jest.Mock).mockResolvedValue([
+      { team_id: 't1', question_id: 'q1', score_awarded: 2 },
+      { team_id: 't1', question_id: 'q2', score_awarded: 5 },
+    ]);
+
+    expect((await service.getState('s1')).teams[0].score).toBe(2);
+  });
+
+  it('counts the open question once its timer has run out', async () => {
+    const { service, teams, answers } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q2', question_ends_at: new Date(Date.now() - 5_000).toISOString() },
+    });
+    (teams.listBySession as jest.Mock).mockResolvedValue([
+      { id: 't1', session_id: 's1', name: 'Team A', device_token_hash: null, joined_at: 'now', is_active: true },
+    ]);
+    (answers.listBySession as jest.Mock).mockResolvedValue([
+      { team_id: 't1', question_id: 'q1', score_awarded: 2 },
+      { team_id: 't1', question_id: 'q2', score_awarded: 5 },
+    ]);
+
+    expect((await service.getState('s1')).teams[0].score).toBe(7);
+  });
+
   it('throws NotFoundException for an unknown session', async () => {
     const { service, sessions } = buildHarness();
     (sessions.findById as jest.Mock).mockResolvedValue(null);

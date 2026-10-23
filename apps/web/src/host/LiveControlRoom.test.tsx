@@ -31,4 +31,16 @@ describe('Live Control Room',()=>{
   stateHook.mockReturnValue({state:{...mockState,status:'FINISHED'},error:null,refetch:vi.fn()});
   setup();expect(await screen.findByTestId('live-status')).toHaveTextContent('FINISHED');expect(screen.queryByTestId('live-start')).not.toBeInTheDocument();
  });
+ it('preselects the next unplayed question after a pause instead of repeating the last one',async()=>{
+  localStorage.clear();
+  const questions=[question,{...question,id:'q2',prompt:'Second?',order_index:1},{...question,id:'q3',prompt:'Third?',order_index:2}];
+  get.mockImplementation(async path=>path==='/host/sessions/s1'?session:path==='/quizzes/quiz1/questions'?questions:path==='/quizzes'?[]:[] as never);
+  const current={...questions[0],type:'MULTIPLE_CHOICE' as const,options:null,points:1,timeLimitSeconds:20,orderIndex:0,correctOptionId:null,correctNumeric:null,acceptedAnswers:null};
+  stateHook.mockReturnValue({state:{...mockState,status:'PAUSE_BREAK',currentQuestion:current},error:null,refetch:vi.fn()});
+  setup();
+  await waitFor(()=>expect(screen.getByTestId('live-question-q2')).toHaveClass('lc-question-active'));
+  expect(screen.getByTestId('live-question-q1')).toHaveAttribute('data-played','true');
+  fireEvent.click(screen.getByTestId('live-transition-LOCK_IN_ROUND'));
+  await waitFor(()=>expect(post).toHaveBeenCalledWith('/sessions/s1/transition',{status:'LOCK_IN_ROUND',questionId:'q2'},'jwt'));
+ });
 });

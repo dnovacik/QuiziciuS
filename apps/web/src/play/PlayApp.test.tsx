@@ -13,7 +13,7 @@ vi.mock('../lib/api-client', async (importOriginal) => ({
 }));
 vi.mock('../lib/supabase-client', () => ({ subscribeToSession: vi.fn(() => vi.fn()) }));
 
-const session = vi.hoisted(() => ({ state: null as QuizSessionStateDto | null }));
+const session = vi.hoisted(() => ({ state: null as QuizSessionStateDto | null, mine: [] as AnswerSummaryDto[] }));
 vi.mock('../lib/use-session-state', () => ({
   useSessionState: (id: string | undefined) => ({ state: id ? session.state : null, error: null, refetch: vi.fn() }),
 }));
@@ -96,8 +96,10 @@ function seated() {
 beforeEach(() => {
   localStorage.clear();
   session.state = null;
+  session.mine = [];
   vi.mocked(apiGet).mockReset().mockImplementation(async (path: string) => {
     if (path.endsWith('/display')) return { title: 'Friday Movie Quiz' };
+    if (path.endsWith('/answers/mine')) return session.mine;
     if (path.endsWith('/media')) return { mediaType: null, url: null };
     throw new Error(`unexpected GET ${path}`);
   });
@@ -259,35 +261,51 @@ describe('answering', () => {
 describe('reveal and results', () => {
   beforeEach(seated);
 
-  it('celebrates a correct answer with the points earned', () => {
-    localStorage.setItem(
-      'quizicius:answers:s1',
-      JSON.stringify({ q1: { display: 'Forrest Gump', letter: 'B', submittedAt: Date.now(), result: graded() } }),
-    );
+  it('celebrates a correct answer with the points the server awarded', async () => {
+    localStorage.setItem('quizicius:answers:s1', JSON.stringify({ q1: { display: 'Forrest Gump', letter: 'B', submittedAt: Date.now() } }));
+    session.mine = [graded()];
     setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'b' }) });
     renderPlay();
 
+    expect(await screen.findByTestId('player-awarded')).toHaveTextContent('+2');
     expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'correct');
-    expect(screen.getByTestId('player-awarded')).toHaveTextContent('+2');
     expect(screen.getByTestId('player-correct-answer')).toHaveTextContent('Forrest Gump');
-    expect(screen.getByTestId('player-total-score')).toHaveTextContent('6');
+    expect(apiGet).toHaveBeenCalledWith('/sessions/s1/answers/mine', 'team-token');
   });
 
-  it('does not claim success for a team that did not answer', () => {
+  it('shows a numeric answer graded at reveal as correct', async () => {
+    localStorage.setItem('quizicius:answers:s1', JSON.stringify({ q1: { display: '1994', letter: null, submittedAt: Date.now() } }));
+    session.mine = [graded({ response: { value: 1994 }, isCorrect: true, scoreAwarded: 2 })];
+    setState('QUESTION_REVEAL', { currentQuestion: question({ type: 'NUMERIC_NEAREST', options: null, correctNumeric: 1994 }) });
+    renderPlay();
+
+    expect(await screen.findByTestId('player-awarded')).toHaveTextContent('+2');
+    expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'correct');
+  });
+
+  it('says "grading" rather than "wrong" while the grade is not available', () => {
+    localStorage.setItem('quizicius:answers:s1', JSON.stringify({ q1: { display: '1994', letter: null, submittedAt: Date.now() } }));
+    vi.mocked(apiGet).mockImplementation(() => new Promise(() => {}));
     setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'b' }) });
     renderPlay();
+    expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'grading');
+  });
+
+  it('does not claim success for a team that did not answer', async () => {
+    setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'b' }) });
+    renderPlay();
+    await act(async () => {});
     expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'none');
     expect(screen.queryByTestId('player-awarded')).not.toBeInTheDocument();
   });
 
-  it('flags free-text answers waiting for host review', () => {
-    localStorage.setItem(
-      'quizicius:answers:s1',
-      JSON.stringify({ q1: { display: 'forest gamp', letter: null, submittedAt: Date.now(), result: graded({ isCorrect: null, needsReview: true, scoreAwarded: 0 }) } }),
-    );
+  it('flags free-text answers waiting for host review', async () => {
+    session.mine = [graded({ response: { text: 'forest gamp' }, isCorrect: null, needsReview: true, scoreAwarded: 0 })];
     setState('QUESTION_REVEAL', { currentQuestion: question({ type: 'FREE_TEXT', options: null, acceptedAnswers: ['Forrest Gump'] }) });
     renderPlay();
+    await act(async () => {});
     expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'review');
+    expect(screen.getByText('forest gamp')).toBeInTheDocument();
   });
 
   it('shows the final rank, the full table on demand and leads back home', async () => {

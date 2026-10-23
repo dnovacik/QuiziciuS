@@ -112,9 +112,16 @@ describe('Session lifecycle (integration)', () => {
       .set('Authorization', `Bearer ${teamToken}`)
       .send({ questionId, response: { optionId: 'a' } });
     expect(submitRes.status).toBe(201);
-    expect(submitRes.body.isCorrect).toBe(true);
+    // Grading stays hidden while the question is open — both in the reply and in the scores.
+    expect(submitRes.body.isCorrect).toBeNull();
+    const openState = await request(server).get(`/sessions/${sessionId}/state`);
+    expect(openState.body.teams).toEqual([expect.objectContaining({ score: 0 })]);
 
     await request(server).post(`/sessions/${sessionId}/transition`).send({ status: 'QUESTION_REVEAL' }).expect(201);
+    const mineRes = await request(server).get(`/sessions/${sessionId}/answers/mine`).set('Authorization', `Bearer ${teamToken}`);
+    expect(mineRes.status).toBe(200);
+    expect(mineRes.body).toEqual([expect.objectContaining({ questionId, isCorrect: true, scoreAwarded: 5 })]);
+
     await request(server).post(`/sessions/${sessionId}/transition`).send({ status: 'FINISHED' }).expect(201);
 
     const stateRes = await request(server).get(`/sessions/${sessionId}/state`);

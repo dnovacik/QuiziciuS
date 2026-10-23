@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { loadSeat, type TeamSeat } from '../lib/team-seat';
 import { useQuizTitle } from '../lib/use-quiz-title';
@@ -6,7 +6,7 @@ import { useSessionState } from '../lib/use-session-state';
 import { JoinScreen } from './JoinScreen';
 import { QuestionScreen } from './QuestionScreen';
 import { ResultsScreen, RevealScreen } from './ResultScreens';
-import { useSubmittedAnswers } from './submitted-answers';
+import { useGradedAnswers, useSubmittedAnswers } from './submitted-answers';
 import { useQuizSecurity } from './use-quiz-security';
 import { LobbyScreen, LockInScreen, PauseScreen } from './WaitingScreens';
 
@@ -21,12 +21,26 @@ export default function PlayApp() {
   );
 }
 
+// The API keeps an open question's results hidden for this long after its timer ends.
+const RESULTS_GRACE_MS = 2500;
+
 function Game({ seat }: { seat: TeamSeat }) {
   const navigate = useNavigate();
-  const { state, error } = useSessionState(seat.sessionId);
+  const { state, error, refetch } = useSessionState(seat.sessionId);
   const title = useQuizTitle(seat.sessionId);
   const { answers, record } = useSubmittedAnswers(seat.sessionId);
   const { requestFullscreenNow } = useQuizSecurity(state?.status ?? 'LOBBY', seat.token);
+  const resultsPublic = state && ['QUESTION_REVEAL', 'PAUSE_BREAK', 'FINISHED'].includes(state.status);
+  const graded = useGradedAnswers(seat.sessionId, seat.token, resultsPublic ? `${state.status}:${state.currentQuestion?.id}` : null);
+
+  // Scores of the open question become public once its timer runs out; nothing is broadcast
+  // at that moment, so fetch the state once ourselves.
+  const endsAt = state?.status === 'QUESTION_ACTIVE' ? state.questionEndsAt : null;
+  useEffect(() => {
+    if (!endsAt) return;
+    const timer = setTimeout(refetch, Math.max(0, Date.parse(endsAt) + RESULTS_GRACE_MS - Date.now()));
+    return () => clearTimeout(timer);
+  }, [endsAt, refetch]);
 
   if (!state) {
     return (
@@ -48,7 +62,7 @@ function Game({ seat }: { seat: TeamSeat }) {
       return <ResultsScreen state={state} teamId={seat.teamId} title={title} onExit={() => navigate('/')} />;
     case 'QUESTION_REVEAL':
       return question ? (
-        <RevealScreen state={state} question={question} teamId={seat.teamId} answer={answers[question.id]} />
+        <RevealScreen state={state} question={question} teamId={seat.teamId} sent={answers[question.id]} graded={graded[question.id]} />
       ) : (
         <LobbyScreen state={state} teamId={seat.teamId} title={title} />
       );

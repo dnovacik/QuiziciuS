@@ -1,25 +1,28 @@
 import { useState } from 'react';
 import { BadgeCheck, ChevronDown, Crown, Download, Flag, Home, Hourglass, PartyPopper, Share2, ThumbsDown, Trophy, Users } from 'lucide-react';
-import type { QuestionPublicDto, QuizSessionStateDto } from '@quizicius/shared-types';
+import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto } from '@quizicius/shared-types';
 import { useI18n } from '../lib/i18n';
 import { correctAnswerText, optionLetter, rankTeams, type RankedTeam } from '../lib/quiz';
 import { Pending } from '../ui/Pending';
 import { PlayerShell } from './PlayerShell';
 import { StandingRow } from './parts';
-import type { SubmittedAnswer } from './submitted-answers';
+import { describeResponse, type SubmittedAnswer } from './submitted-answers';
 
-type Verdict = 'correct' | 'wrong' | 'review' | 'none';
+type Verdict = 'correct' | 'wrong' | 'review' | 'grading' | 'none';
 
-function verdictOf(answer: SubmittedAnswer | undefined): Verdict {
-  if (!answer) return 'none';
-  if (answer.result.needsReview) return 'review';
-  return answer.result.isCorrect ? 'correct' : 'wrong';
+/** Verdict from the server's grade; a sent answer without a grade yet is still being graded. */
+function verdictOf(sent: SubmittedAnswer | undefined, graded: AnswerSummaryDto | undefined): Verdict {
+  if (graded?.needsReview) return 'review';
+  if (graded?.isCorrect === true) return 'correct';
+  if (graded?.isCorrect === false) return 'wrong';
+  return sent || graded ? 'grading' : 'none';
 }
 
 const VERDICT_STYLE: Record<Verdict, { box: string; text: string; icon: typeof PartyPopper }> = {
   correct: { box: 'bg-tertiary-container/20 shadow-[0_0_28px_rgba(78,222,163,0.22)]', text: 'text-tertiary', icon: PartyPopper },
   wrong: { box: 'bg-error-container/25 shadow-[0_0_28px_rgba(255,180,171,0.15)]', text: 'text-error', icon: ThumbsDown },
   review: { box: 'bg-secondary-container/15 shadow-glow-gold', text: 'text-secondary', icon: Hourglass },
+  grading: { box: 'bg-surface-container', text: 'text-on-surface-variant', icon: Hourglass },
   none: { box: 'bg-surface-container', text: 'text-on-surface-variant', icon: Hourglass },
 };
 
@@ -28,20 +31,23 @@ export function RevealScreen({
   state,
   question,
   teamId,
-  answer,
+  sent,
+  graded,
 }: {
   state: QuizSessionStateDto;
   question: QuestionPublicDto;
   teamId: string;
-  answer: SubmittedAnswer | undefined;
+  sent: SubmittedAnswer | undefined;
+  graded: AnswerSummaryDto | undefined;
 }) {
   const { t } = useI18n();
   const ranked = rankTeams(state.teams);
   const own = ranked.find((team) => team.id === teamId);
-  const verdict = verdictOf(answer);
+  const verdict = verdictOf(sent, graded);
   const style = VERDICT_STYLE[verdict];
   const correctIndex = question.options?.findIndex((option) => option.id === question.correctOptionId) ?? -1;
-  const awarded = answer?.result.scoreAwarded ?? 0;
+  const awarded = graded?.scoreAwarded ?? 0;
+  const answer = sent ?? (graded ? describeResponse(question, graded.response) : undefined);
 
   return (
     <PlayerShell joinCode={state.joinCode} phase="reveal" testId="player-reveal">

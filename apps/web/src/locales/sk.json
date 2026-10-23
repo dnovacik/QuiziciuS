@@ -401,5 +401,8 @@
   "play.results.share": "Zdieľať výsledok",
   "play.results.shared": "Výsledok je pripravený na zdieľanie",
   "play.results.home": "Späť na úvod",
-  "play.results.certificate": "Stiahnuť certifikát"
+  "play.results.certificate": "Stiahnuť certifikát",
+  "play.reveal.grading.title": "Vyhodnocuje sa…",
+  "play.reveal.grading.subtitle": "Výsledok vašej odpovede sa práve načítava.",
+  "live.played": "odohraná"
 }
