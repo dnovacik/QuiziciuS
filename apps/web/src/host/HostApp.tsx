@@ -6,6 +6,7 @@ import { DashboardPage } from './DashboardPage';
 import { HostShell } from './HostShell';
 import { QuizEditorPage } from './editor/QuizEditorPage';
 import { QuizzesPage } from './QuizzesPage';
+import { PubsPage } from './pubs';
 import { SessionsPage } from './SessionsPage';
 import { ToastProvider } from './ui';
 
@@ -39,6 +40,7 @@ export default function HostApp() {
                   <Route path="quizzes" element={<QuizzesPage token={token} />} />
                   <Route path="quizzes/:quizId" element={<QuizEditorPage token={token} />} />
                   <Route path="sessions" element={<SessionsPage token={token} />} />
+                  <Route path="pubs" element={<PubsPage token={token} />} />
                   <Route path="*" element={<DashboardPage token={token} />} />
                 </Routes>
               </HostShell>

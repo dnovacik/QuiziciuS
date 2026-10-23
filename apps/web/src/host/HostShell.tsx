@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Bell, CirclePlus, LayoutGrid, LogOut, Menu, NotebookPen, Radio, Settings, Trophy, UserRound, X } from 'lucide-react';
+import { Beer, Bell, CirclePlus, LayoutGrid, LogOut, Menu, NotebookPen, Radio, Settings, Trophy, UserRound, X } from 'lucide-react';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase-client';
@@ -9,6 +9,7 @@ import { LogoMark } from '../ui/Logo';
 import { Modal } from '../ui/Modal';
 import { Pending } from '../ui/Pending';
 import { hostApi, type Category, type HostSession } from './api';
+import { PubSelect, useHostPubs } from './pubs';
 import { btn, inputClass, Label } from './ui';
 
 const NAV_ITEM =
@@ -69,6 +70,10 @@ export function HostShell({ token, email, children }: { token: string; email: st
               <Radio className="h-5 w-5" />
               {t('host.nav.sessions')}
               {live > 0 && <span className="ml-auto h-2 w-2 rounded-full bg-tertiary shadow-[0_0_8px_#4edea3]" />}
+            </NavLink>
+            <NavLink to="/host/pubs" className={navLink} data-testid="host-nav-pubs">
+              <Beer className="h-5 w-5" />
+              {t('host.nav.pubs')}
             </NavLink>
             <Pending feature="leagues">
               <span className={`${NAV_ITEM} text-on-surface-variant`}>
@@ -175,6 +180,8 @@ export function CreateQuizDialog({ token, onClose }: { token: string; onClose: (
   const [categories, setCategories] = useState<Category[]>([]);
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const { pubs } = useHostPubs(token);
+  const [pubId, setPubId] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -190,7 +197,7 @@ export function CreateQuizDialog({ token, onClose }: { token: string; onClose: (
     setBusy(true);
     setError(null);
     try {
-      const quiz = await hostApi.createQuiz(token, title, categoryId || null);
+      const quiz = await hostApi.createQuiz(token, title, categoryId || null, pubId || null);
       onClose();
       navigate(`/host/quizzes/${quiz.id}`);
     } catch (err) {
@@ -244,6 +251,7 @@ export function CreateQuizDialog({ token, onClose }: { token: string; onClose: (
             ))}
           </select>
         </div>
+        <PubSelect id="create-quiz-pub" testId="create-quiz-pub" pubs={pubs} value={pubId} onChange={setPubId} />
         {error && (
           <p role="alert" className="text-body-sm text-error">
             {error}

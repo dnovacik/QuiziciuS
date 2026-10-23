@@ -4,7 +4,7 @@ import { ApiError } from '../lib/api-client';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { findSessionByCode, joinSession, normalizeJoinCode, recentTeamNames, type TeamSeat } from '../lib/team-seat';
-import { useQuizTitle } from '../lib/use-quiz-title';
+import { useSessionDisplay } from '../lib/use-quiz-title';
 import { useSessionState } from '../lib/use-session-state';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { Logo } from '../ui/Logo';
@@ -15,7 +15,7 @@ type Method = 'pin' | 'link';
 /** Stitch "Mobilný Vstup a Pripojenie" — players join with the 4-character code or a /play/:id link. */
 export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoined: (seat: TeamSeat) => void }) {
   const { t } = useI18n();
-  const title = useQuizTitle(sessionId);
+  const { title, pub } = useSessionDisplay(sessionId);
   const { state } = useSessionState(sessionId);
   const [method, setMethod] = useState<Method>('pin');
   const [pin, setPin] = useState(['', '', '', '']);
@@ -88,6 +88,11 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
               <span className="truncate text-body-md font-semibold text-on-surface" data-testid="player-quiz-title">
                 {title ?? t('play.join.eventFallback')}
               </span>
+              {pub && (
+                <span className="truncate text-body-sm text-on-surface-variant" data-testid="player-quiz-pub">
+                  {pub}
+                </span>
+              )}
             </div>
             <span className="flex shrink-0 items-center gap-1 rounded-full bg-surface-container-highest px-2.5 py-1 text-label-sm text-tertiary">
               <span className="h-1.5 w-1.5 animate-ping rounded-full bg-tertiary" />

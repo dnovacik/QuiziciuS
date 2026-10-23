@@ -47,10 +47,10 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
     currentQuestion: null,
     questionEndsAt: null,
     teams: [
-      { id: 'team-1', name: 'Wise Ducks', isActive: true, score: 6, infractionCount: 0 },
-      { id: 'team-2', name: 'Pub Mozarts', isActive: true, score: 9, infractionCount: 0 },
-      { id: 'team-3', name: 'Einsteins', isActive: false, score: 3, infractionCount: 0 },
-      { id: 'team-4', name: 'Quiz Wolves', isActive: true, score: 1, infractionCount: 0 },
+      { id: 'team-1', name: 'Wise Ducks', isActive: true, registeredTeamId: null, score: 6, infractionCount: 0 },
+      { id: 'team-2', name: 'Pub Mozarts', isActive: true, registeredTeamId: null, score: 9, infractionCount: 0 },
+      { id: 'team-3', name: 'Einsteins', isActive: false, registeredTeamId: null, score: 3, infractionCount: 0 },
+      { id: 'team-4', name: 'Quiz Wolves', isActive: true, registeredTeamId: null, score: 1, infractionCount: 0 },
     ],
     ...overrides,
   };

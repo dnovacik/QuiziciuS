@@ -6,17 +6,19 @@ import { QuizPatch, QuizRecord, QuizzesRepository } from '../data/quizzes.reposi
 import { ScoreAdjustmentRecord, ScoreAdjustmentsRepository } from '../data/score-adjustments.repository';
 import { SessionRecord, SessionsRepository, SessionStatusPatch } from '../data/sessions.repository';
 import { TeamRecord, TeamsRepository } from '../data/teams.repository';
+import { NewPub, PubRecord, PubsRepository, pubKey, TeamPubRecord } from '../data/pubs.repository';
 
 export class InMemorySessionsRepository extends SessionsRepository {
   private rows = new Map<string, SessionRecord>();
 
-  async create(quizId: string, hostId: string, joinCode: string): Promise<SessionRecord> {
+  async create(quizId: string, hostId: string, joinCode: string, pubId: string | null = null): Promise<SessionRecord> {
     const record: SessionRecord = {
       id: randomUUID(),
       quiz_id: quizId,
       host_id: hostId,
       join_code: joinCode,
       status: 'LOBBY',
+      pub_id: pubId,
       current_question_id: null,
       question_ends_at: null,
       created_at: new Date().toISOString(),
@@ -89,10 +91,19 @@ export class InMemoryTeamsRepository extends TeamsRepository {
     return [...this.rows.values()].find((t) => t.session_id === sessionId && t.name === name) ?? null;
   }
 
-  async upsertJoin(sessionId: string, name: string): Promise<TeamRecord> {
+  async findBySessionAndRegisteredTeam(sessionId: string, registeredTeamId: string): Promise<TeamRecord | null> {
+    return [...this.rows.values()].find((t) => t.session_id === sessionId && t.registered_team_id === registeredTeamId) ?? null;
+  }
+
+  async upsertJoin(sessionId: string, name: string, registeredTeamId: string | null = null): Promise<TeamRecord> {
     const existing = await this.findBySessionAndName(sessionId, name);
     if (existing) {
-      const updated = { ...existing, is_active: true, joined_at: new Date().toISOString() };
+      const updated = {
+        ...existing,
+        is_active: true,
+        joined_at: new Date().toISOString(),
+        registered_team_id: registeredTeamId ?? existing.registered_team_id,
+      };
       this.rows.set(updated.id, updated);
       return updated;
     }
@@ -103,6 +114,7 @@ export class InMemoryTeamsRepository extends TeamsRepository {
       device_token_hash: null,
       joined_at: new Date().toISOString(),
       is_active: true,
+      registered_team_id: registeredTeamId,
     };
     this.rows.set(record.id, record);
     return record;
@@ -233,12 +245,13 @@ export class InMemoryScoreAdjustmentsRepository extends ScoreAdjustmentsReposito
 export class InMemoryQuizzesRepository extends QuizzesRepository {
   private rows = new Map<string, QuizRecord>();
 
-  async create(hostId: string, title: string, categoryId: string | null): Promise<QuizRecord> {
+  async create(hostId: string, title: string, categoryId: string | null, pubId: string | null = null): Promise<QuizRecord> {
     const record: QuizRecord = {
       id: randomUUID(),
       host_id: hostId,
       league_id: null,
       category_id: categoryId,
+      pub_id: pubId,
       title,
       created_at: new Date().toISOString(),
     };
@@ -262,5 +275,54 @@ export class InMemoryQuizzesRepository extends QuizzesRepository {
 
   async remove(id: string): Promise<void> {
     this.rows.delete(id);
+  }
+}
+
+export class InMemoryPubsRepository extends PubsRepository {
+  readonly pubs = new Map<string, PubRecord>();
+  readonly hostPubs = new Map<string, Set<string>>();
+  readonly teamPubs = new Map<string, { pubIds: string[]; primary: string | null }>();
+
+  async search(query: string | null): Promise<PubRecord[]> {
+    const term = query?.trim().toLowerCase() ?? '';
+    return [...this.pubs.values()]
+      .filter((pub) => !term || pub.name.toLowerCase().includes(term) || pub.city.toLowerCase().includes(term))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async findById(id: string): Promise<PubRecord | null> {
+    return this.pubs.get(id) ?? null;
+  }
+
+  async findByKey(name: string, city: string): Promise<PubRecord | null> {
+    return [...this.pubs.values()].find((pub) => pubKey(pub.name, pub.city) === pubKey(name, city)) ?? null;
+  }
+
+  async create(pub: NewPub): Promise<PubRecord> {
+    const record: PubRecord = { id: randomUUID(), ...pub, created_at: new Date().toISOString() };
+    this.pubs.set(record.id, record);
+    return record;
+  }
+
+  async listForHost(hostId: string): Promise<PubRecord[]> {
+    return [...(this.hostPubs.get(hostId) ?? [])].map((id) => this.pubs.get(id)!);
+  }
+
+  async linkHost(hostId: string, pubId: string): Promise<void> {
+    this.hostPubs.set(hostId, (this.hostPubs.get(hostId) ?? new Set()).add(pubId));
+  }
+
+  async unlinkHost(hostId: string, pubId: string): Promise<void> {
+    this.hostPubs.get(hostId)?.delete(pubId);
+  }
+
+  async listForTeam(teamId: string): Promise<TeamPubRecord[]> {
+    const entry = this.teamPubs.get(teamId);
+    if (!entry) return [];
+    return entry.pubIds.map((id) => ({ ...this.pubs.get(id)!, is_primary: id === entry.primary }));
+  }
+
+  async setTeamPubs(teamId: string, pubIds: string[], primaryPubId: string | null): Promise<void> {
+    this.teamPubs.set(teamId, { pubIds, primary: primaryPubId });
   }
 }

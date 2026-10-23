@@ -12,10 +12,12 @@ import {
   Body,
   UseGuards,
 } from '@nestjs/common';
-import { IsIn, IsInt, IsOptional, IsString, Length, Max, Min } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Length, Max, Min, ValidateIf } from 'class-validator';
 import { CurrentHost, CurrentHostPayload } from './auth/current-host.decorator';
 import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
+import { MAX_TEAM_PUBS, PubsService } from './pubs/pubs.service';
 import { SupabaseService } from './supabase/supabase.service';
+import { JoinResult, TeamsService } from './teams/teams.service';
 
 class RegisterTeamDto {
   @IsString() @Length(3, 30) name!: string;
@@ -23,7 +25,8 @@ class RegisterTeamDto {
   @IsOptional() @IsIn(['shield', 'crown', 'bolt', 'star', 'brain', 'trophy']) badge?: string;
   @IsOptional() @IsIn(['purple', 'amber', 'cyan', 'green', 'pink']) color?: string;
   @IsInt() @Min(2) @Max(6) expectedMembers!: number;
-  @IsOptional() @IsString() @Length(0, 100) homePub?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(MAX_TEAM_PUBS) @IsString({ each: true }) pubIds?: string[];
+  @IsOptional() @ValidateIf((_, value) => value !== null) @IsString() primaryPubId?: string | null;
 }
 class PlayerDto {
   @IsString() @Length(1, 60) name!: string;
@@ -34,12 +37,26 @@ class EditTeamDto {
   @IsOptional() @IsIn(['shield', 'crown', 'bolt', 'star', 'brain', 'trophy']) badge?: string;
   @IsOptional() @IsIn(['purple', 'amber', 'cyan', 'green', 'pink']) color?: string;
   @IsOptional() @IsInt() @Min(2) @Max(6) expectedMembers?: number;
-  @IsOptional() @IsString() @Length(0, 100) homePub?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(MAX_TEAM_PUBS) @IsString({ each: true }) pubIds?: string[];
+  @IsOptional() @ValidateIf((_, value) => value !== null) @IsString() primaryPubId?: string | null;
 }
 @Controller('registered-teams')
 @UseGuards(SupabaseAuthGuard)
 export class RegisteredTeamsController {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly pubs: PubsService,
+    private readonly sessionTeams: TeamsService,
+  ) {}
+
+  /** A registered team as the web app sees it: the row plus its pubs (primary first). */
+  private async withPubs<T extends { id: string }>(team: T) {
+    const pubs = await this.pubs.listForTeam(team.id);
+    return {
+      ...team,
+      pubs: pubs.map((pub) => ({ id: pub.id, name: pub.name, city: pub.city, isPrimary: pub.is_primary })),
+    };
+  }
   @Get('mine')
   async mine(@CurrentHost() user: CurrentHostPayload) {
     const { data, error } = await this.supabase
@@ -49,7 +66,7 @@ export class RegisteredTeamsController {
       .eq('captain_id', user.id)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return data ?? [];
+    return Promise.all((data ?? []).map((team) => this.withPubs(team)));
   }
   @Get('availability/:name')
   async availability(@Param('name') name: string) {
@@ -75,25 +92,38 @@ export class RegisteredTeamsController {
       p_badge: dto.badge ?? 'shield',
       p_color: dto.color ?? 'purple',
       p_members: dto.expectedMembers,
-      p_home_pub: dto.homePub ?? '',
+      p_home_pub: '',
     });
     if (error) {
       if (error.code === '23505') throw new ConflictException({ code: 'NAME_TAKEN' });
       if (error.code === '22023') throw new BadRequestException({ code: 'INVALID_NAME' });
       throw error;
     }
-    return data;
+    const team = data as { id: string };
+    if (dto.pubIds?.length) await this.pubs.setTeamPubs(team.id, dto.pubIds, dto.primaryPubId);
+    return this.withPubs(team);
   }
-  private async own(teamId: string, userId: string) {
+  private async own(teamId: string, userId: string): Promise<{ id: string; name: string }> {
     const { data, error } = await this.supabase
       .getClient()
       .from('registered_teams')
-      .select('id')
+      .select('id,name')
       .eq('id', teamId)
       .eq('captain_id', userId)
       .maybeSingle();
     if (error) throw error;
     if (!data) throw new NotFoundException({ code: 'TEAM_NOT_FOUND' });
+    return data;
+  }
+  /** The captain joins a live session as the registered team, which links the session team to it. */
+  @Post(':id/sessions/:sessionId/join')
+  async joinSession(
+    @CurrentHost() user: CurrentHostPayload,
+    @Param('id') id: string,
+    @Param('sessionId') sessionId: string,
+  ): Promise<JoinResult> {
+    const team = await this.own(id, user.id);
+    return this.sessionTeams.join(sessionId, team.name, team.id);
   }
   @Get(':id/players')
   async players(@CurrentHost() user: CurrentHostPayload, @Param('id') id: string) {
@@ -175,8 +205,15 @@ export class RegisteredTeamsController {
     if (dto.badge !== undefined) patch.badge = dto.badge;
     if (dto.color !== undefined) patch.badge_color = dto.color;
     if (dto.expectedMembers !== undefined) patch.expected_members = dto.expectedMembers;
-    if (dto.homePub !== undefined) patch.home_pub = dto.homePub.trim() || null;
-    if (!Object.keys(patch).length) throw new BadRequestException({ code: 'NO_CHANGES' });
+    const pubsChanged = dto.pubIds !== undefined;
+    if (!Object.keys(patch).length && !pubsChanged) throw new BadRequestException({ code: 'NO_CHANGES' });
+    if (pubsChanged) await this.pubs.setTeamPubs(id, dto.pubIds ?? [], dto.primaryPubId);
+    if (!Object.keys(patch).length) {
+      await this.own(id, user.id);
+      const { data, error } = await this.supabase.getClient().from('registered_teams').select('*').eq('id', id).single();
+      if (error) throw error;
+      return this.withPubs(data as { id: string });
+    }
     const { data, error } = await this.supabase
       .getClient()
       .from('registered_teams')
@@ -190,6 +227,6 @@ export class RegisteredTeamsController {
       throw error;
     }
     if (!data) throw new NotFoundException({ code: 'TEAM_NOT_FOUND' });
-    return data;
+    return this.withPubs(data as { id: string });
   }
 }

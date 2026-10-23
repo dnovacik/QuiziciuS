@@ -29,8 +29,8 @@ export class QuizEngineService {
     private readonly broadcast: RealtimeBroadcastService,
   ) {}
 
-  async createSession(quizId: string, hostId: string): Promise<SessionRecord> {
-    return this.sessions.create(quizId, hostId, generateJoinCode());
+  async createSession(quizId: string, hostId: string, pubId: string | null = null): Promise<SessionRecord> {
+    return this.sessions.create(quizId, hostId, generateJoinCode(), pubId);
   }
 
   async getState(sessionId: string): Promise<QuizSessionStateDto> {
@@ -82,6 +82,7 @@ export class QuizEngineService {
         id: team.id,
         name: team.name,
         isActive: team.is_active,
+        registeredTeamId: team.registered_team_id ?? null,
         score: scoreByTeam.get(team.id) ?? 0,
         infractionCount: infractionCountByTeam.get(team.id) ?? 0,
       })),

@@ -20,7 +20,6 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 | `notifications` | Host top bar | Notification feed (new teams, disputes) | |
 | `team-ratings` | Host dashboard stat | Teams rate the night after it ends | |
 | `scheduled-sessions` | Host dashboard | Sessions planned ahead (date, venue, table capacity, reservations) | |
-| `venues` | Start-session dialog, quiz settings | Venue model attached to quizzes / sessions | |
 | `quiz-default-timer` | Quiz settings | Default answer time stored per quiz | |
 | `numeric-unit` | Quiz editor | `unit` column on numeric questions, shown to players and on the projector | |
 | `timer-controls` | Control room | Pause / +10 s / stop answers early / host pause — needs a pausable timer in the quiz engine | |
@@ -32,11 +31,10 @@ These are omitted from the screens (no fake values); adding them needs API work 
 
 | Data | Stitch screens | Needed |
 |---|---|---|
-| Venue name / city ("U Zlatého leva, Žilina") | player join, lobby | venue on quiz or host profile |
 | Host name ("Moderátor Michal Kováč") | player lobby, reveal | host display name in public session state |
 | Rounds ("Kolo 2/5") and question total ("Otázka 4 z 10") | player question, reveal | rounds model + question count in session state |
 | Question category / ID badge | player question | category per question |
-| Team roster, captain role, captain-only submit | player lobby, question, locked | link session teams to registered teams and their players |
+| Team roster, captain role, captain-only submit | player lobby, question, locked | session teams are now linked to registered teams (`teams.registered_team_id`); still needs the roster in session state |
 | Who submitted + teams-answered progress ("13 / 14") | player locked | per-question answered flags in session state |
 | Speed bonus, streaks, jokers, accuracy %, max score | player question, reveal, results | scoring features |
 | Host trivia comment after reveal | player reveal | comment field on questions |
@@ -72,3 +70,15 @@ These are omitted from the screens (no fake values); adding them needs API work 
 |---|---|
 | "Sign in" tab in the team dialog | Registered team captains need to sign back in to the team hub. |
 | Password recovery mode on the host card | Stitch only shows the "Forgot password?" link. |
+
+## Pubs (built)
+
+Pubs replaced the `venues` placeholder and the team's free-text home pub. Design notes are in
+`docs/PUBS_AND_LEAGUES.md`; the schema is migration `0011_pubs.sql`.
+
+- `GET /pubs?q=` — the shared pub list (hosts and captains)
+- `GET /host/pubs`, `POST /host/pubs` (add or reuse by name + city), `PUT /host/pubs/:pubId` (link an existing pub), `DELETE /host/pubs/:pubId` (unlink only)
+- `POST /quizzes` and `PATCH /quizzes/:quizId` take `pubId` (the quiz's default pub)
+- `POST /quizzes/:quizId/sessions` takes `pubId` (omitted → the quiz's pub, `null` → none); `GET /sessions/:id/display` returns `pub`
+- Registered teams take `pubIds` (max 5) + `primaryPubId` and return `pubs`
+- `POST /registered-teams/:id/sessions/:sessionId/join` — the captain joins as the registered team; the session team is linked and its name is reserved in that session (`409 TEAM_NAME_RESERVED` for one-off teams)

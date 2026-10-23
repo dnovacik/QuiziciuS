@@ -8,4 +8,8 @@ export class CreateQuizDto {
   @IsOptional()
   @IsString()
   categoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  pubId?: string;
 }

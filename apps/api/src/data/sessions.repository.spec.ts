@@ -6,6 +6,7 @@ const RECORD: SessionRecord = {
   quiz_id: 'q1',
   host_id: 'h1',
   join_code: 'AB12',
+  pub_id: null,
   status: 'LOBBY',
   current_question_id: null,
   question_ends_at: null,

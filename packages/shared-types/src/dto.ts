@@ -24,6 +24,8 @@ export interface TeamSummaryDto {
   id: string;
   name: string;
   isActive: boolean;
+  /** The registered team this session team was joined as, or null for a one-off team. */
+  registeredTeamId: string | null;
   score: number;
   infractionCount: number;
 }

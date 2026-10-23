@@ -11,7 +11,6 @@ import {
   Palette,
   Quote,
   Shuffle,
-  Store,
   TableProperties,
   UserPlus,
   Users,
@@ -19,9 +18,10 @@ import {
 } from 'lucide-react';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
+import { pubLabel } from '../lib/pubs';
 import { Modal } from '../ui/Modal';
 import { teamApi, type RegisteredTeam, type TeamProfile } from './api';
-import { BadgePicker, CapacityPicker, ColorPicker, useNameAvailability, type Availability } from './profile-fields';
+import { BadgePicker, CapacityPicker, ColorPicker, PubsPicker, useNameAvailability, usePubList, type Availability } from './profile-fields';
 import { TeamEmblem } from './TeamEmblem';
 
 const NAME_IDEAS = [
@@ -60,7 +60,8 @@ export function OnboardingPage({
     badge: 'shield',
     color: 'purple',
     expectedMembers: Math.min(6, Math.max(2, suggestedMembers)),
-    homePub: '',
+    pubIds: [],
+    primaryPubId: null,
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +69,8 @@ export function OnboardingPage({
   const check = useCallback((name: string) => teamApi.availability(token, name), [token]);
   const availability = useNameAvailability(profile.name, check);
   const set = (patch: Partial<TeamProfile>) => setProfile((current) => ({ ...current, ...patch }));
+  const pubList = usePubList(token);
+  const primaryPub = pubList?.find((pub) => pub.id === profile.primaryPubId) ?? null;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -167,23 +170,12 @@ export function OnboardingPage({
               </div>
               <CapacityPicker value={profile.expectedMembers} onChange={(expectedMembers) => set({ expectedMembers })} />
             </div>
-            <label className="flex flex-col gap-2">
-              <span className="flex items-center justify-between text-label-md text-on-surface">
-                {t('team.form.homePub')}
-                <span className="text-body-sm text-on-surface-variant">{t('common.optional')}</span>
-              </span>
-              <span className="relative">
-                <Store className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-on-surface-variant" />
-                <input
-                  data-testid="team-home-pub"
-                  value={profile.homePub}
-                  maxLength={100}
-                  onChange={(event) => set({ homePub: event.target.value })}
-                  placeholder={t('team.form.homePubPlaceholder')}
-                  className="h-12 w-full rounded-xl bg-surface-container-lowest pl-11 pr-4 text-body-md text-on-surface shadow-inner placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </span>
-            </label>
+            <PubsPicker
+              pubs={pubList}
+              pubIds={profile.pubIds}
+              primaryPubId={profile.primaryPubId}
+              onChange={(pubIds, primaryPubId) => set({ pubIds, primaryPubId })}
+            />
             <label className="flex flex-col gap-2">
               <span className="flex items-center justify-between text-label-md text-on-surface">
                 {t('team.form.motto')}
@@ -245,10 +237,10 @@ export function OnboardingPage({
                 <h3 className="truncate text-headline-md font-extrabold tracking-tight text-on-surface" data-testid="team-preview-name">
                   {profile.name.trim() || t('team.preview.unnamed')}
                 </h3>
-                {profile.homePub.trim() && (
-                  <span className="flex items-center gap-1 text-body-sm text-on-surface-variant">
+                {primaryPub && (
+                  <span className="flex items-center gap-1 text-body-sm text-on-surface-variant" data-testid="team-preview-pub">
                     <MapPin className="h-3.5 w-3.5" />
-                    {profile.homePub}
+                    {pubLabel(primaryPub)}
                   </span>
                 )}
               </div>
@@ -331,7 +323,7 @@ export function OnboardingPage({
               <TeamEmblem badge={created.badge} color={created.badge_color} size="sm" />
               <div>
                 <div className="text-label-md font-bold text-on-surface">{created.name}</div>
-                {created.home_pub && <div className="text-body-sm text-on-surface-variant">{created.home_pub}</div>}
+                {created.pubs[0] && <div className="text-body-sm text-on-surface-variant">{pubLabel(created.pubs[0])}</div>}
               </div>
             </div>
             <button

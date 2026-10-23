@@ -18,7 +18,6 @@ export const PENDING_FEATURES = {
   notifications: 'Host notifications (new teams, disputes) in the top bar.',
   'team-ratings': 'Team satisfaction ratings after a quiz night.',
   'scheduled-sessions': 'Planning quiz nights ahead with a date, venue and table capacity.',
-  venues: 'Venue selection when launching a session or editing a quiz.',
   'quiz-default-timer': 'Default answer time per quiz, applied to new questions.',
   'numeric-unit': 'Unit suffix for numeric questions (years, km, %).',
   'timer-controls': 'Pausing, extending or stopping the answer timer early, and a host pause for everyone.',

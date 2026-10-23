@@ -11,4 +11,10 @@ export class UpdateQuizDto {
   @ValidateIf((_, value) => value !== null)
   @IsString()
   categoryId?: string | null;
+
+  /** null clears the default pub. */
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  pubId?: string | null;
 }

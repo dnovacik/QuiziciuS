@@ -16,6 +16,7 @@ import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator'
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { QuizPatch, QuizRecord, QuizzesRepository } from '../data/quizzes.repository';
 import { SessionsRepository } from '../data/sessions.repository';
+import { PubsService } from '../pubs/pubs.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 
@@ -25,11 +26,13 @@ export class QuizzesController {
   constructor(
     private readonly quizzes: QuizzesRepository,
     private readonly sessions: SessionsRepository,
+    private readonly pubs: PubsService,
   ) {}
 
   @Post()
-  create(@CurrentHost() host: CurrentHostPayload, @Body() dto: CreateQuizDto) {
-    return this.quizzes.create(host.id, dto.title, dto.categoryId ?? null);
+  async create(@CurrentHost() host: CurrentHostPayload, @Body() dto: CreateQuizDto) {
+    if (dto.pubId) await this.pubs.requirePub(dto.pubId);
+    return this.quizzes.create(host.id, dto.title, dto.categoryId ?? null, dto.pubId ?? null);
   }
 
   @Get()
@@ -43,6 +46,8 @@ export class QuizzesController {
     const patch: QuizPatch = {};
     if (dto.title !== undefined) patch.title = dto.title.trim();
     if (dto.categoryId !== undefined) patch.category_id = dto.categoryId;
+    if (dto.pubId) await this.pubs.requirePub(dto.pubId);
+    if (dto.pubId !== undefined) patch.pub_id = dto.pubId;
     return this.quizzes.update(quizId, patch);
   }
 

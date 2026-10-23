@@ -35,6 +35,7 @@ import {
   type QuestionDraft,
   type Quiz,
 } from '../api';
+import { PubSelect, useHostPubs } from '../pubs';
 import { btn, Card, ConfirmDialog, ErrorBanner, inputClass, Label, useToast } from '../ui';
 import { PhonePreview } from './PhonePreview';
 import { QuestionForm } from './QuestionForm';
@@ -644,6 +645,8 @@ function QuizSettingsDialog({
   const { t } = useI18n();
   const [title, setTitle] = useState(quiz.title);
   const [categoryId, setCategoryId] = useState(quiz.category_id ?? '');
+  const { pubs } = useHostPubs(token);
+  const [pubId, setPubId] = useState(quiz.pub_id ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -652,7 +655,7 @@ function QuizSettingsDialog({
     setBusy(true);
     setError(null);
     try {
-      onSaved(await hostApi.updateQuiz(token, quiz.id, { title: title.trim(), categoryId: categoryId || null }));
+      onSaved(await hostApi.updateQuiz(token, quiz.id, { title: title.trim(), categoryId: categoryId || null, pubId: pubId || null }));
     } catch (err) {
       setError(describeError(err, t, 'errors.generic'));
       setBusy(false);
@@ -702,12 +705,7 @@ function QuizSettingsDialog({
             </div>
           </Pending>
         </div>
-        <Pending feature="venues">
-          <div>
-            <Label>{t('host.start.venue')}</Label>
-            <input readOnly value="—" className={`${inputClass} p-space-md`} />
-          </div>
-        </Pending>
+        <PubSelect id="settings-pub" testId="settings-pub" pubs={pubs} value={pubId} onChange={setPubId} />
         {error && (
           <p role="alert" className="text-body-sm text-error">
             {error}

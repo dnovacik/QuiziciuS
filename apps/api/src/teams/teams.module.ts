@@ -16,6 +16,6 @@ import { TeamsService } from './teams.service';
   ],
   controllers: [TeamsController],
   providers: [TeamsService, TeamTokenService, TeamTokenGuard],
-  exports: [TeamTokenService, TeamTokenGuard],
+  exports: [TeamsService, TeamTokenService, TeamTokenGuard],
 })
 export class TeamsModule {}

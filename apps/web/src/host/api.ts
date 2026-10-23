@@ -6,6 +6,7 @@ export interface Quiz {
   id: string;
   title: string;
   category_id: string | null;
+  pub_id: string | null;
   created_at: string;
 }
 
@@ -19,6 +20,7 @@ export interface HostSession {
   quiz_id: string;
   join_code: string;
   status: QuizState;
+  pub_id: string | null;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -77,9 +79,9 @@ export function stripIds(question: Question): QuestionDraft {
 export const hostApi = {
   listQuizzes: (token: string) => apiGet<Quiz[]>('/quizzes', token),
   listCategories: (token: string) => apiGet<Category[]>('/categories', token),
-  createQuiz: (token: string, title: string, categoryId: string | null) =>
-    apiPost<Quiz>('/quizzes', { title: title.trim(), categoryId: categoryId ?? undefined }, token),
-  updateQuiz: (token: string, quizId: string, patch: { title?: string; categoryId?: string | null }) =>
+  createQuiz: (token: string, title: string, categoryId: string | null, pubId: string | null = null) =>
+    apiPost<Quiz>('/quizzes', { title: title.trim(), categoryId: categoryId ?? undefined, pubId: pubId ?? undefined }, token),
+  updateQuiz: (token: string, quizId: string, patch: { title?: string; categoryId?: string | null; pubId?: string | null }) =>
     apiPatch<Quiz>(`/quizzes/${quizId}`, patch, token),
   deleteQuiz: (token: string, quizId: string) => apiDelete<void>(`/quizzes/${quizId}`, token),
 
@@ -94,7 +96,9 @@ export const hostApi = {
 
   listSessions: (token: string) => apiGet<HostSession[]>('/host/sessions', token),
   getSession: (token: string, sessionId: string) => apiGet<HostSession>(`/host/sessions/${sessionId}`, token),
-  createSession: (token: string, quizId: string) => apiPost<HostSession>(`/quizzes/${quizId}/sessions`, {}, token),
+  /** `pubId` null launches without a pub; the API falls back to the quiz's pub only when it is omitted. */
+  createSession: (token: string, quizId: string, pubId: string | null) =>
+    apiPost<HostSession>(`/quizzes/${quizId}/sessions`, { pubId }, token),
   transition: (token: string, sessionId: string, status: QuizState, questionId?: string) =>
     apiPost(`/sessions/${sessionId}/transition`, status === 'LOCK_IN_ROUND' ? { status, questionId } : { status }, token),
   listAnswers: (token: string, sessionId: string, questionId?: string) =>
@@ -144,7 +148,7 @@ export async function uploadQuestionMedia(token: string, quizId: string, file: F
  */
 export async function duplicateQuiz(token: string, source: Quiz, title: string): Promise<Quiz> {
   const [copy, questions] = await Promise.all([
-    hostApi.createQuiz(token, title, source.category_id),
+    hostApi.createQuiz(token, title, source.category_id, source.pub_id),
     hostApi.listQuestions(token, source.id),
   ]);
   for (const question of [...questions].sort((a, b) => a.order_index - b.order_index)) {

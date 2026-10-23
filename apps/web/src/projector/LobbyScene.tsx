@@ -1,9 +1,19 @@
 import { QRCodeSVG } from 'qrcode.react';
-import { LockOpen, RefreshCw, Users } from 'lucide-react';
+import { LockOpen, MapPin, RefreshCw, Users } from 'lucide-react';
 import type { QuizSessionStateDto } from '@quizicius/shared-types';
 import { useI18n } from '../lib/i18n';
 
-export function LobbyScene({ state, sessionId, title }: { state: QuizSessionStateDto; sessionId: string; title: string | null }) {
+export function LobbyScene({
+  state,
+  sessionId,
+  title,
+  pub,
+}: {
+  state: QuizSessionStateDto;
+  sessionId: string;
+  title: string | null;
+  pub?: string | null;
+}) {
   const { t } = useI18n();
   const joinUrl = new URL(`/play/${sessionId}`, window.location.origin);
   const active = state.teams.filter((team) => team.isActive).length;
@@ -19,6 +29,12 @@ export function LobbyScene({ state, sessionId, title }: { state: QuizSessionStat
           >
             {title ?? t('play.join.eventFallback')}
           </h1>
+          {pub && (
+            <p className="mt-space-xs flex items-center gap-space-xs text-headline-sm text-on-surface-variant" data-testid="projector-pub">
+              <MapPin className="h-6 w-6 text-secondary" />
+              {pub}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-space-sm self-start rounded-xl bg-surface-container-high px-space-lg py-space-sm shadow-lg md:self-auto">
           <div className="h-3 w-3 animate-pulse rounded-full bg-tertiary" />

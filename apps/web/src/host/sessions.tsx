@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Copy, MonitorPlay, QrCode, SlidersHorizontal, Users } from 'lucide-react';
+import { Copy, MapPin, MonitorPlay, QrCode, SlidersHorizontal, Users } from 'lucide-react';
 import type { QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
 import { apiGet } from '../lib/api-client';
 import { useI18n } from '../lib/i18n';
 import { rankTeams } from '../lib/quiz';
+import { useSessionDisplay } from '../lib/use-quiz-title';
 import { Modal } from '../ui/Modal';
 import type { HostSession, Quiz } from './api';
 import { btn, useCopy } from './ui';
@@ -44,6 +45,7 @@ export function LiveSessionCard({ session, quiz }: { session: HostSession; quiz:
   const copy = useCopy();
   const [state, setState] = useState<QuizSessionStateDto | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
+  const { pub } = useSessionDisplay(session.pub_id ? session.id : undefined);
 
   useEffect(() => {
     apiGet<QuizSessionStateDto>(`/sessions/${session.id}/state`)
@@ -79,6 +81,12 @@ export function LiveSessionCard({ session, quiz }: { session: HostSession; quiz:
         </div>
         <h3 className="text-headline-md tracking-tight text-on-surface">{quiz?.title ?? '—'}</h3>
         <div className="mt-1 flex flex-wrap items-center gap-space-md text-body-sm text-on-surface-variant">
+          {pub && (
+            <span className="flex items-center gap-1" data-testid="session-pub">
+              <MapPin className="h-4 w-4 text-secondary" />
+              {pub}
+            </span>
+          )}
           <span className="flex items-center gap-1">
             <Users className="h-4 w-4 text-tertiary" />
             <strong className="font-semibold text-tertiary">

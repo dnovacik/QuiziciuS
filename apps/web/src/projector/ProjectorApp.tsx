@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { CloudOff, RefreshCw } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
-import { useQuizTitle } from '../lib/use-quiz-title';
+import { useSessionDisplay } from '../lib/use-quiz-title';
 import { useSessionState } from '../lib/use-session-state';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { Logo } from '../ui/Logo';
@@ -15,7 +15,7 @@ export default function ProjectorApp() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { t } = useI18n();
   const { state, error, refetch } = useSessionState(sessionId);
-  const title = useQuizTitle(sessionId);
+  const { title, pub } = useSessionDisplay(sessionId);
 
   // Realtime events drive the screen; a slow poll covers a dropped websocket on the venue Wi-Fi.
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function ProjectorApp() {
               <span className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           ) : (
-            <Scene state={state} sessionId={sessionId!} title={title} />
+            <Scene state={state} sessionId={sessionId!} title={title} pub={pub} />
           )}
         </div>
 
@@ -100,15 +100,17 @@ function Scene({
   state,
   sessionId,
   title,
+  pub,
 }: {
   state: NonNullable<ReturnType<typeof useSessionState>['state']>;
   sessionId: string;
   title: string | null;
+  pub: string | null;
 }) {
   const question = state.currentQuestion;
   switch (state.status) {
     case 'LOBBY':
-      return <LobbyScene state={state} sessionId={sessionId} title={title} />;
+      return <LobbyScene state={state} sessionId={sessionId} title={title} pub={pub} />;
     case 'LOCK_IN_ROUND':
       return <LockInScene question={question} />;
     case 'QUESTION_ACTIVE':

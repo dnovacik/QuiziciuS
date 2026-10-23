@@ -2,12 +2,14 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { AnswerSummaryDto, QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../lib/api-client';
+import type { Pub } from '../lib/pubs';
 import { I18nProvider } from '../lib/i18n';
 import type { HostSession, Question, Quiz } from './api';
 import { ControlRoomPage } from './control-room/ControlRoomPage';
 import { DashboardPage } from './DashboardPage';
 import { QuizEditorPage } from './editor/QuizEditorPage';
+import { PubsPage } from './pubs';
 import { ToastProvider } from './ui';
 
 vi.mock('../lib/api-client', async (importOriginal) => ({
@@ -16,16 +18,20 @@ vi.mock('../lib/api-client', async (importOriginal) => ({
   apiPost: vi.fn(),
   apiPatch: vi.fn(),
   apiDelete: vi.fn(),
+  apiPut: vi.fn(),
 }));
 vi.mock('../lib/supabase-client', () => ({ supabase: { auth: { signOut: vi.fn() } }, subscribeToSession: vi.fn(() => vi.fn()) }));
 
+const pubs = vi.hoisted(() => ({ mine: [] as Pub[], all: [] as Pub[] }));
 const live = vi.hoisted(() => ({ state: null as QuizSessionStateDto | null, refetch: vi.fn() }));
 vi.mock('../lib/use-session-state', () => ({
   useSessionState: () => ({ state: live.state, error: null, refetch: live.refetch }),
 }));
 
-const QUIZ: Quiz = { id: 'quiz1', title: 'Friday Movies', category_id: 'cat1', created_at: '2026-10-01T18:00:00Z' };
-const EMPTY_QUIZ: Quiz = { id: 'quiz2', title: 'History draft', category_id: null, created_at: '2026-09-01T18:00:00Z' };
+const LION: Pub = { id: 'pub1', name: 'U Zlatého leva', city: 'Žilina', address: null };
+const DOG: Pub = { id: 'pub2', name: 'Black Dog', city: 'Bratislava', address: null };
+const QUIZ: Quiz = { id: 'quiz1', title: 'Friday Movies', category_id: 'cat1', pub_id: 'pub1', created_at: '2026-10-01T18:00:00Z' };
+const EMPTY_QUIZ: Quiz = { id: 'quiz2', title: 'History draft', category_id: null, pub_id: null, created_at: '2026-09-01T18:00:00Z' };
 
 function question(id: string, order: number, overrides: Partial<Question> = {}): Question {
   return {
@@ -57,7 +63,16 @@ const db = vi.hoisted(() => ({
 }));
 
 function session(id: string, status: QuizState, quizId = 'quiz1'): HostSession {
-  return { id, quiz_id: quizId, join_code: 'A7F3', status, created_at: '2026-10-20T18:00:00Z', started_at: null, finished_at: null };
+  return {
+    id,
+    quiz_id: quizId,
+    join_code: 'A7F3',
+    status,
+    pub_id: null,
+    created_at: '2026-10-20T18:00:00Z',
+    started_at: null,
+    finished_at: null,
+  };
 }
 
 function liveState(status: QuizState, currentId: string | null = null): QuizSessionStateDto {
@@ -80,8 +95,8 @@ function liveState(status: QuizState, currentId: string | null = null): QuizSess
     },
     questionEndsAt: status === 'QUESTION_ACTIVE' ? new Date(Date.now() + 20_000).toISOString() : null,
     teams: [
-      { id: 't1', name: 'Wise Ducks', isActive: true, score: 20, infractionCount: 0 },
-      { id: 't2', name: 'Pub Mozarts', isActive: true, score: 10, infractionCount: 1 },
+      { id: 't1', name: 'Wise Ducks', isActive: true, registeredTeamId: null, score: 20, infractionCount: 0 },
+      { id: 't2', name: 'Pub Mozarts', isActive: true, registeredTeamId: null, score: 10, infractionCount: 1 },
     ],
   };
 }
@@ -92,6 +107,8 @@ beforeEach(() => {
   db.questions = { quiz1: [question('q1', 0), question('q2', 1), question('q3', 2)], quiz2: [] };
   db.sessions = [session('s1', 'LOBBY'), session('s0', 'FINISHED')];
   db.answers = [];
+  pubs.mine = [LION];
+  pubs.all = [LION, DOG];
   db.disputes = [];
   live.state = null;
   live.refetch = vi.fn();
@@ -100,6 +117,8 @@ beforeEach(() => {
     .mockImplementation(async (path: string) => {
       if (path === '/quizzes') return db.quizzes;
       if (path === '/categories') return [{ id: 'cat1', name: 'Movies' }];
+      if (path === '/host/pubs') return pubs.mine;
+      if (path.startsWith('/pubs')) return pubs.all;
       if (path === '/host/sessions') return db.sessions;
       if (path === '/host/sessions/s1') return db.sessions[0];
       if (path.startsWith('/host/sessions/s1/answers')) return db.answers;
@@ -134,6 +153,9 @@ beforeEach(() => {
       return { ...QUIZ, ...(body as object) };
     });
   vi.mocked(apiDelete).mockReset().mockResolvedValue(undefined);
+  vi.mocked(apiPut)
+    .mockReset()
+    .mockImplementation(async (path: string) => pubs.all.find((pub) => path.endsWith(pub.id)));
 });
 
 function renderAt(path: string, element: React.ReactNode, routePath: string) {
@@ -178,7 +200,20 @@ describe('host dashboard', () => {
     fireEvent.click(screen.getByTestId('start-session-confirm'));
 
     await screen.findByText('control room for session');
-    expect(apiPost).toHaveBeenCalledWith('/quizzes/quiz1/sessions', {}, 'jwt');
+    expect(apiPost).toHaveBeenCalledWith('/quizzes/quiz1/sessions', { pubId: 'pub1' }, 'jwt');
+  });
+
+  it("launches at the quiz's pub unless the host picks another", async () => {
+    renderAt('/host', <DashboardPage token="jwt" />, '/host');
+    fireEvent.click(await screen.findByTestId('quiz-start-quiz1'));
+    const select = screen.getByTestId('start-session-pub');
+    await waitFor(() => expect(within(select).getAllByRole('option')).toHaveLength(2));
+    expect(select).toHaveValue('pub1');
+    fireEvent.change(select, { target: { value: '' } });
+    fireEvent.click(screen.getByTestId('start-session-confirm'));
+
+    await screen.findByText('control room for session');
+    expect(apiPost).toHaveBeenCalledWith('/quizzes/quiz1/sessions', { pubId: null }, 'jwt');
   });
 
   it('deletes a quiz after confirmation', async () => {
@@ -198,7 +233,7 @@ describe('host dashboard', () => {
     fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
 
     await waitFor(() => expect(vi.mocked(apiPost).mock.calls.filter(([path]) => path === '/quizzes/copy1/questions')).toHaveLength(3));
-    expect(apiPost).toHaveBeenCalledWith('/quizzes', { title: 'Friday Movies (kópia)', categoryId: 'cat1' }, 'jwt');
+    expect(apiPost).toHaveBeenCalledWith('/quizzes', { title: 'Friday Movies (kópia)', categoryId: 'cat1', pubId: 'pub1' }, 'jwt');
     const firstCopy = vi.mocked(apiPost).mock.calls.find(([path]) => path === '/quizzes/copy1/questions')![1];
     expect(firstCopy).toMatchObject({ prompt: 'Question q1', mediaPath: null, orderIndex: 0 });
   });
@@ -273,9 +308,12 @@ describe('quiz editor', () => {
     fireEvent.click(screen.getByTestId('editor-settings'));
     fireEvent.change(screen.getByTestId('settings-title'), { target: { value: 'Saturday Movies' } });
     fireEvent.change(screen.getByTestId('settings-category'), { target: { value: '' } });
+    fireEvent.change(screen.getByTestId('settings-pub'), { target: { value: '' } });
     fireEvent.click(screen.getByTestId('settings-save'));
 
-    await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/quizzes/quiz1', { title: 'Saturday Movies', categoryId: null }, 'jwt'));
+    await waitFor(() =>
+      expect(apiPatch).toHaveBeenCalledWith('/quizzes/quiz1', { title: 'Saturday Movies', categoryId: null, pubId: null }, 'jwt'),
+    );
   });
 });
 
@@ -379,5 +417,40 @@ describe('control room', () => {
     expect(await screen.findByTestId('results-podium-1')).toHaveTextContent('Wise Ducks');
     expect(screen.getByTestId('results-podium-2')).toHaveTextContent('Pub Mozarts');
     expect(screen.queryByTestId('room-end')).not.toBeInTheDocument();
+  });
+});
+
+describe('pubs page', () => {
+  const renderPubs = () => renderAt('/host/pubs', <PubsPage token="jwt" />, '/host/pubs');
+
+  it("lists the host's pubs and removes one from the list", async () => {
+    renderPubs();
+    expect(await screen.findByText('U Zlatého leva')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('pub-remove-pub1'));
+
+    await waitFor(() => expect(apiDelete).toHaveBeenCalledWith('/host/pubs/pub1', 'jwt'));
+  });
+
+  it('adds a new pub', async () => {
+    vi.mocked(apiPost).mockResolvedValueOnce({ id: 'pub3', name: 'Mlyn', city: 'Martin', address: null });
+    renderPubs();
+    await screen.findByText('U Zlatého leva');
+    fireEvent.change(screen.getByTestId('pub-name'), { target: { value: 'Mlyn' } });
+    fireEvent.change(screen.getByTestId('pub-city'), { target: { value: 'Martin' } });
+    fireEvent.click(screen.getByTestId('pub-add-submit'));
+
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/host/pubs', { name: 'Mlyn', city: 'Martin', address: undefined }, 'jwt'));
+  });
+
+  it('offers a pub another host already added instead of creating a duplicate', async () => {
+    renderPubs();
+    await screen.findByText('U Zlatého leva');
+    fireEvent.change(screen.getByTestId('pub-name'), { target: { value: 'Black' } });
+
+    const suggestions = await screen.findByTestId('pub-suggestions');
+    expect(within(suggestions).queryByText(/Zlatého/)).not.toBeInTheDocument();
+    fireEvent.click(within(suggestions).getByTestId('pub-link-pub2'));
+
+    await waitFor(() => expect(apiPut).toHaveBeenCalledWith('/host/pubs/pub2', {}, 'jwt'));
   });
 });

@@ -14,6 +14,7 @@ const BASE_SESSION: SessionRecord = {
   quiz_id: 'quiz1',
   host_id: 'host1',
   join_code: 'AB12',
+  pub_id: null,
   status: 'LOBBY',
   current_question_id: null,
   question_ends_at: null,
@@ -55,6 +56,7 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
   const teams: TeamsRepository = {
     findById: jest.fn(),
     findBySessionAndName: jest.fn(),
+    findBySessionAndRegisteredTeam: jest.fn().mockResolvedValue(null),
     upsertJoin: jest.fn(),
     setDeviceTokenHash: jest.fn(),
     listBySession: jest.fn().mockResolvedValue([] as TeamRecord[]),
@@ -270,7 +272,7 @@ describe('QuizEngineService.getState', () => {
 
     const state = await service.getState('s1');
 
-    expect(state.teams).toEqual([{ id: 't1', name: 'Team A', isActive: true, score: 3, infractionCount: 0 }]);
+    expect(state.teams).toEqual([{ id: 't1', name: 'Team A', isActive: true, registeredTeamId: null, score: 3, infractionCount: 0 }]);
   });
 
   it('leaves the open question out of team scores until its results are public', async () => {
@@ -459,6 +461,6 @@ describe('QuizEngineService.createSession', () => {
 
     await service.createSession('quiz1', 'host1');
 
-    expect(sessions.create).toHaveBeenCalledWith('quiz1', 'host1', expect.stringMatching(/^[A-HJ-NP-Z2-9]{4}$/));
+    expect(sessions.create).toHaveBeenCalledWith('quiz1', 'host1', expect.stringMatching(/^[A-HJ-NP-Z2-9]{4}$/), null);
   });
 });

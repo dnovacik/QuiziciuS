@@ -23,12 +23,13 @@ import {
 import { ApiError } from '../lib/api-client';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
-import { findSessionByCode, joinSession, normalizeJoinCode } from '../lib/team-seat';
+import { pubLabel } from '../lib/pubs';
+import { findSessionByCode, normalizeJoinCode } from '../lib/team-seat';
 import { Modal } from '../ui/Modal';
 import { Pending } from '../ui/Pending';
 import { MAX_PLAYERS, profileOf, teamApi, type Player, type RegisteredTeam, type TeamProfile } from './api';
 import { NameField } from './OnboardingPage';
-import { BadgePicker, CapacityPicker, ColorPicker, useNameAvailability } from './profile-fields';
+import { BadgePicker, CapacityPicker, ColorPicker, PubsPicker, useNameAvailability, usePubList } from './profile-fields';
 import { TeamEmblem } from './TeamEmblem';
 
 const card = 'rounded-3xl bg-surface-container/70 p-space-md shadow-xl backdrop-blur-xl lg:p-space-lg';
@@ -75,8 +76,25 @@ export function TeamDashboard({
               </h1>
               <p className="max-w-lg text-body-md text-on-surface-variant">{team.description || t('team.dashboard.noMotto')}</p>
               <div className="flex flex-wrap items-center justify-center gap-space-sm pt-space-xs sm:justify-start">
-                {team.home_pub && (
-                  <span className="flex items-center gap-1.5 rounded-xl bg-surface-container-high px-space-sm py-1 text-label-md text-on-surface">
+                {team.pubs.map((pub) => (
+                  <span
+                    key={pub.id}
+                    data-testid="team-pub"
+                    title={pub.isPrimary ? t('team.dashboard.primaryPub') : undefined}
+                    className={`flex items-center gap-1.5 rounded-xl px-space-sm py-1 text-label-md text-on-surface ${
+                      pub.isPrimary ? 'bg-secondary-container/30 ring-1 ring-secondary/60' : 'bg-surface-container-high'
+                    }`}
+                  >
+                    {pub.isPrimary ? (
+                      <Star className="h-[18px] w-[18px] fill-current text-secondary" />
+                    ) : (
+                      <MapPin className="h-[18px] w-[18px] text-secondary" />
+                    )}
+                    {pubLabel(pub)}
+                  </span>
+                ))}
+                {team.pubs.length === 0 && team.home_pub && (
+                  <span className="flex items-center gap-1.5 rounded-xl bg-surface-container-high px-space-sm py-1 text-label-md text-on-surface-variant">
                     <MapPin className="h-[18px] w-[18px] text-secondary" />
                     {team.home_pub}
                   </span>
@@ -112,7 +130,7 @@ export function TeamDashboard({
         </div>
       </section>
 
-      <JoinQuizBar team={team} />
+      <JoinQuizBar token={token} team={team} />
 
       <div className="grid grid-cols-1 gap-space-lg lg:grid-cols-12">
         <section className={`${card} flex flex-col justify-between lg:col-span-5`} data-testid="team-roster">
@@ -264,7 +282,7 @@ export function TeamDashboard({
 }
 
 /** "Pripojiť tím k aktuálnemu kvízu" — joins a live session under the team's name. */
-function JoinQuizBar({ team }: { team: RegisteredTeam }) {
+function JoinQuizBar({ token, team }: { token: string; team: RegisteredTeam }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [code, setCode] = useState('');
@@ -278,7 +296,7 @@ function JoinQuizBar({ team }: { team: RegisteredTeam }) {
     setError(null);
     try {
       const sessionId = await findSessionByCode(code);
-      await joinSession(sessionId, team.name);
+      await teamApi.joinSession(token, team.id, sessionId);
       navigate(`/play/${sessionId}`);
     } catch (err) {
       setError(err instanceof ApiError && err.status === 404 ? t('play.join.codeNotFound') : describeError(err, t, 'play.join.failed'));
@@ -549,6 +567,7 @@ function EditTeamDialog({
   const check = useCallback((name: string) => teamApi.availability(token, name), [token]);
   const availability = useNameAvailability(profile.name, check, team.name);
   const set = (patch: Partial<TeamProfile>) => setProfile((current) => ({ ...current, ...patch }));
+  const pubList = usePubList(token);
 
   async function save() {
     if (busy || availability !== 'available') return;
@@ -583,16 +602,12 @@ function EditTeamDialog({
             onChange={(event) => set({ description: event.target.value })}
           />
         </label>
-        <label className="block space-y-1">
-          <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">{t('team.form.homePub')}</span>
-          <input
-            data-testid="edit-home-pub"
-            maxLength={100}
-            className={fieldClass}
-            value={profile.homePub}
-            onChange={(event) => set({ homePub: event.target.value })}
-          />
-        </label>
+        <PubsPicker
+          pubs={pubList}
+          pubIds={profile.pubIds}
+          primaryPubId={profile.primaryPubId}
+          onChange={(pubIds, primaryPubId) => set({ pubIds, primaryPubId })}
+        />
         <BadgePicker value={profile.badge} onChange={(badge) => set({ badge })} />
         <div className="flex items-center justify-between gap-space-sm">
           <span className="text-label-md text-on-surface">{t('team.form.color')}</span>

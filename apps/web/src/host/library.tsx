@@ -6,6 +6,7 @@ import { useI18n } from '../lib/i18n';
 import { Modal } from '../ui/Modal';
 import { Pending } from '../ui/Pending';
 import { duplicateQuiz, hostApi, type Category, type HostSession, type Quiz } from './api';
+import { PubSelect, useHostPubs } from './pubs';
 import { btn, ConfirmDialog, inputClass, Label, useToast } from './ui';
 
 export interface QuizStats {
@@ -312,6 +313,11 @@ export function StartSessionDialog({
   const { t } = useI18n();
   const navigate = useNavigate();
   const [picked, setPicked] = useState(quiz?.id ?? choices[0]?.id ?? '');
+  const { pubs } = useHostPubs(token);
+  const quizPub = (quiz ?? choices.find((choice) => choice.id === picked))?.pub_id ?? '';
+  // Follows the picked quiz's default pub until the host chooses one explicitly.
+  const [pubChoice, setPubChoice] = useState<string | null>(null);
+  const pubId = pubChoice ?? quizPub;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -320,7 +326,7 @@ export function StartSessionDialog({
     setBusy(true);
     setError(null);
     try {
-      const session = await hostApi.createSession(token, picked);
+      const session = await hostApi.createSession(token, picked, pubId || null);
       navigate(`/host/sessions/${session.id}`);
     } catch (err) {
       setError(describeError(err, t, 'errors.generic'));
@@ -364,12 +370,7 @@ export function StartSessionDialog({
             )}
           </div>
         )}
-        <Pending feature="venues">
-          <div>
-            <Label>{t('host.start.venue')}</Label>
-            <div className="rounded-xl bg-surface-container p-space-sm text-label-md text-on-surface-variant">—</div>
-          </div>
-        </Pending>
+        <PubSelect id="start-session-pub" testId="start-session-pub" pubs={pubs} value={pubId} onChange={setPubChoice} />
         <div className="flex items-center gap-space-sm rounded-xl bg-primary-container/10 p-space-sm text-body-sm text-on-surface-variant">
           <HelpCircle className="h-5 w-5 shrink-0 text-primary" />
           {t('host.start.info')}

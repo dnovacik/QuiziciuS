@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { CirclePlay, Copy, Link2, MonitorPlay, XCircle } from 'lucide-react';
+import { BadgeCheck, CirclePlay, Copy, Link2, MonitorPlay, XCircle } from 'lucide-react';
 import { useI18n } from '../../lib/i18n';
 import { btn, ConfirmDialog, useCopy } from '../ui';
 import { joinUrl } from '../sessions';
@@ -162,7 +162,16 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
                   </span>
                   <span className={`h-2 w-2 rounded-full ${team.isActive ? 'bg-tertiary' : 'bg-outline'}`} />
                 </div>
-                <h4 className="truncate text-label-lg text-on-surface">{team.name}</h4>
+                <h4 className="flex items-center gap-1 truncate text-label-lg text-on-surface">
+                  {team.name}
+                  {team.registeredTeamId && (
+                    <BadgeCheck
+                      className="h-4 w-4 shrink-0 text-secondary"
+                      aria-label={t('host.room.registeredTeam')}
+                      data-testid={`registered-${team.id}`}
+                    />
+                  )}
+                </h4>
                 <div className="flex items-center justify-between pt-1 text-label-sm">
                   <span className={team.isActive ? 'text-tertiary' : 'text-outline'}>
                     {t(team.isActive ? 'host.room.online' : 'host.room.offlineOne')}

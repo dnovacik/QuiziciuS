@@ -8,6 +8,7 @@ const RECORD: TeamRecord = {
   device_token_hash: 'hash-1',
   joined_at: '2026-09-16T00:00:00.000Z',
   is_active: true,
+  registered_team_id: null,
 };
 
 describe('SupabaseTeamsRepository', () => {

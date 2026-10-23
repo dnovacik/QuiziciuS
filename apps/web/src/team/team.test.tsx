@@ -30,9 +30,15 @@ const TEAM: RegisteredTeam = {
   badge: 'brain',
   badge_color: 'amber',
   expected_members: 4,
-  home_pub: 'The Golden Lion',
+  home_pub: null,
+  pubs: [{ id: 'pub1', name: 'The Golden Lion', city: 'Žilina', isPrimary: true }],
   created_at: '2026-10-01T18:00:00Z',
 };
+
+const PUBS = [
+  { id: 'pub1', name: 'The Golden Lion', city: 'Žilina', address: null },
+  { id: 'pub2', name: 'Black Dog', city: 'Bratislava', address: null },
+];
 
 const data = vi.hoisted(() => ({ teams: [] as RegisteredTeam[], players: [] as Player[], taken: [] as string[] }));
 
@@ -65,6 +71,7 @@ beforeEach(() => {
         return { available: !data.taken.includes(name), code: 'X' };
       }
       if (path === '/registered-teams/rt1/players') return data.players;
+      if (path === '/pubs') return PUBS;
       if (path === '/sessions/by-code/A7F3') return { id: 's1' };
       throw new Error(`unexpected GET ${path}`);
     });
@@ -73,7 +80,7 @@ beforeEach(() => {
     .mockImplementation(async (path: string, body: unknown) => {
       if (path === '/registered-teams') return { ...TEAM, name: (body as { name: string }).name };
       if (path === '/registered-teams/rt1/players') return { id: 'p2', name: (body as { name: string }).name, created_at: 'now' };
-      if (path === '/sessions/s1/teams/join') return { teamId: 'session-team', token: 'team-token' };
+      if (path === '/registered-teams/rt1/sessions/s1/join') return { teamId: 'session-team', token: 'team-token' };
       throw new Error(`unexpected POST ${path}`);
     });
   vi.mocked(apiPatch)
@@ -105,6 +112,12 @@ describe('team area', () => {
     fireEvent.click(screen.getByTestId('badge-crown'));
     fireEvent.click(screen.getByTestId('color-green'));
     fireEvent.change(screen.getByTestId('team-motto'), { target: { value: 'Howl louder' } });
+    const pubSelect = screen.getByTestId('team-pub-select');
+    await waitFor(() => expect(pubSelect).toBeEnabled());
+    fireEvent.change(pubSelect, { target: { value: 'pub2' } });
+    fireEvent.change(pubSelect, { target: { value: 'pub1' } });
+    fireEvent.click(screen.getByTestId('team-pub-primary-pub1'));
+    expect(screen.getByTestId('team-preview-pub')).toHaveTextContent('The Golden Lion, Žilina');
     expect(screen.getByTestId('team-preview-name')).toHaveTextContent('Quiz Wolves');
     expect(within(screen.getByTestId('team-preview')).getByTestId('team-emblem')).toHaveAttribute('data-badge', 'crown');
 
@@ -112,7 +125,15 @@ describe('team area', () => {
     await screen.findByTestId('team-created-dialog');
     expect(apiPost).toHaveBeenCalledWith(
       '/registered-teams',
-      { name: 'Quiz Wolves', description: 'Howl louder', badge: 'crown', color: 'green', expectedMembers: 5, homePub: '' },
+      {
+        name: 'Quiz Wolves',
+        description: 'Howl louder',
+        badge: 'crown',
+        color: 'green',
+        expectedMembers: 5,
+        pubIds: ['pub2', 'pub1'],
+        primaryPubId: 'pub1',
+      },
       'captain-jwt',
     );
     fireEvent.click(screen.getByTestId('team-created-continue'));
@@ -135,6 +156,7 @@ describe('team dashboard', () => {
   it('shows the team profile and roster', async () => {
     renderTeam();
     expect(await screen.findByTestId('team-name')).toHaveTextContent('Wise Ducks');
+    expect(screen.getByTestId('team-pub')).toHaveTextContent('The Golden Lion, Žilina');
     expect(await screen.findByText('Jana')).toBeInTheDocument();
     expect(screen.getByTestId('roster-count')).toHaveTextContent('1 / 6');
   });
@@ -163,7 +185,8 @@ describe('team dashboard', () => {
     fireEvent.submit(screen.getByTestId('team-join-form'));
 
     await screen.findByText('play screen');
-    expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', { name: 'Wise Ducks' });
+    expect(apiPost).toHaveBeenCalledWith('/registered-teams/rt1/sessions/s1/join', {}, 'captain-jwt');
+    expect(JSON.parse(localStorage.getItem('quizicius:team:s1')!)).toMatchObject({ teamId: 'session-team', token: 'team-token' });
   });
 
   it('edits the team profile, keeping its own name allowed', async () => {
@@ -171,15 +194,44 @@ describe('team dashboard', () => {
     fireEvent.click(await screen.findByTestId('team-edit-open'));
     const dialog = screen.getByTestId('edit-team-dialog');
     await waitFor(() => expect(within(dialog).getByTestId('team-name-status')).toHaveAttribute('data-status', 'available'));
-    fireEvent.change(within(dialog).getByTestId('edit-home-pub'), { target: { value: 'Black Dog' } });
+    await waitFor(() => expect(within(dialog).getByTestId('team-pub-select')).toBeEnabled());
+    fireEvent.change(within(dialog).getByTestId('team-pub-select'), { target: { value: 'pub2' } });
     fireEvent.click(within(dialog).getByTestId('edit-save'));
 
     await waitFor(() =>
       expect(apiPatch).toHaveBeenCalledWith(
         '/registered-teams/rt1',
-        { name: 'Wise Ducks', description: 'We come, we win', badge: 'brain', color: 'amber', expectedMembers: 4, homePub: 'Black Dog' },
+        {
+          name: 'Wise Ducks',
+          description: 'We come, we win',
+          badge: 'brain',
+          color: 'amber',
+          expectedMembers: 4,
+          pubIds: ['pub1', 'pub2'],
+          primaryPubId: 'pub1',
+        },
         'captain-jwt',
       ),
     );
+  });
+});
+
+describe('team pubs picker', () => {
+  beforeEach(() => {
+    data.teams = [TEAM];
+  });
+
+  it('moves the home pub to the next pub when the home pub is removed', async () => {
+    renderTeam();
+    fireEvent.click(await screen.findByTestId('team-edit-open'));
+    const dialog = screen.getByTestId('edit-team-dialog');
+    await waitFor(() => expect(within(dialog).getByTestId('team-pub-select')).toBeEnabled());
+    fireEvent.change(within(dialog).getByTestId('team-pub-select'), { target: { value: 'pub2' } });
+    fireEvent.click(within(dialog).getByTestId('team-pub-remove-pub1'));
+
+    const chips = within(dialog).getAllByTestId('team-pub-chip');
+    expect(chips).toHaveLength(1);
+    expect(chips[0]).toHaveAttribute('data-primary', 'true');
+    expect(chips[0]).toHaveTextContent('Black Dog, Bratislava');
   });
 });

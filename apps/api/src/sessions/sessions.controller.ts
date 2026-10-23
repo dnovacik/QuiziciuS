@@ -3,8 +3,10 @@ import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator'
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { QuizzesRepository } from '../data/quizzes.repository';
 import { SessionsRepository } from '../data/sessions.repository';
+import { PubsService } from '../pubs/pubs.service';
 import { QuizEngineService } from '../quiz-engine/quiz-engine.service';
 import { AddPaperScoreDto } from './dto/add-paper-score.dto';
+import { CreateSessionDto } from './dto/create-session.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
 import { TransitionSessionDto } from './dto/transition-session.dto';
 
@@ -14,15 +16,18 @@ export class SessionsController {
     private readonly quizEngine: QuizEngineService,
     private readonly quizzes: QuizzesRepository,
     private readonly sessions: SessionsRepository,
+    private readonly pubs: PubsService,
   ) {}
 
   @Post('quizzes/:quizId/sessions')
   @UseGuards(SupabaseAuthGuard)
-  async create(@Param('quizId') quizId: string, @CurrentHost() host: CurrentHostPayload) {
+  async create(@Param('quizId') quizId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: CreateSessionDto = {}) {
     const quiz = await this.quizzes.findById(quizId);
     if (!quiz) throw new NotFoundException('Quiz not found');
     if (quiz.host_id !== host.id) throw new ForbiddenException('Not your quiz');
-    return this.quizEngine.createSession(quizId, host.id);
+    const pubId = dto.pubId === undefined ? quiz.pub_id : dto.pubId;
+    if (pubId) await this.pubs.requirePub(pubId);
+    return this.quizEngine.createSession(quizId, host.id, pubId);
   }
 
   @Get('host/sessions')
@@ -57,7 +62,8 @@ export class SessionsController {
     if (!session) throw new NotFoundException('Session not found');
     const quiz = await this.quizzes.findById(session.quiz_id);
     if (!quiz) throw new NotFoundException('Quiz not found');
-    return { title: quiz.title, quizId: quiz.id };
+    const pub = session.pub_id ? await this.pubs.requirePub(session.pub_id).catch(() => null) : null;
+    return { title: quiz.title, quizId: quiz.id, pub: pub && { id: pub.id, name: pub.name, city: pub.city } };
   }
 
   @Get('sessions/:sessionId/state')

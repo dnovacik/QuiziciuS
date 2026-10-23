@@ -12,6 +12,7 @@ const SESSION: SessionRecord = {
   quiz_id: 'quiz1',
   host_id: 'host1',
   join_code: 'AB12',
+  pub_id: null,
   status: 'LOBBY',
   current_question_id: null,
   question_ends_at: null,
@@ -27,6 +28,7 @@ const TEAM: TeamRecord = {
   device_token_hash: null,
   joined_at: '2026-09-16T00:00:00.000Z',
   is_active: true,
+  registered_team_id: null,
 };
 
 function buildHarness() {
@@ -34,6 +36,7 @@ function buildHarness() {
   const teams: TeamsRepository = {
     findById: jest.fn(),
     findBySessionAndName: jest.fn(),
+    findBySessionAndRegisteredTeam: jest.fn().mockResolvedValue(null),
     upsertJoin: jest.fn().mockResolvedValue(TEAM),
     setDeviceTokenHash: jest.fn().mockResolvedValue(TEAM),
     listBySession: jest.fn(),
@@ -50,7 +53,7 @@ describe('TeamsService.join', () => {
 
     const result = await service.join('s1', 'The Quizzards');
 
-    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards');
+    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', null);
     expect(result.teamId).toBe('t1');
     expect(result.name).toBe('The Quizzards');
     expect(teamTokens.verify(result.token)).toMatchObject({ sessionId: 's1', teamId: 't1' });
@@ -82,5 +85,32 @@ describe('TeamsService.join', () => {
     (sessions.findById as jest.Mock).mockResolvedValue({ ...SESSION, status: 'FINISHED' });
 
     await expect(service.join('s1', 'Team')).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
+describe('TeamsService.join as a registered team', () => {
+  it('links the session team to the registered team', async () => {
+    const { service, teams } = buildHarness();
+
+    await service.join('s1', 'The Quizzards', 'rt1');
+
+    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', 'rt1');
+  });
+
+  it('keeps the existing session team when the registered team was renamed', async () => {
+    const { service, teams } = buildHarness();
+    jest.mocked(teams.findBySessionAndRegisteredTeam).mockResolvedValue({ ...TEAM, registered_team_id: 'rt1' });
+
+    await service.join('s1', 'Renamed Quizzards', 'rt1');
+
+    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', 'rt1');
+  });
+
+  it("refuses a one-off team that takes a registered team's name in the session", async () => {
+    const { service, teams } = buildHarness();
+    jest.mocked(teams.findBySessionAndName).mockResolvedValue({ ...TEAM, registered_team_id: 'rt1' });
+
+    await expect(service.join('s1', 'The Quizzards')).rejects.toMatchObject({ response: { code: 'TEAM_NAME_RESERVED' } });
+    expect(teams.upsertJoin).not.toHaveBeenCalled();
   });
 });
