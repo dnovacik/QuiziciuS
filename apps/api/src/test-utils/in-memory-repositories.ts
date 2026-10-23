@@ -1,3 +1,4 @@
+import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { AccountRole } from '@quizicius/shared-types';
 import { AnswerGradePatch, AnswerRecord, AnswersRepository } from '../data/answers.repository';
@@ -8,6 +9,14 @@ import { ScoreAdjustmentRecord, ScoreAdjustmentsRepository } from '../data/score
 import { SessionRecord, SessionsRepository, SessionStatusPatch } from '../data/sessions.repository';
 import { TeamRecord, TeamsRepository } from '../data/teams.repository';
 import { ProfileRecord, ProfilesRepository } from '../data/profiles.repository';
+import {
+  MAX_ROSTER,
+  NewRegisteredTeam,
+  RegisteredTeamPatch,
+  RegisteredTeamPlayerRecord,
+  RegisteredTeamRecord,
+  RegisteredTeamsRepository,
+} from '../data/registered-teams.repository';
 import { NewPub, PubRecord, PubsRepository, pubKey, TeamPubRecord } from '../data/pubs.repository';
 
 export class InMemorySessionsRepository extends SessionsRepository {
@@ -371,5 +380,96 @@ export class InMemoryProfilesRepository extends ProfilesRepository {
     const updated = { ...this.rows.get(id)!, ...patch };
     this.rows.set(id, updated);
     return updated;
+  }
+}
+
+/** Mirrors the database rules: case-insensitive unique team names and player names, roster limit. */
+export class InMemoryRegisteredTeamsRepository extends RegisteredTeamsRepository {
+  readonly rows = new Map<string, RegisteredTeamRecord>();
+  readonly players = new Map<string, (RegisteredTeamPlayerRecord & { team_id: string })[]>();
+
+  private assertNameFree(name: string, exceptId?: string): void {
+    const normalized = name.trim().toLowerCase();
+    if ([...this.rows.values()].some((row) => row.normalized_name === normalized && row.id !== exceptId)) {
+      throw new ConflictException({ code: 'NAME_TAKEN' });
+    }
+  }
+
+  private assertPlayerFree(teamId: string, name: string, exceptId?: string): void {
+    const normalized = name.trim().toLowerCase();
+    if ((this.players.get(teamId) ?? []).some((p) => p.name.toLowerCase() === normalized && p.id !== exceptId)) {
+      throw new ConflictException({ code: 'PLAYER_EXISTS' });
+    }
+  }
+
+  async listByCaptain(captainId: string): Promise<RegisteredTeamRecord[]> {
+    return [...this.rows.values()].filter((row) => row.captain_id === captainId).reverse();
+  }
+
+  async findById(id: string): Promise<RegisteredTeamRecord | null> {
+    return this.rows.get(id) ?? null;
+  }
+
+  async isNameTaken(name: string): Promise<boolean> {
+    const normalized = name.trim().toLowerCase();
+    return [...this.rows.values()].some((row) => row.normalized_name === normalized);
+  }
+
+  async create(team: NewRegisteredTeam): Promise<RegisteredTeamRecord> {
+    this.assertNameFree(team.name);
+    const record: RegisteredTeamRecord = {
+      id: randomUUID(),
+      captain_id: team.captainId,
+      name: team.name.trim(),
+      normalized_name: team.name.trim().toLowerCase(),
+      description: team.description.trim() || null,
+      badge: team.badge,
+      badge_color: team.color,
+      expected_members: team.expectedMembers,
+      home_pub: null,
+      created_at: new Date().toISOString(),
+    };
+    this.rows.set(record.id, record);
+    return record;
+  }
+
+  async update(id: string, patch: RegisteredTeamPatch): Promise<RegisteredTeamRecord> {
+    if (patch.name !== undefined) this.assertNameFree(patch.name, id);
+    const existing = this.rows.get(id)!;
+    const updated = { ...existing, ...patch };
+    updated.normalized_name = updated.name.trim().toLowerCase();
+    this.rows.set(id, updated);
+    return updated;
+  }
+
+  async listPlayers(teamId: string): Promise<RegisteredTeamPlayerRecord[]> {
+    return (this.players.get(teamId) ?? []).map(({ id, name, created_at }) => ({ id, name, created_at }));
+  }
+
+  async addPlayer(teamId: string, captainId: string, name: string): Promise<RegisteredTeamPlayerRecord> {
+    if (this.rows.get(teamId)?.captain_id !== captainId) throw new ForbiddenException({ code: 'NOT_CAPTAIN' });
+    const trimmed = name.trim();
+    if (trimmed.length < 1 || trimmed.length > 60) throw new BadRequestException({ code: 'INVALID_PLAYER' });
+    const roster = this.players.get(teamId) ?? [];
+    if (roster.length >= MAX_ROSTER) throw new BadRequestException({ code: 'ROSTER_FULL' });
+    this.assertPlayerFree(teamId, trimmed);
+    const player = { id: randomUUID(), team_id: teamId, name: trimmed, created_at: new Date().toISOString() };
+    this.players.set(teamId, [...roster, player]);
+    return { id: player.id, name: player.name, created_at: player.created_at };
+  }
+
+  async renamePlayer(teamId: string, playerId: string, name: string): Promise<RegisteredTeamPlayerRecord | null> {
+    const player = (this.players.get(teamId) ?? []).find((p) => p.id === playerId);
+    if (!player) return null;
+    this.assertPlayerFree(teamId, name, playerId);
+    player.name = name;
+    return { id: player.id, name: player.name, created_at: player.created_at };
+  }
+
+  async removePlayer(teamId: string, playerId: string): Promise<boolean> {
+    const roster = this.players.get(teamId) ?? [];
+    const remaining = roster.filter((p) => p.id !== playerId);
+    this.players.set(teamId, remaining);
+    return remaining.length !== roster.length;
   }
 }
