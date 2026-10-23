@@ -179,7 +179,7 @@ export function HostShell({ token, email, account, children }: { token: string; 
             <div className="hidden items-center gap-space-sm sm:flex">
               <div className="flex flex-col text-right">
                 <span className="max-w-[200px] truncate text-label-lg text-on-surface">{email}</span>
-                <span className="text-body-sm text-on-surface-variant">{t('host.header.role')}</span>
+                <span className="text-body-sm text-on-surface-variant">{t(`account.role.${account.role}`)}</span>
               </div>
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
                 <UserRound className="h-[18px] w-[18px] text-on-primary" />

@@ -153,7 +153,7 @@ function HostsSection({ token }: { token: string }) {
                   <td className="p-space-sm">
                     <div className="flex flex-col">
                       <span className="text-label-md">{host.displayName}</span>
-                      <span className="text-on-surface-variant">{host.email}</span>
+                      {host.displayName !== host.email && <span className="text-on-surface-variant">{host.email}</span>}
                       <span className="mt-1 flex flex-wrap gap-1">
                         <span className={`rounded px-1.5 py-0.5 text-label-sm ${ROLE_STYLE[host.role]}`}>
                           {t(`account.role.${host.role}`)}
