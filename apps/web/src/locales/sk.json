@@ -847,5 +847,11 @@
   "errors.NOT_INVITED": "Na túto pozvánku nemôžete odpovedať.",
   "errors.REGISTRATION_CLOSED": "Kvíz už začal — registrácia do ligy je uzavretá.",
   "errors.ALREADY_IN_SESSION": "Váš tím už v tomto kvíze hrá.",
-  "errors.INVALID_TEAM_TOKEN": "Miesto v kvíze sa nepodarilo overiť."
+  "errors.INVALID_TEAM_TOKEN": "Miesto v kvíze sa nepodarilo overiť.",
+  "leagues.start.toggle": "Táto noc sa počíta do ligy",
+  "leagues.start.night": "večer",
+  "leagues.lobby.league": "Ligový večer",
+  "leagues.lobby.unregistered": "Bez registrácie (mimo ligy)",
+  "leagues.lobby.hint": "Povedzte im, nech si tím zaregistrujú — po spustení prvej otázky to už nepôjde.",
+  "leagues.lobby.badge": "neregistrovaný"
 }

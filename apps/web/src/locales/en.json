@@ -847,5 +847,11 @@
   "errors.NOT_INVITED": "You cannot answer this invitation.",
   "errors.REGISTRATION_CLOSED": "The quiz has started — league registration is closed.",
   "errors.ALREADY_IN_SESSION": "Your team already plays in this quiz.",
-  "errors.INVALID_TEAM_TOKEN": "Your place in the quiz could not be verified."
+  "errors.INVALID_TEAM_TOKEN": "Your place in the quiz could not be verified.",
+  "leagues.start.toggle": "This night counts for a league",
+  "leagues.start.night": "night",
+  "leagues.lobby.league": "League night",
+  "leagues.lobby.unregistered": "Not registered (outside the league)",
+  "leagues.lobby.hint": "Tell them to register their team — once the first question starts it is too late.",
+  "leagues.lobby.badge": "not registered"
 }

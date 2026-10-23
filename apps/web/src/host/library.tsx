@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { HostLeagueDto } from '@quizicius/shared-types';
 import { ArrowUpDown, Copy, HelpCircle, Pencil, Play, Plus, Radio, Search, Timer, Trash2, TriangleAlert, Trophy } from 'lucide-react';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { Modal } from '../ui/Modal';
 import { Pending } from '../ui/Pending';
 import { duplicateQuiz, hostApi, type Category, type HostSession, type Quiz } from './api';
+import { leaguesApi } from './leagues/api';
 import { PubSelect, useHostPubs } from './pubs';
 import { btn, ConfirmDialog, inputClass, Label, useToast } from './ui';
 
@@ -320,13 +322,24 @@ export function StartSessionDialog({
   const pubId = pubChoice ?? quizPub;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // League nights: only leagues this host runs, still open, at the chosen pub.
+  const [leagues, setLeagues] = useState<HostLeagueDto[]>([]);
+  const [leagueOn, setLeagueOn] = useState(false);
+  const [leagueChoice, setLeagueChoice] = useState('');
+  useEffect(() => {
+    leaguesApi.list(token).then(setLeagues, () => setLeagues([]));
+  }, [token]);
+  const pubLeagues = leagues.filter(
+    (league) => league.myStatus === 'ACCEPTED' && league.phase !== 'CLOSED' && league.pubs.some((pub) => pub.id === pubId),
+  );
+  const leagueId = leagueOn ? ((pubLeagues.find((league) => league.id === leagueChoice) ?? pubLeagues[0])?.id ?? null) : null;
 
   async function launch() {
     if (!picked) return;
     setBusy(true);
     setError(null);
     try {
-      const session = await hostApi.createSession(token, picked, pubId || null);
+      const session = await hostApi.createSession(token, picked, pubId || null, leagueId);
       navigate(`/host/sessions/${session.id}`);
     } catch (err) {
       setError(describeError(err, t, 'errors.generic'));
@@ -371,6 +384,35 @@ export function StartSessionDialog({
           </div>
         )}
         <PubSelect id="start-session-pub" testId="start-session-pub" pubs={pubs} value={pubId} onChange={setPubChoice} />
+        {pubLeagues.length > 0 && (
+          <div className="flex flex-col gap-space-xs rounded-xl bg-secondary-container/10 p-space-sm">
+            <label className="flex items-center gap-space-xs text-label-md text-on-surface">
+              <input
+                type="checkbox"
+                checked={leagueOn}
+                onChange={(event) => setLeagueOn(event.target.checked)}
+                data-testid="start-session-league-toggle"
+              />
+              <Trophy className="h-4 w-4 text-secondary" />
+              {t('leagues.start.toggle')}
+            </label>
+            {leagueOn && (
+              <select
+                aria-label={t('leagues.start.toggle')}
+                data-testid="start-session-league"
+                className={inputClass}
+                value={leagueId ?? ''}
+                onChange={(event) => setLeagueChoice(event.target.value)}
+              >
+                {pubLeagues.map((league) => (
+                  <option key={league.id} value={league.id}>
+                    {league.name} ({league.nightsPlayed + 1}. {t('leagues.start.night')})
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
         <div className="flex items-center gap-space-sm rounded-xl bg-primary-container/10 p-space-sm text-body-sm text-on-surface-variant">
           <HelpCircle className="h-5 w-5 shrink-0 text-primary" />
           {t('host.start.info')}
