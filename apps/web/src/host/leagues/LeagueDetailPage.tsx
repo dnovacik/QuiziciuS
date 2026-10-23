@@ -20,6 +20,9 @@ export function LeagueDetailPage({ token }: { token: string }) {
   const [closing, setClosing] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // Another league (e.g. the Super League just created): never show the previous one meanwhile.
+  useEffect(() => setLeague(null), [leagueId]);
+
   const load = useCallback(() => {
     leaguesApi
       .detail(token, leagueId)

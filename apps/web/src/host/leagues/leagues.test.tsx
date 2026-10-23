@@ -195,3 +195,16 @@ describe('league detail', () => {
     await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/leagues/l1/super-league', {}, 'jwt'));
   });
 });
+
+describe('opening the Super League', () => {
+  it('does not keep showing the closed league while the new one loads', async () => {
+    data.detail = detail({ phase: 'CLOSED', qualified: [standing(1, 'Tim bez pala', 34)] });
+    renderAt('/host/leagues/l1');
+    fireEvent.click(await screen.findByTestId('league-create-super'));
+    // The Super League's own page never finishes loading in this test.
+    vi.mocked(apiGet).mockImplementation(async (path: string) => (path === '/leagues/new' ? new Promise(() => {}) : ME));
+
+    await waitFor(() => expect(screen.queryByTestId('league-qualified')).not.toBeInTheDocument());
+    expect(screen.queryByTestId('league-create-super')).not.toBeInTheDocument();
+  });
+});
