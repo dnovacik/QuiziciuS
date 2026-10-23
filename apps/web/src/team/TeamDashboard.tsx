@@ -15,7 +15,6 @@ import {
   Share2,
   SlidersHorizontal,
   Star,
-  Trophy,
   UserPlus,
   Users,
   X,
@@ -27,6 +26,7 @@ import { pubLabel } from '../lib/pubs';
 import { findSessionByCode, normalizeJoinCode } from '../lib/team-seat';
 import { Modal } from '../ui/Modal';
 import { Pending } from '../ui/Pending';
+import { TeamLeagues } from './TeamLeagues';
 import { MAX_PLAYERS, profileOf, teamApi, type Player, type RegisteredTeam, type TeamProfile } from './api';
 import { NameField } from './OnboardingPage';
 import { BadgePicker, CapacityPicker, ColorPicker, PubsPicker, useNameAvailability, usePubList } from './profile-fields';
@@ -204,15 +204,7 @@ export function TeamDashboard({
         </section>
 
         <div className="flex flex-col gap-space-lg lg:col-span-7">
-          <Pending feature="leagues">
-            <section className={card}>
-              <span className="flex items-center gap-1 text-label-sm uppercase tracking-wider text-secondary">
-                <Trophy className="h-4 w-4" />
-                {t('team.dashboard.league')}
-              </span>
-              <p className="mt-space-xs text-body-sm text-on-surface-variant">{t('team.dashboard.leagueText')}</p>
-            </section>
-          </Pending>
+          <TeamLeagues token={token} teamId={team.id} card={card} />
           <Pending feature="scheduled-sessions">
             <section className={card}>
               <span className="flex items-center gap-1 text-label-sm uppercase tracking-wider text-secondary">

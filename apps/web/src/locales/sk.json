@@ -575,8 +575,6 @@
   "team.dashboard.noMotto": "Bez motta — doplňte ho v úprave tímu.",
   "team.dashboard.edit": "Upraviť tím",
   "team.dashboard.share": "Zdieľať odkaz",
-  "team.dashboard.league": "Ligová tabuľka",
-  "team.dashboard.leagueText": "Umiestnenie tímu v lokálnej lige a postup do play-off.",
   "team.dashboard.upcoming": "Najbližší naplánovaný kvíz",
   "team.dashboard.upcomingText": "Termín a miesto ďalšieho kvízového večera s potvrdením účasti tímu.",
   "team.join.title": "Pripojiť tím k aktuálnemu kvízu",
@@ -853,5 +851,9 @@
   "leagues.lobby.league": "Ligový večer",
   "leagues.lobby.unregistered": "Bez registrácie (mimo ligy)",
   "leagues.lobby.hint": "Povedzte im, nech si tím zaregistrujú — po spustení prvej otázky to už nepôjde.",
-  "leagues.lobby.badge": "neregistrovaný"
+  "leagues.lobby.badge": "neregistrovaný",
+  "team.leagues.title": "Ligy",
+  "team.leagues.invite": "Pozvánka do ligy",
+  "team.leagues.join": "Pridať sa",
+  "team.leagues.empty": "Zatiaľ nehráte v žiadnej lige. Pozvánky od moderátorov sa objavia tu."
 }

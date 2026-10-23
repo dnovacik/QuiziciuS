@@ -575,8 +575,6 @@
   "team.dashboard.noMotto": "No motto yet — add one when editing the team.",
   "team.dashboard.edit": "Edit team",
   "team.dashboard.share": "Share link",
-  "team.dashboard.league": "League table",
-  "team.dashboard.leagueText": "The team's position in the local league and play-off qualification.",
   "team.dashboard.upcoming": "Next scheduled quiz",
   "team.dashboard.upcomingText": "Date and venue of the next quiz night with the team's RSVP.",
   "team.join.title": "Join the current quiz",
@@ -853,5 +851,9 @@
   "leagues.lobby.league": "League night",
   "leagues.lobby.unregistered": "Not registered (outside the league)",
   "leagues.lobby.hint": "Tell them to register their team — once the first question starts it is too late.",
-  "leagues.lobby.badge": "not registered"
+  "leagues.lobby.badge": "not registered",
+  "team.leagues.title": "Leagues",
+  "team.leagues.invite": "League invitation",
+  "team.leagues.join": "Join",
+  "team.leagues.empty": "You do not play in a league yet. Invitations from hosts appear here."
 }

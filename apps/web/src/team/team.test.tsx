@@ -1,3 +1,4 @@
+import type { TeamLeagueDto } from '@quizicius/shared-types';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -40,7 +41,12 @@ const PUBS = [
   { id: 'pub2', name: 'Black Dog', city: 'Bratislava', address: null },
 ];
 
-const data = vi.hoisted(() => ({ teams: [] as RegisteredTeam[], players: [] as Player[], taken: [] as string[] }));
+const data = vi.hoisted(() => ({
+  teams: [] as RegisteredTeam[],
+  players: [] as Player[],
+  taken: [] as string[],
+  leagues: [] as TeamLeagueDto[],
+}));
 
 function renderTeam() {
   return render(
@@ -62,6 +68,7 @@ beforeEach(() => {
   data.teams = [];
   data.players = [{ id: 'p1', name: 'Jana', created_at: '2026-10-02T18:00:00Z' }];
   data.taken = ['pub mozarts'];
+  data.leagues = [];
   vi.mocked(apiGet)
     .mockReset()
     .mockImplementation(async (path: string) => {
@@ -71,6 +78,7 @@ beforeEach(() => {
         return { available: !data.taken.includes(name), code: 'X' };
       }
       if (path === '/registered-teams/rt1/players') return data.players;
+      if (path === '/registered-teams/rt1/leagues') return data.leagues;
       if (path === '/pubs') return PUBS;
       if (path === '/sessions/by-code/A7F3') return { id: 's1' };
       throw new Error(`unexpected GET ${path}`);
@@ -81,6 +89,7 @@ beforeEach(() => {
       if (path === '/registered-teams') return { ...TEAM, name: (body as { name: string }).name };
       if (path === '/registered-teams/rt1/players') return { id: 'p2', name: (body as { name: string }).name, created_at: 'now' };
       if (path === '/registered-teams/rt1/sessions/s1/join') return { teamId: 'session-team', token: 'team-token' };
+      if (path === '/registered-teams/rt1/leagues/l1/join') return { ...data.leagues[0], status: 'JOINED' };
       throw new Error(`unexpected POST ${path}`);
     });
   vi.mocked(apiPatch)
@@ -233,5 +242,66 @@ describe('team pubs picker', () => {
     expect(chips).toHaveLength(1);
     expect(chips[0]).toHaveAttribute('data-primary', 'true');
     expect(chips[0]).toHaveTextContent('Black Dog, Bratislava');
+  });
+});
+
+describe('team leagues', () => {
+  function teamLeague(status: TeamLeagueDto['status']): TeamLeagueDto {
+    return {
+      status,
+      league: {
+        id: 'l1',
+        name: 'Zimná liga Žilina',
+        kind: 'LEAGUE',
+        phase: 'RUNNING',
+        startsOn: '2027-01-12',
+        endsOn: '2027-03-30',
+        message: 'Finále v Hoffmane',
+        ownerHostId: 'h1',
+        ownerName: 'Daniel N.',
+        pubs: [{ id: 'pub1', name: 'The Golden Lion', city: 'Žilina', hostId: 'h1' }],
+        nightsPlayed: 2,
+        joinedTeams: 6,
+        parentLeagueId: null,
+      },
+      standings: [{ rank: 1, registeredTeamId: 'rt1', teamName: 'Wise Ducks', pubId: 'pub1', points: 18, nights: 2, placements: [1, 2] }],
+    };
+  }
+
+  it('shows an invitation and joins the league from it', async () => {
+    data.teams = [TEAM];
+    data.leagues = [teamLeague('INVITED')];
+    renderTeam();
+
+    const invite = await screen.findByTestId('team-league-invite-l1');
+    expect(invite).toHaveTextContent('Zimná liga Žilina');
+    expect(invite).toHaveTextContent('The Golden Lion');
+    expect(invite).toHaveTextContent('12. 1. 2027');
+    expect(invite).toHaveTextContent('Finále v Hoffmane');
+    fireEvent.click(screen.getByTestId('team-league-join-l1'));
+
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/registered-teams/rt1/leagues/l1/join', {}, 'captain-jwt'));
+    expect(await screen.findByTestId('team-league-l1')).toHaveTextContent('18');
+    expect(screen.queryByTestId('team-league-invite-l1')).not.toBeInTheDocument();
+  });
+
+  it('shows the standings of a joined league with the own team highlighted', async () => {
+    data.teams = [TEAM];
+    data.leagues = [teamLeague('JOINED')];
+    renderTeam();
+
+    const block = await screen.findByTestId('team-league-l1');
+    expect(within(block).getByTestId('standing-rt1')).toHaveClass('bg-primary-container/20');
+  });
+
+  it('hides a declined league', async () => {
+    data.teams = [TEAM];
+    data.leagues = [teamLeague('DECLINED')];
+    renderTeam();
+
+    await screen.findByTestId('team-dashboard');
+    await waitFor(() => expect(apiGet).toHaveBeenCalledWith('/registered-teams/rt1/leagues', 'captain-jwt'));
+    expect(screen.queryByTestId('team-league-l1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('team-league-invite-l1')).not.toBeInTheDocument();
   });
 });
