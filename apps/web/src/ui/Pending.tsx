@@ -23,6 +23,9 @@ export const PENDING_FEATURES = {
   'numeric-unit': 'Unit suffix for numeric questions (years, km, %).',
   'timer-controls': 'Pausing, extending or stopping the answer timer early, and a host pause for everyone.',
   'session-archive': 'Archiving a finished session into league tables.',
+  'pub-leaderboard': 'Pub / league leaderboard for registered teams.',
+  'team-invite-link': 'Invite link or e-mail for teammates to join a registered team.',
+  'team-access-pin': 'Team access PIN so teammates can play as the registered team.',
 } as const;
 
 export type PendingFeature = keyof typeof PENDING_FEATURES;
