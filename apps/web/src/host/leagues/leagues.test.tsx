@@ -129,6 +129,8 @@ describe('host leagues page', () => {
     const invite = await screen.findByTestId('league-invite-inv');
     expect(invite).toHaveTextContent('Peter K.');
     expect(invite).toHaveTextContent('Finále v Hoffmane');
+    // Accepting needs at least one of my pubs, which load separately.
+    expect(await within(invite).findByLabelText('KC Hoffman, Žilina')).toBeChecked();
     fireEvent.click(within(invite).getByTestId('league-accept-inv'));
 
     await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/leagues/inv/hosts/me/accept', { pubIds: [HOFFMAN.id] }, 'jwt'));
