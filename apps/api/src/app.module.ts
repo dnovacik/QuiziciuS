@@ -6,6 +6,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { validateEnv } from './config/env.validation';
 import { DataModule } from './data/data.module';
 import { InfractionsModule } from './infractions/infractions.module';
+import { LeaguesModule } from './leagues/leagues.module';
 import { PubsModule } from './pubs/pubs.module';
 import { QuestionsModule } from './questions/questions.module';
 import { QuizEngineModule } from './quiz-engine/quiz-engine.module';
@@ -33,6 +34,7 @@ import { TeamsModule } from './teams/teams.module';
     PubsModule,
     RegisteredTeamsModule,
     AccountsModule,
+    LeaguesModule,
   ],
 })
 export class AppModule {}
