@@ -1,17 +1,18 @@
-import { IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
 import { QUESTION_TYPES, QuestionType } from '@quizicius/shared-types';
 
 export class CreateQuestionDto {
   @IsIn(QUESTION_TYPES)
   type!: QuestionType;
 
+  /** A MediaRef, checked and normalised by normalizeMediaRef. */
   @IsOptional()
-  @IsIn(['image', 'video'])
-  mediaType?: 'image' | 'video' | null;
+  @IsObject()
+  media?: Record<string, unknown> | null;
 
   @IsOptional()
-  @IsString()
-  mediaPath?: string | null;
+  @IsObject()
+  revealMedia?: Record<string, unknown> | null;
 
   @IsString()
   prompt!: string;

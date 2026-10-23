@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
-export type BroadcastEvent = 'STATE_CHANGE' | 'SCORE_UPDATE';
+export type BroadcastEvent = 'STATE_CHANGE' | 'SCORE_UPDATE' | 'MEDIA_CONTROL';
 
 type SendResult = 'ok' | 'error' | 'timed out';
 

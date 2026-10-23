@@ -155,3 +155,27 @@ export interface InvitableHostDto {
   name: string;
   pubs: { id: string; name: string; city: string }[];
 }
+
+export type MediaKind = 'image' | 'video' | 'audio' | 'youtube';
+export type MediaSlot = 'question' | 'reveal';
+export type MediaAction = 'play' | 'pause' | 'replay';
+export type MediaPlaybackState = 'playing' | 'paused' | 'ended' | 'error' | 'blocked';
+
+/** A question's media as stored: an upload (`path`) or a link (`url`), with an optional part to play. */
+export interface MediaRefDto {
+  kind: MediaKind;
+  /** YouTube is always a link. */
+  source: 'upload' | 'link';
+  path?: string;
+  url?: string;
+  startSeconds?: number;
+  durationSeconds?: number;
+}
+
+/** Media ready to show during a night: uploads already have a (signed) URL. */
+export interface ResolvedMediaDto {
+  kind: MediaKind;
+  url: string;
+  startSeconds: number | null;
+  durationSeconds: number | null;
+}
