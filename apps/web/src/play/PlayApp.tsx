@@ -1,68 +1,69 @@
-import { I18nProvider } from '../lib/i18n';
-import { useNavigate, useParams } from 'react-router-dom';
 import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { loadSeat, type TeamSeat } from '../lib/team-seat';
+import { useQuizTitle } from '../lib/use-quiz-title';
 import { useSessionState } from '../lib/use-session-state';
+import { JoinScreen } from './JoinScreen';
+import { QuestionScreen } from './QuestionScreen';
+import { ResultsScreen, RevealScreen } from './ResultScreens';
+import { useSubmittedAnswers } from './submitted-answers';
 import { useQuizSecurity } from './use-quiz-security';
-import { StitchJoinScreen, JoinResult } from './StitchJoinScreen';
-import { StitchQuestionScreen } from './StitchQuestionScreen';
-
-const STORAGE_PREFIX = 'quizicius:team:';
-
-function loadStoredJoin(sessionId: string | undefined): JoinResult | null {
-  if (!sessionId) return null;
-  try {
-    const raw = localStorage.getItem(`${STORAGE_PREFIX}${sessionId}`);
-    return raw ? (JSON.parse(raw) as JoinResult) : null;
-  } catch {
-    return null;
-  }
-}
+import { LobbyScreen, LockInScreen, PauseScreen } from './WaitingScreens';
 
 export default function PlayApp() {
   const { sessionId } = useParams<{ sessionId?: string }>();
+  const [seat, setSeat] = useState<TeamSeat | null>(() => loadSeat(sessionId));
+
+  return (
+    <div data-testid="play-app">
+      {seat ? <Game key={seat.sessionId} seat={seat} /> : <JoinScreen sessionId={sessionId} onJoined={setSeat} />}
+    </div>
+  );
+}
+
+function Game({ seat }: { seat: TeamSeat }) {
   const navigate = useNavigate();
-  const [joined, setJoined] = useState<JoinResult | null>(() => loadStoredJoin(sessionId));
+  const { state, error } = useSessionState(seat.sessionId);
+  const title = useQuizTitle(seat.sessionId);
+  const { answers, record } = useSubmittedAnswers(seat.sessionId);
+  const { requestFullscreenNow } = useQuizSecurity(state?.status ?? 'LOBBY', seat.token);
 
-  const { state } = useSessionState(joined?.sessionId);
-  const { requestFullscreenNow } = useQuizSecurity(state?.status ?? 'LOBBY', joined?.token ?? null);
-
-  function handleJoined(result: JoinResult): void {
-    try {
-      localStorage.setItem(`${STORAGE_PREFIX}${result.sessionId}`, JSON.stringify(result));
-    } catch {
-      // Best-effort persistence — gameplay still works for this tab even if storage is blocked.
-    }
-    setJoined(result);
-  }
-
-  if (!joined) {
+  if (!state) {
     return (
-      <div data-testid="play-app">
-        <I18nProvider><StitchJoinScreen initialSessionId={sessionId} onJoined={handleJoined} /></I18nProvider>
+      <div className="flex min-h-[100dvh] items-center justify-center bg-surface-container-lowest p-6 text-center text-on-surface-variant" aria-busy={!error}>
+        {error ?? <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />}
       </div>
     );
   }
 
-  if (!state) {
-    return <div data-testid="play-app">Loading…</div>;
+  const question = state.currentQuestion;
+  switch (state.status) {
+    case 'LOBBY':
+      return <LobbyScreen state={state} teamId={seat.teamId} title={title} />;
+    case 'LOCK_IN_ROUND':
+      return <LockInScreen state={state} onReady={requestFullscreenNow} />;
+    case 'PAUSE_BREAK':
+      return <PauseScreen state={state} teamId={seat.teamId} />;
+    case 'FINISHED':
+      return <ResultsScreen state={state} teamId={seat.teamId} title={title} onExit={() => navigate('/')} />;
+    case 'QUESTION_REVEAL':
+      return question ? (
+        <RevealScreen state={state} question={question} teamId={seat.teamId} answer={answers[question.id]} />
+      ) : (
+        <LobbyScreen state={state} teamId={seat.teamId} title={title} />
+      );
+    case 'QUESTION_ACTIVE':
+      return question ? (
+        <QuestionScreen
+          key={question.id}
+          state={state}
+          question={question}
+          seat={seat}
+          submitted={answers[question.id]}
+          onSubmitted={(answer) => record(question.id, answer)}
+        />
+      ) : (
+        <LobbyScreen state={state} teamId={seat.teamId} title={title} />
+      );
   }
-
-  return (
-    <div data-testid="play-app">
-      {/*
-        Keyed on the current question so React remounts QuestionScreen whenever the
-        session advances. QuestionScreen keeps `submitted`/`text`/`numericValue` in
-        local state; without the key it is never remounted and `submitted` would stay
-        true forever after the first answer, locking the team out of every later round.
-      */}
-      <I18nProvider><StitchQuestionScreen
-        key={state.currentQuestion?.id}
-        state={state}
-        teamId={joined.teamId}
-        token={joined.token}
-        onTapToLockIn={requestFullscreenNow}
-        onExit={() => navigate('/')}
-      /></I18nProvider>
-    </div>
-  );
 }

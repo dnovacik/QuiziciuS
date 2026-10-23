@@ -1,0 +1,321 @@
+import { useState } from 'react';
+import { BadgeCheck, ChevronDown, Crown, Download, Flag, Home, Hourglass, PartyPopper, Share2, ThumbsDown, Trophy, Users } from 'lucide-react';
+import type { QuestionPublicDto, QuizSessionStateDto } from '@quizicius/shared-types';
+import { useI18n } from '../lib/i18n';
+import { correctAnswerText, optionLetter, rankTeams, type RankedTeam } from '../lib/quiz';
+import { Pending } from '../ui/Pending';
+import { PlayerShell } from './PlayerShell';
+import { StandingRow } from './parts';
+import type { SubmittedAnswer } from './submitted-answers';
+
+type Verdict = 'correct' | 'wrong' | 'review' | 'none';
+
+function verdictOf(answer: SubmittedAnswer | undefined): Verdict {
+  if (!answer) return 'none';
+  if (answer.result.needsReview) return 'review';
+  return answer.result.isCorrect ? 'correct' : 'wrong';
+}
+
+const VERDICT_STYLE: Record<Verdict, { box: string; text: string; icon: typeof PartyPopper }> = {
+  correct: { box: 'bg-tertiary-container/20 shadow-[0_0_28px_rgba(78,222,163,0.22)]', text: 'text-tertiary', icon: PartyPopper },
+  wrong: { box: 'bg-error-container/25 shadow-[0_0_28px_rgba(255,180,171,0.15)]', text: 'text-error', icon: ThumbsDown },
+  review: { box: 'bg-secondary-container/15 shadow-glow-gold', text: 'text-secondary', icon: Hourglass },
+  none: { box: 'bg-surface-container', text: 'text-on-surface-variant', icon: Hourglass },
+};
+
+/** Stitch "Odhalenie Odpovede a Body". */
+export function RevealScreen({
+  state,
+  question,
+  teamId,
+  answer,
+}: {
+  state: QuizSessionStateDto;
+  question: QuestionPublicDto;
+  teamId: string;
+  answer: SubmittedAnswer | undefined;
+}) {
+  const { t } = useI18n();
+  const ranked = rankTeams(state.teams);
+  const own = ranked.find((team) => team.id === teamId);
+  const verdict = verdictOf(answer);
+  const style = VERDICT_STYLE[verdict];
+  const correctIndex = question.options?.findIndex((option) => option.id === question.correctOptionId) ?? -1;
+  const awarded = answer?.result.scoreAwarded ?? 0;
+
+  return (
+    <PlayerShell joinCode={state.joinCode} phase="reveal" testId="player-reveal">
+      <section data-testid="player-verdict" data-verdict={verdict} className={`relative overflow-hidden rounded-xl p-space-md ${style.box}`}>
+        <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-tertiary/20 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-6 -left-6 h-28 w-28 rounded-full bg-primary/20 blur-xl" />
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-surface-container-lowest/40">
+            <style.icon className={`h-8 w-8 ${style.text}`} />
+          </div>
+          <span className={`mb-0.5 text-label-sm font-extrabold uppercase tracking-widest ${style.text}`}>
+            {t('play.question.number')} {question.orderIndex + 1}
+          </span>
+          <h2 className="text-headline-md font-extrabold tracking-tight text-on-surface">{t(`play.reveal.${verdict}.title`)}</h2>
+          <p className="mt-0.5 text-body-sm text-on-surface-variant">{t(`play.reveal.${verdict}.subtitle`)}</p>
+          {verdict === 'correct' && (
+            <div className="mt-3 flex w-full items-center justify-between rounded-lg bg-surface-container-lowest/60 p-space-sm">
+              <span className={`text-label-md font-extrabold uppercase ${style.text}`}>{t('play.reveal.earned')}</span>
+              <span className={`text-headline-sm font-extrabold tracking-tight ${style.text}`} data-testid="player-awarded">
+                +{awarded} {t('play.pointsShort')}
+              </span>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-xl bg-surface-container p-space-md shadow-md">
+        <span className="mb-2 flex items-center gap-1 text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">
+          <BadgeCheck className="h-4 w-4 text-primary" />
+          {t('play.reveal.correctAnswer')}
+        </span>
+        <div className="flex items-center gap-space-sm rounded-lg bg-surface-container-high p-space-sm">
+          {correctIndex >= 0 && (
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-tertiary-container shadow-[0_0_12px_rgba(0,165,114,0.35)]">
+              <span className="text-headline-sm font-extrabold text-on-tertiary-container">{optionLetter(correctIndex)}</span>
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="text-label-sm text-on-surface-variant">{question.prompt}</div>
+            <div className="text-body-lg font-bold text-on-surface" data-testid="player-correct-answer">
+              {correctAnswerText(question) ?? '—'}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {own && (
+        <section className="space-y-3 rounded-xl bg-surface-container p-space-md shadow-md">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20">
+              <Users className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-headline-sm font-bold text-on-surface">{t('play.reveal.teamResult')}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-space-xs">
+            <div className="flex flex-col rounded-lg bg-surface-container-lowest p-space-sm">
+              <span className="text-label-sm uppercase text-on-surface-variant">{t('play.reveal.yourAnswer')}</span>
+              <span className={`mt-0.5 break-words text-body-lg font-bold ${style.text}`}>
+                {answer ? [answer.letter, answer.display].filter(Boolean).join(' — ') : t('play.reveal.noAnswer')}
+              </span>
+            </div>
+            <div className="flex flex-col justify-between rounded-lg bg-surface-container-lowest p-space-sm">
+              <span className="text-label-sm uppercase text-on-surface-variant">{t('play.reveal.totalScore')}</span>
+              <span className="mt-0.5 text-headline-md font-extrabold text-primary" data-testid="player-total-score">
+                {own.score}
+              </span>
+              <span className="text-label-sm text-on-surface-variant/70">
+                {t('play.reveal.position')} #{own.rank}
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="rounded-xl bg-surface-container p-space-md">
+        <span className="mb-2.5 block text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">{t('play.reveal.top3')}</span>
+        <ol className="space-y-1.5">
+          {ranked.slice(0, 3).map((team) => (
+            <StandingRow key={team.id} team={team} isOwn={team.id === teamId} />
+          ))}
+        </ol>
+      </section>
+
+      <Pending feature="answer-dispute">
+        <section className="flex flex-col gap-2 rounded-xl bg-surface-container-low p-space-md">
+          <h3 className="text-label-md font-bold text-on-surface">{t('play.reveal.disputeTitle')}</h3>
+          <p className="text-body-sm leading-relaxed text-on-surface-variant">{t('play.reveal.disputeText')}</p>
+          <div className="flex justify-end">
+            <button type="button" className="flex min-h-[44px] items-center gap-1.5 rounded-lg bg-surface-container-high px-3.5 text-label-md font-bold text-on-surface">
+              <Flag className="h-4 w-4 text-secondary" />
+              {t('play.reveal.disputeButton')}
+            </button>
+          </div>
+        </section>
+      </Pending>
+
+      <section className="flex items-center gap-space-sm rounded-xl bg-surface-container-lowest p-space-md shadow-md">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
+          <Hourglass className="h-5 w-5 animate-spin text-primary [animation-duration:4s]" />
+        </div>
+        <p className="text-body-md font-bold text-on-surface">{t('play.reveal.nextComing')}</p>
+      </section>
+    </PlayerShell>
+  );
+}
+
+/** Stitch "Finálne Poradie a Víťazi". */
+export function ResultsScreen({
+  state,
+  teamId,
+  title,
+  onExit,
+}: {
+  state: QuizSessionStateDto;
+  teamId: string;
+  title: string | null;
+  onExit: () => void;
+}) {
+  const { t } = useI18n();
+  const ranked = rankTeams(state.teams);
+  const own = ranked.find((team) => team.id === teamId);
+  const [showAll, setShowAll] = useState(false);
+  const [shared, setShared] = useState(false);
+  const visible = showAll ? ranked : ranked.slice(0, 3);
+
+  async function share() {
+    if (!own) return;
+    const text = `🏆 ${own.name} — ${own.rank}. ${t('play.results.place')}, ${own.score} ${t('play.pointsShort')}! #QuiziciuS`;
+    try {
+      if (navigator.share) await navigator.share({ text });
+      else await navigator.clipboard.writeText(text);
+      setShared(true);
+    } catch {
+      // The user dismissed the share sheet.
+    }
+  }
+
+  return (
+    <PlayerShell joinCode={state.joinCode} phase="results" testId="player-results">
+      <section className="relative overflow-hidden rounded-xl bg-surface-container-low p-space-md shadow-xl">
+        <Trophy className="pointer-events-none absolute -bottom-6 -right-6 h-32 w-32 text-secondary opacity-10" />
+        <div className="mb-1 flex items-center gap-space-xs">
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary/15 px-2.5 py-0.5 text-label-sm font-bold uppercase tracking-wider text-secondary">
+            <span className="h-1.5 w-1.5 animate-ping rounded-full bg-secondary" />
+            {t('play.results.finished')}
+          </span>
+        </div>
+        <h1 className="text-headline-md font-extrabold tracking-tight text-on-surface">{title ?? t('play.join.eventFallback')}</h1>
+        <p className="mt-0.5 text-body-sm text-on-surface-variant">{t('play.results.subtitle')}</p>
+      </section>
+
+      {own && (
+        <section className="relative overflow-hidden rounded-xl bg-surface-container p-space-md shadow-2xl" data-testid="player-own-result">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-secondary to-primary-container" />
+          <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-primary/20 blur-2xl" />
+          <div className="relative z-10 flex items-start justify-between gap-space-sm">
+            <div className="min-w-0">
+              <span className="rounded-full bg-primary/20 px-2 py-0.5 text-label-sm font-extrabold uppercase tracking-wider text-primary">{t('play.results.yourTeam')}</span>
+              <h2 className="mt-1 truncate text-headline-sm font-bold text-on-surface">{own.name}</h2>
+            </div>
+            <div className="flex shrink-0 flex-col items-end">
+              <span className="rounded-full bg-surface-container-highest px-3 py-1 text-headline-sm font-extrabold leading-none text-on-surface" data-testid="player-final-rank">
+                {own.rank}.
+              </span>
+              <span className="mt-1 text-label-sm uppercase tracking-wider text-on-surface-variant">{t('play.results.place')}</span>
+            </div>
+          </div>
+          <div className="mt-space-md flex items-baseline gap-1 rounded-lg bg-surface-container-lowest/80 p-space-sm">
+            <span className="block text-label-sm uppercase text-on-surface-variant">{t('play.results.finalScore')}</span>
+            <span className="ml-auto text-display-lg-mobile leading-none text-secondary" data-testid="player-final-score">
+              {own.score}
+            </span>
+            <span className="text-label-md text-on-surface-variant">{t('play.pointsShort')}</span>
+          </div>
+        </section>
+      )}
+
+      {ranked.length > 0 && <Podium ranked={ranked} teamId={teamId} />}
+
+      <section className="rounded-xl bg-surface-container-low p-space-md shadow-md">
+        <h3 className="mb-space-sm text-headline-sm font-bold text-on-surface">{t('play.results.standings')}</h3>
+        <ol className="flex flex-col gap-2">
+          {visible.map((team) => (
+            <StandingRow key={team.id} team={team} isOwn={team.id === teamId} />
+          ))}
+        </ol>
+        {ranked.length > 3 && (
+          <button
+            type="button"
+            onClick={() => setShowAll((value) => !value)}
+            className="mt-space-xs flex w-full items-center justify-center gap-1 rounded-lg bg-surface-container py-2 text-label-md text-on-surface-variant transition-colors hover:bg-surface-container-high"
+          >
+            {showAll ? t('play.results.showLess') : `${t('play.results.showAll')} (${ranked.length})`}
+            <ChevronDown className={`h-[18px] w-[18px] transition-transform ${showAll ? 'rotate-180' : ''}`} />
+          </button>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-space-sm rounded-xl bg-surface-container p-space-md shadow-lg">
+        <button
+          type="button"
+          data-testid="player-share"
+          onClick={() => void share()}
+          className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-primary-container text-label-lg text-on-primary-container shadow-lg transition-all hover:brightness-110 active:scale-[0.98]"
+        >
+          <Share2 className="h-5 w-5" />
+          {shared ? t('play.results.shared') : t('play.results.share')}
+        </button>
+        <div className="grid grid-cols-2 gap-space-xs">
+          <button
+            type="button"
+            data-testid="player-exit"
+            onClick={onExit}
+            className="flex h-12 items-center justify-center gap-1.5 rounded-lg bg-surface-container-high px-2 text-label-md text-on-surface transition-colors hover:bg-surface-container-highest"
+          >
+            <Home className="h-[18px] w-[18px] text-secondary" />
+            {t('play.results.home')}
+          </button>
+          <Pending feature="result-certificate">
+            <button type="button" className="flex h-12 w-full items-center justify-center gap-1.5 rounded-lg bg-surface-container-high px-2 text-label-md text-on-surface">
+              <Download className="h-[18px] w-[18px] text-tertiary" />
+              {t('play.results.certificate')}
+            </button>
+          </Pending>
+        </div>
+      </section>
+    </PlayerShell>
+  );
+}
+
+function Podium({ ranked, teamId }: { ranked: RankedTeam[]; teamId: string }) {
+  const { t } = useI18n();
+  // Visual order: 2nd, 1st, 3rd.
+  const places = [ranked[1], ranked[0], ranked[2]];
+  const heights = ['h-16', 'h-24', 'h-12'];
+  return (
+    <section className="rounded-xl bg-surface-container-low p-space-md shadow-lg" data-testid="player-podium">
+      <div className="mb-space-sm flex items-center justify-between">
+        <h3 className="flex items-center gap-2 text-headline-sm font-bold text-on-surface">
+          <Trophy className="h-5 w-5 text-secondary" />
+          {t('play.results.podium')}
+        </h3>
+        <span className="text-label-sm text-on-surface-variant">
+          {ranked.length} {t('play.results.teamsTotal')}
+        </span>
+      </div>
+      <div className="grid grid-cols-3 items-end gap-2 pb-2 pt-6 text-center">
+        {places.map((team, slot) =>
+          team ? (
+            <div key={team.id} className="flex flex-col items-center">
+              <div
+                className={`mb-1 flex items-center justify-center rounded-full ${
+                  slot === 1 ? 'h-12 w-12 bg-secondary-container/30 shadow-[0_0_16px_rgba(238,152,0,0.4)]' : 'h-10 w-10 bg-surface-container-highest shadow-md'
+                }`}
+              >
+                {slot === 1 ? <Crown className="h-6 w-6 text-secondary" /> : <span className="text-label-lg font-extrabold text-on-surface">{team.rank}</span>}
+              </div>
+              <span className={`w-full truncate px-1 text-label-sm font-bold ${slot === 1 ? 'text-secondary' : 'text-on-surface'}`}>{team.name}</span>
+              <span className={`text-label-sm font-bold ${team.id === teamId ? 'text-primary' : slot === 1 ? 'text-secondary' : 'text-on-surface-variant'}`}>
+                {team.score} {t('play.pointsShort')}
+              </span>
+              <div
+                className={`mt-2 flex w-full flex-col justify-end rounded-t-lg pb-1 shadow-inner ${heights[slot]} ${
+                  slot === 1 ? 'bg-gradient-to-t from-secondary/30 via-secondary-container/20 to-surface-container-highest' : 'bg-gradient-to-t from-primary/20 to-surface-container-high'
+                }`}
+              >
+                {team.id === teamId && <span className="text-label-sm font-bold uppercase text-on-surface-variant">{t('play.you')}</span>}
+              </div>
+            </div>
+          ) : (
+            <div key={slot} />
+          ),
+        )}
+      </div>
+    </section>
+  );
+}

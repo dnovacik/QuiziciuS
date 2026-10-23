@@ -11,7 +11,26 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 |---|---|---|---|
 | `social-login` | Landing – host card | Google / Microsoft OAuth providers in Supabase + redirect handling | |
 | `remember-me` | Landing – host card | Supabase always persists the session; needs a session-storage auth client when unchecked | |
-| `table-number` | Landing – team dialog | `teams.table_number` column + join endpoint field; show it to the host | |
+| `table-number` | Landing – team dialog, player join | `teams.table_number` column + join endpoint field; show it to the host | |
+| `qr-scanner` | Player join | In-app camera QR scanner (phones can already scan the projector QR with the camera app) | |
+| `answer-dispute` | Player reveal | Endpoint for a team to dispute its graded answer + host review queue entry | |
+| `result-certificate` | Player final results | Generated certificate (PDF/image) for a team's result | |
+
+## Data the designs show but the API does not provide
+
+These are omitted from the screens (no fake values); adding them needs API work first.
+
+| Data | Stitch screens | Needed |
+|---|---|---|
+| Venue name / city ("U Zlatého leva, Žilina") | player join, lobby | venue on quiz or host profile |
+| Host name ("Moderátor Michal Kováč") | player lobby, reveal | host display name in public session state |
+| Rounds ("Kolo 2/5") and question total ("Otázka 4 z 10") | player question, reveal | rounds model + question count in session state |
+| Question category / ID badge | player question | category per question |
+| Team roster, captain role, captain-only submit | player lobby, question, locked | link session teams to registered teams and their players |
+| Who submitted + teams-answered progress ("13 / 14") | player locked | per-question answered flags in session state |
+| Speed bonus, streaks, jokers, accuracy %, max score | player question, reveal, results | scoring features |
+| Host trivia comment after reveal | player reveal | comment field on questions |
+| Connection latency / "Supabase Live" health | player question, locked | realtime connection status from the subscription |
 
 ## Left out on purpose
 

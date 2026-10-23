@@ -10,6 +10,9 @@ export const PENDING_FEATURES = {
   'social-login': 'Google / Microsoft sign-in — Supabase OAuth providers are not configured.',
   'remember-me': 'Opt-out of session persistence — Supabase always persists the session.',
   'table-number': 'Table number on quick join — teams have no table column.',
+  'qr-scanner': 'In-app QR scanner on the join screen — phones can scan the projector QR with the camera app meanwhile.',
+  'answer-dispute': 'Team-initiated dispute of a graded answer — only automatic free-text review exists.',
+  'result-certificate': 'Downloadable result certificate for a finished quiz.',
 } as const;
 
 export type PendingFeature = keyof typeof PENDING_FEATURES;

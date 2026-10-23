@@ -27,7 +27,29 @@ export async function joinSession(sessionId: string, teamName: string): Promise<
   });
   const seat = { sessionId, teamId: result.teamId, token: result.token };
   saveSeat(seat);
+  rememberTeamName(teamName.trim());
   return seat;
+}
+
+const RECENT_TEAMS_KEY = 'quizicius:recent-teams';
+
+/** Team names used on this device, newest first — offered as one-tap chips on the join screen. */
+export function recentTeamNames(): string[] {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(RECENT_TEAMS_KEY) ?? '[]');
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberTeamName(name: string): void {
+  try {
+    const names = [name, ...recentTeamNames().filter((item) => item !== name)].slice(0, 3);
+    localStorage.setItem(RECENT_TEAMS_KEY, JSON.stringify(names));
+  } catch {
+    // Optional convenience only.
+  }
 }
 
 export function saveSeat(seat: TeamSeat): void {
