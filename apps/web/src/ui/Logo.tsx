@@ -35,9 +35,7 @@ export function Logo({ size = 'md', to }: { size?: LogoSize; to?: string }) {
     <>
       <LogoMark size={size} />
       {/* 800 is the heaviest loaded weight; font-black would make the browser fake a bolder face. */}
-      <span className={`${SIZES[size].text} font-extrabold tracking-tight text-white`}>
-        Quiziciu<span className="text-brand-glow">s</span>
-      </span>
+      <span className={`${SIZES[size].text} font-extrabold tracking-tight text-white`}>QuiziciuS</span>
     </>
   );
   const className = 'group flex items-center gap-2';
