@@ -64,6 +64,17 @@ export const teamApi = {
   leagues: (token: string, teamId: string) => apiGet<TeamLeagueDto[]>(`/registered-teams/${teamId}/leagues`, token),
   respondToLeague: (token: string, teamId: string, leagueId: string, join: boolean) =>
     apiPost<TeamLeagueDto>(`/registered-teams/${teamId}/leagues/${leagueId}/${join ? 'join' : 'decline'}`, {}, token),
+  /** Links the phone's one-off team (its seat) to this registered team; the seat keeps its token. */
+  claimSeat: async (token: string, teamId: string, seat: TeamSeat): Promise<TeamSeat> => {
+    await apiPost<{ teamId: string; token: string }>(
+      `/registered-teams/${teamId}/sessions/${seat.sessionId}/claim`,
+      { teamToken: seat.token },
+      token,
+    );
+    const claimed = { sessionId: seat.sessionId, teamId: seat.teamId, token: seat.token };
+    saveSeat(claimed);
+    return claimed;
+  },
   /** The captain joins a live session as this registered team; the seat is stored like any team's. */
   joinSession: async (token: string, teamId: string, sessionId: string): Promise<TeamSeat> => {
     const result = await apiPost<{ teamId: string; token: string }>(`/registered-teams/${teamId}/sessions/${sessionId}/join`, {}, token);

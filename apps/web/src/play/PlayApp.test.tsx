@@ -13,7 +13,11 @@ vi.mock('../lib/api-client', async (importOriginal) => ({
 }));
 vi.mock('../lib/supabase-client', () => ({ subscribeToSession: vi.fn(() => vi.fn()) }));
 
-const session = vi.hoisted(() => ({ state: null as QuizSessionStateDto | null, mine: [] as AnswerSummaryDto[] }));
+const session = vi.hoisted(() => ({
+  state: null as QuizSessionStateDto | null,
+  mine: [] as AnswerSummaryDto[],
+  league: null as { id: string; name: string } | null,
+}));
 vi.mock('../lib/use-session-state', () => ({
   useSessionState: (id: string | undefined) => ({ state: id ? session.state : null, error: null, refetch: vi.fn() }),
 }));
@@ -119,6 +123,7 @@ function renderPlay(path = '/play/s1') {
         <Routes>
           <Route path="/play/:sessionId?" element={<PlayApp />} />
           <Route path="/" element={<p>home page</p>} />
+          <Route path="/team" element={<p>team page</p>} />
         </Routes>
       </MemoryRouter>
     </I18nProvider>,
@@ -133,10 +138,12 @@ beforeEach(() => {
   localStorage.clear();
   session.state = null;
   session.mine = [];
+  session.league = null;
+  sessionStorage.clear();
   vi.mocked(apiGet)
     .mockReset()
     .mockImplementation(async (path: string) => {
-      if (path.endsWith('/display')) return { title: 'Friday Movie Quiz' };
+      if (path.endsWith('/display')) return { title: 'Friday Movie Quiz', league: session.league };
       if (path.endsWith('/answers/mine')) return session.mine;
       if (path.endsWith('/media')) return { mediaType: null, url: null };
       throw new Error(`unexpected GET ${path}`);
@@ -396,5 +403,51 @@ describe('reveal and results', () => {
 
     await act(async () => fireEvent.click(screen.getByTestId('player-exit')));
     expect(screen.getByText('home page')).toBeInTheDocument();
+  });
+});
+
+describe('league nights', () => {
+  it('offers an unregistered team to register while the quiz has not started', async () => {
+    seated();
+    session.league = { id: 'l1', name: 'Zimná liga' };
+    setState('LOBBY');
+    renderPlay();
+
+    const banner = await screen.findByTestId('play-league-banner');
+    expect(banner).toHaveTextContent('Zimná liga');
+    fireEvent.click(within(banner).getByTestId('play-league-register'));
+
+    expect(await screen.findByText('team page')).toBeInTheDocument();
+    expect(JSON.parse(sessionStorage.getItem('quizicius:pending-claim')!)).toEqual({ ...SEAT, teamName: 'Wise Ducks' });
+  });
+
+  it('lets the team play without registering', async () => {
+    seated();
+    session.league = { id: 'l1', name: 'Zimná liga' };
+    setState('LOBBY');
+    renderPlay();
+
+    fireEvent.click(await screen.findByTestId('play-league-skip'));
+
+    expect(screen.queryByTestId('play-league-banner')).not.toBeInTheDocument();
+  });
+
+  it('says nothing about the league to a registered team or on an ordinary night', async () => {
+    seated();
+    setState('LOBBY');
+    renderPlay();
+    await screen.findByTestId('player-lobby');
+    await waitFor(() => expect(apiGet).toHaveBeenCalledWith('/sessions/s1/display'));
+    expect(screen.queryByTestId('play-league-banner')).not.toBeInTheDocument();
+  });
+
+  it('stops offering registration once the first question has started', async () => {
+    seated();
+    session.league = { id: 'l1', name: 'Zimná liga' };
+    setState('LOCK_IN_ROUND', { currentQuestion: question() });
+    renderPlay();
+
+    await screen.findByTestId('player-lock-in');
+    expect(screen.queryByTestId('play-league-banner')).not.toBeInTheDocument();
   });
 });

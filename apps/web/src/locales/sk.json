@@ -855,5 +855,10 @@
   "team.leagues.title": "Ligy",
   "team.leagues.invite": "Pozvánka do ligy",
   "team.leagues.join": "Pridať sa",
-  "team.leagues.empty": "Zatiaľ nehráte v žiadnej lige. Pozvánky od moderátorov sa objavia tu."
+  "team.leagues.empty": "Zatiaľ nehráte v žiadnej lige. Pozvánky od moderátorov sa objavia tu.",
+  "play.league.badge": "Ligový večer",
+  "play.league.text": "Zaregistrujte tím a body z dnešného večera sa vám započítajú do ligy. Stihnite to pred prvou otázkou.",
+  "play.league.register": "Registrovať tím",
+  "play.league.skip": "Hrať bez registrácie",
+  "team.claim.backToGame": "Späť do kvízu"
 }

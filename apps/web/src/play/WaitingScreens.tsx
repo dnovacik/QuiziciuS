@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Brain, CheckCircle2, Coffee, Lightbulb, Radio, Users, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Brain, CheckCircle2, Coffee, Lightbulb, Radio, Trophy, Users, Zap } from 'lucide-react';
 import type { QuizSessionStateDto } from '@quizicius/shared-types';
 import { useI18n } from '../lib/i18n';
 import { rankTeams } from '../lib/quiz';
+import { savePendingClaim, type TeamSeat } from '../lib/team-seat';
 import { PlayerShell } from './PlayerShell';
 import { StandingPill, StatusCard } from './parts';
 
@@ -27,12 +29,87 @@ function QuizBanner({ title }: { title: string | null }) {
   );
 }
 
-export function LobbyScreen({ state, teamId, title }: { state: QuizSessionStateDto; teamId: string; title: string | null }) {
+const skipKey = (sessionId: string) => `quizicius:league-skip:${sessionId}`;
+
+/** On a league night, an unregistered team is offered to register before the first question. */
+function LeagueBanner({ league, seat, teamName }: { league: { name: string }; seat: TeamSeat; teamName: string }) {
+  const { t } = useI18n();
+  const navigate = useNavigate();
+  const [skipped, setSkipped] = useState(() => {
+    try {
+      return sessionStorage.getItem(skipKey(seat.sessionId)) === '1';
+    } catch {
+      return false;
+    }
+  });
+  if (skipped) return null;
+
+  function skip() {
+    try {
+      sessionStorage.setItem(skipKey(seat.sessionId), '1');
+    } catch {
+      // Hiding it for this render is enough.
+    }
+    setSkipped(true);
+  }
+
+  return (
+    <section
+      className="flex flex-col gap-space-sm rounded-xl border border-secondary/50 bg-secondary-container/15 p-space-md shadow-md"
+      data-testid="play-league-banner"
+    >
+      <span className="flex items-center gap-1 text-label-sm font-bold uppercase text-secondary">
+        <Trophy className="h-4 w-4" />
+        {t('play.league.badge')}: {league.name}
+      </span>
+      <p className="text-body-sm text-on-surface">{t('play.league.text')}</p>
+      <div className="flex gap-space-sm">
+        <button
+          type="button"
+          className="flex-1 rounded-xl bg-primary px-space-md py-2 text-label-lg text-on-primary"
+          data-testid="play-league-register"
+          onClick={() => {
+            savePendingClaim({ ...seat, teamName });
+            navigate('/team');
+          }}
+        >
+          {t('play.league.register')}
+        </button>
+        <button
+          type="button"
+          className="flex-1 rounded-xl bg-surface-container-high px-space-md py-2 text-label-lg text-on-surface"
+          data-testid="play-league-skip"
+          onClick={skip}
+        >
+          {t('play.league.skip')}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+export function LobbyScreen({
+  state,
+  teamId,
+  title,
+  league = null,
+  seat,
+}: {
+  state: QuizSessionStateDto;
+  teamId: string;
+  title: string | null;
+  /** The league this night counts for; only shown in the lobby, before registration closes. */
+  league?: { id: string; name: string } | null;
+  seat?: TeamSeat;
+}) {
   const { t } = useI18n();
   const team = state.teams.find((row) => row.id === teamId);
   return (
     <PlayerShell joinCode={state.joinCode} phase="lobby" testId="player-lobby">
       <QuizBanner title={title} />
+      {league && seat && team && !team.registeredTeamId && state.status === 'LOBBY' && (
+        <LeagueBanner league={league} seat={seat} teamName={team.name} />
+      )}
 
       <StatusCard icon={Radio} spin badge={t('play.lobby.badge')} title={t('play.lobby.title')} testId="player-lobby-status">
         <p className="mt-space-xs max-w-[310px] text-body-sm text-on-surface-variant">{t('play.lobby.subtitle')}</p>

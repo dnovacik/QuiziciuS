@@ -855,5 +855,10 @@
   "team.leagues.title": "Leagues",
   "team.leagues.invite": "League invitation",
   "team.leagues.join": "Join",
-  "team.leagues.empty": "You do not play in a league yet. Invitations from hosts appear here."
+  "team.leagues.empty": "You do not play in a league yet. Invitations from hosts appear here.",
+  "play.league.badge": "League night",
+  "play.league.text": "Register your team and tonight's points count for the league. Do it before the first question.",
+  "play.league.register": "Register team",
+  "play.league.skip": "Play without registering",
+  "team.claim.backToGame": "Back to the quiz"
 }

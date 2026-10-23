@@ -21,28 +21,28 @@ Carried over from the earlier project tracker (marked "locked" there):
   season standings.
 - **Championship:** played at a single venue, using the existing quiz engine.
 
-## How leagues should use this (not built yet)
+## Leagues (built 2026-10-23, migration `0015_leagues.sql`)
 
-Results are recorded per session, so standings can be derived without asking teams anything:
+Full design: `docs/superpowers/specs/2026-10-23-leagues-design.md`. In short:
 
-| League | Scope | Which results count |
-|---|---|---|
-| Pub league | one pub, one season | every linked session team result in sessions played at that pub |
-| Super league | all pubs (or a region), one season | each registered team counts **once**, under its **primary pub** |
+- **Seasons are flexible.** A host proposes a league for their pubs (`/host/leagues`) with a start
+  date and an indicative end date; several leagues a year are fine. Other hosts can be invited
+  and join with their own pubs. There is no chat — the proposal carries a short message.
+- **Teams are invited** when the league is created (or a co-host accepts): registered teams that
+  have one of the league's pubs, or have played a finished night there. Captains join or decline
+  on the team page. **Playing a league night makes a team a member**, even after declining.
+- **A night counts only when the host ticks it** at launch ("Táto noc sa počíta do ligy").
+- **One-off teams** on a league night are offered registration on their phone until the first
+  question starts; the host sees who is unregistered in the lobby. Unregistered teams are left out
+  of league placing.
+- **Scoring** of a league night is by placing among registered teams: 10, 8, 6, 5, 4, 3, 2, 1, then
+  0; ties share the better place. Table tie-break: more 1st places, then 2nd, …, then fewer nights.
+- **The pub a team represents** is fixed when it joins: its primary pub if that is a league pub,
+  otherwise the league pub where it first played — so changing the primary pub mid-season does not
+  move it.
+- **Closing** (owner, any time; prompted after the end date) freezes the table into
+  `league_results`. The **top 3 per pub** qualify; "Vytvoriť Super ligu" creates the final, which
+  only the qualified teams play and which is scored by **raw quiz points**.
 
-Why several pubs do not clash:
-
-- In **pub leagues** a team simply appears in every pub's table where it actually played. Playing
-  at two pubs is normal and harmless — each table only sees its own pub's sessions.
-- In the **super league** a team must not qualify or be counted twice. The primary pub decides
-  which pub the team represents, and the team's super-league score is its own results (e.g. best
-  N sessions across all pubs), not the sum of two pub-league placings.
-- **Changing the primary pub mid-season** should be locked or only take effect next season;
-  otherwise a team could switch to whichever pub gives it a better qualifying spot. Suggested rule:
-  store the primary pub per season (`league_memberships(season_id, team_id, pub_id)`) when the
-  season starts.
-
-Open decisions before building leagues: season boundaries, the scoring formula (points per
-placing vs. raw score, best N of M nights), what makes a team "eligible" (registered, a minimum
-number of nights), and whether one-off (unregistered) teams appear in pub tables. Qualification
-itself is decided: the top 3 per pub, with each team qualifying only through its primary pub.
+Not built yet: notifications (invitations show in the app only), standings on the projector,
+regional Super Leagues across several seasons, configurable scoring.

@@ -2,7 +2,7 @@ import type { TeamLeagueDto } from '@quizicius/shared-types';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
+import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
 import { I18nProvider } from '../lib/i18n';
 import type { Player, RegisteredTeam } from './api';
 import TeamApp from './TeamApp';
@@ -46,6 +46,7 @@ const data = vi.hoisted(() => ({
   players: [] as Player[],
   taken: [] as string[],
   leagues: [] as TeamLeagueDto[],
+  claimError: null as Error | null,
 }));
 
 function renderTeam() {
@@ -69,6 +70,8 @@ beforeEach(() => {
   data.players = [{ id: 'p1', name: 'Jana', created_at: '2026-10-02T18:00:00Z' }];
   data.taken = ['pub mozarts'];
   data.leagues = [];
+  data.claimError = null;
+  sessionStorage.clear();
   vi.mocked(apiGet)
     .mockReset()
     .mockImplementation(async (path: string) => {
@@ -90,6 +93,10 @@ beforeEach(() => {
       if (path === '/registered-teams/rt1/players') return { id: 'p2', name: (body as { name: string }).name, created_at: 'now' };
       if (path === '/registered-teams/rt1/sessions/s1/join') return { teamId: 'session-team', token: 'team-token' };
       if (path === '/registered-teams/rt1/leagues/l1/join') return { ...data.leagues[0], status: 'JOINED' };
+      if (path === '/registered-teams/rt1/sessions/s1/claim') {
+        if (data.claimError) throw data.claimError;
+        return { teamId: 'team-1', name: 'Wise Ducks', token: 'team-token' };
+      }
       throw new Error(`unexpected POST ${path}`);
     });
   vi.mocked(apiPatch)
@@ -303,5 +310,37 @@ describe('team leagues', () => {
     await waitFor(() => expect(apiGet).toHaveBeenCalledWith('/registered-teams/rt1/leagues', 'captain-jwt'));
     expect(screen.queryByTestId('team-league-l1')).not.toBeInTheDocument();
     expect(screen.queryByTestId('team-league-invite-l1')).not.toBeInTheDocument();
+  });
+});
+
+describe('registering from a league night', () => {
+  const CLAIM = { sessionId: 's1', teamId: 'team-1', token: 'team-token', teamName: 'Wise Ducks' };
+
+  it("links the phone's seat to the captain's team and goes back to the game", async () => {
+    data.teams = [TEAM];
+    sessionStorage.setItem('quizicius:pending-claim', JSON.stringify(CLAIM));
+    renderTeam();
+
+    expect(await screen.findByText('play screen')).toBeInTheDocument();
+    expect(apiPost).toHaveBeenCalledWith('/registered-teams/rt1/sessions/s1/claim', { teamToken: 'team-token' }, 'captain-jwt');
+    expect(sessionStorage.getItem('quizicius:pending-claim')).toBeNull();
+  });
+
+  it('suggests the name the team played under when it creates its team first', async () => {
+    sessionStorage.setItem('quizicius:pending-claim', JSON.stringify(CLAIM));
+    renderTeam();
+
+    expect(await screen.findByTestId('team-name-input')).toHaveValue('Wise Ducks');
+  });
+
+  it('explains when the quiz has already started, with a way back to the game', async () => {
+    data.teams = [TEAM];
+    data.claimError = new ApiError(409, 'Conflict', { code: 'REGISTRATION_CLOSED' });
+    sessionStorage.setItem('quizicius:pending-claim', JSON.stringify(CLAIM));
+    renderTeam();
+
+    const notice = await screen.findByTestId('team-claim-error');
+    expect(notice).toHaveTextContent('registrácia do ligy je uzavretá');
+    expect(within(notice).getByRole('link')).toHaveAttribute('href', '/play/s1');
   });
 });
