@@ -107,12 +107,10 @@ export function HostShell({ token, email, account, children }: { token: string; 
                 {t('host.nav.admin')}
               </NavLink>
             )}
-            <Pending feature="leagues">
-              <span className={`${NAV_ITEM} text-on-surface-variant`}>
-                <Trophy className="h-5 w-5" />
-                {t('host.nav.leagues')}
-              </span>
-            </Pending>
+            <NavLink to="/host/leagues" className={navLink} data-testid="host-nav-leagues">
+              <Trophy className="h-5 w-5" />
+              {t('host.nav.leagues')}
+            </NavLink>
             <Pending feature="host-settings">
               <span className={`${NAV_ITEM} text-on-surface-variant`}>
                 <Settings className="h-5 w-5" />

@@ -23,6 +23,8 @@ export abstract class TeamsRepository {
   abstract setDeviceTokenHash(teamId: string, tokenHash: string): Promise<TeamRecord>;
   abstract markReady(teamId: string, questionId: string, fullscreen: boolean): Promise<TeamRecord>;
   abstract listBySession(sessionId: string): Promise<TeamRecord[]>;
+  /** Every quiz-night team a registered team played as. */
+  abstract listByRegisteredTeam(registeredTeamId: string): Promise<TeamRecord[]>;
   /** Links a session team to a registered team and gives it the registered name. */
   abstract linkRegistered(teamId: string, registeredTeamId: string, name: string): Promise<TeamRecord>;
 }
@@ -55,6 +57,12 @@ export class SupabaseTeamsRepository extends TeamsRepository {
       .maybeSingle();
     if (error) return null;
     return data as TeamRecord | null;
+  }
+
+  async listByRegisteredTeam(registeredTeamId: string): Promise<TeamRecord[]> {
+    const { data, error } = await this.supabase.getClient().from('teams').select().eq('registered_team_id', registeredTeamId);
+    if (error) throw new InternalServerErrorException(error.message);
+    return (data ?? []) as TeamRecord[];
   }
 
   async linkRegistered(teamId: string, registeredTeamId: string, name: string): Promise<TeamRecord> {

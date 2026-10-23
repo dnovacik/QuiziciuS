@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import type { AnswerSummaryDto, QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
+import type { HostLeagueDto, AnswerSummaryDto, QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../lib/api-client';
 import type { Pub } from '../lib/pubs';
@@ -60,6 +60,8 @@ const db = vi.hoisted(() => ({
   sessions: [] as HostSession[],
   answers: [] as AnswerSummaryDto[],
   disputes: [] as AnswerSummaryDto[],
+  leagues: [] as HostLeagueDto[],
+  display: { title: 'Friday Movies', pub: null, league: null } as { title: string; pub: null; league: { id: string; name: string } | null },
 }));
 
 function session(id: string, status: QuizState, quizId = 'quiz1'): HostSession {
@@ -128,6 +130,8 @@ beforeEach(() => {
   pubs.mine = [LION];
   pubs.all = [LION, DOG];
   db.disputes = [];
+  db.leagues = [];
+  db.display = { title: 'Friday Movies', pub: null, league: null };
   live.state = null;
   live.refetch = vi.fn();
   vi.mocked(apiGet)
@@ -143,6 +147,8 @@ beforeEach(() => {
       if (path === '/sessions/s1/disputes') return db.disputes;
       if (path === '/sessions/s1/infractions') return [];
       if (path === '/sessions/s1/state') return live.state;
+      if (path === '/sessions/s1/display') return db.display;
+      if (path === '/leagues') return db.leagues;
       const questions = path.match(/^\/quizzes\/(\w+)\/questions$/);
       if (questions) return db.questions[questions[1]] ?? [];
       throw new Error(`unexpected GET ${path}`);
@@ -232,6 +238,46 @@ describe('host dashboard', () => {
 
     await screen.findByText('control room for session');
     expect(apiPost).toHaveBeenCalledWith('/quizzes/quiz1/sessions', { pubId: null }, 'jwt');
+  });
+
+  it('ticks the night for a league running at the chosen pub', async () => {
+    db.leagues = [
+      {
+        id: 'l1',
+        name: 'Zimná liga',
+        kind: 'LEAGUE',
+        phase: 'RUNNING',
+        startsOn: '2026-10-01',
+        endsOn: null,
+        message: null,
+        ownerHostId: 'me',
+        ownerName: 'Me',
+        pubs: [{ id: 'pub1', name: 'Red Lion', city: 'Bratislava', hostId: 'me' }],
+        nightsPlayed: 3,
+        joinedTeams: 8,
+        parentLeagueId: null,
+        myStatus: 'ACCEPTED',
+        isOwner: true,
+      },
+    ];
+    renderAt('/host', <DashboardPage token="jwt" />, '/host');
+    fireEvent.click(await screen.findByTestId('quiz-start-quiz1'));
+
+    fireEvent.click(await screen.findByTestId('start-session-league-toggle'));
+    expect(screen.getByTestId('start-session-league')).toHaveValue('l1');
+    fireEvent.click(screen.getByTestId('start-session-confirm'));
+
+    await screen.findByText('control room for session');
+    expect(apiPost).toHaveBeenCalledWith('/quizzes/quiz1/sessions', { pubId: 'pub1', leagueId: 'l1' }, 'jwt');
+  });
+
+  it('offers no league when the night is at a pub outside every league', async () => {
+    db.leagues = [];
+    renderAt('/host', <DashboardPage token="jwt" />, '/host');
+    fireEvent.click(await screen.findByTestId('quiz-start-quiz1'));
+    await screen.findByTestId('start-session-pub');
+
+    expect(screen.queryByTestId('start-session-league-toggle')).not.toBeInTheDocument();
   });
 
   it('deletes a quiz after confirmation', async () => {
@@ -348,6 +394,26 @@ describe('quiz editor', () => {
 
 describe('control room', () => {
   const renderRoom = () => renderAt('/host/sessions/s1', <ControlRoomPage token="jwt" />, '/host/sessions/:sessionId');
+
+  it('marks unregistered teams in the lobby of a league night', async () => {
+    db.display = { title: 'Friday Movies', pub: null, league: { id: 'l1', name: 'Zimná liga' } };
+    const base = liveState('LOBBY');
+    live.state = { ...base, teams: [...base.teams, { ...base.teams[0], id: 't3', name: 'Tim bez pala', registeredTeamId: 'rt1' }] };
+    renderRoom();
+
+    expect(await screen.findByTestId('lobby-unregistered-count')).toHaveTextContent('2 tímy');
+    expect(screen.getByTestId('unregistered-t1')).toBeInTheDocument();
+    expect(screen.queryByTestId('unregistered-t3')).not.toBeInTheDocument();
+  });
+
+  it('shows no league markers on an ordinary night', async () => {
+    live.state = liveState('LOBBY');
+    renderRoom();
+
+    await screen.findByTestId('room-lobby');
+    expect(screen.queryByTestId('lobby-unregistered-count')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('unregistered-t1')).not.toBeInTheDocument();
+  });
 
   it('closes answers for an untimed question', async () => {
     db.questions.quiz1[0].time_limit_seconds = 0;

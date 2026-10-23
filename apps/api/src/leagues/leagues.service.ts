@@ -17,6 +17,7 @@ import { ProfilesRepository } from '../data/profiles.repository';
 import { PubsRepository } from '../data/pubs.repository';
 import { RegisteredTeamsRepository } from '../data/registered-teams.repository';
 import { SessionsRepository } from '../data/sessions.repository';
+import { TeamsRepository } from '../data/teams.repository';
 import { QuizEngineService } from '../quiz-engine/quiz-engine.service';
 import { CreateLeagueDto, UpdateLeagueDto } from './dto/league.dto';
 import { leagueStandings, LeagueMember, NightResult, qualifiers, superLeagueStandings } from './standings';
@@ -41,6 +42,7 @@ export class LeaguesService {
     private readonly profiles: ProfilesRepository,
     private readonly teams: RegisteredTeamsRepository,
     private readonly engine: QuizEngineService,
+    private readonly sessionTeams: TeamsRepository,
   ) {}
 
   // ---------- reading ----------
@@ -116,7 +118,8 @@ export class LeaguesService {
     }
     for (const [teamId, nightPub] of firstNightPub) {
       const row = rows.get(teamId);
-      if (row?.status === 'JOINED') continue;
+      // A member that joined from its invitation may still lack a pub; its first night supplies one.
+      if (row?.status === 'JOINED' && row.pub_id) continue;
       if (!row && league.kind === 'SUPER') continue;
       const pubId = row?.pub_id ?? (await this.pubSnapshot(teamId, leaguePubIds, nightPub));
       await this.leagues.setTeamStatus(league.id, teamId, 'JOINED', pubId);
@@ -307,7 +310,8 @@ export class LeaguesService {
     const own = await this.requireOwnPubs(hostId, pubIds);
     await this.leagues.setHost(leagueId, hostId, 'ACCEPTED');
     await this.leagues.addPubs(leagueId, hostId, own);
-    await this.inviteTeamsOf(league, own);
+    // A Super League is only for the teams that qualified; a co-host brings a venue, not teams.
+    if (league.kind === 'LEAGUE') await this.inviteTeamsOf(league, own);
     return this.detail(hostId, leagueId);
   }
 
@@ -401,14 +405,27 @@ export class LeaguesService {
     return { league: await this.summary(league, computed), status: row.status, standings: computed.standings };
   }
 
+  /** Leagues of the finished nights the team played, whether or not it was ever invited. */
+  private async leaguesPlayedBy(registeredTeamId: string): Promise<string[]> {
+    const seats = await this.sessionTeams.listByRegisteredTeam(registeredTeamId);
+    const sessions = await Promise.all([...new Set(seats.map((seat) => seat.session_id))].map((id) => this.sessions.findById(id)));
+    return sessions.filter((s) => s?.league_id && s.status === 'FINISHED').map((s) => s!.league_id!);
+  }
+
   /** The team's invitations and leagues; a league it played in shows as joined. */
   async forTeam(registeredTeamId: string): Promise<TeamLeagueDto[]> {
-    const leagues = await this.leagues.listForTeam(registeredTeamId);
+    const invited = await this.leagues.listForTeam(registeredTeamId);
+    const playedIds = (await this.leaguesPlayedBy(registeredTeamId)).filter((id) => !invited.some((league) => league.id === id));
+    const played = (await Promise.all([...new Set(playedIds)].map((id) => this.leagues.findById(id)))).filter(
+      (league): league is LeagueRecord => league !== null,
+    );
     const views: TeamLeagueDto[] = [];
-    for (const league of leagues) {
-      if (!league.closed_at) await this.syncPlayed(league, await this.nights(league));
-      const row = (await this.leagues.teams(league.id)).find((r) => r.registered_team_id === registeredTeamId)!;
-      views.push(await this.teamView(league, row));
+    for (const league of [...invited, ...played]) {
+      // Computing the table also makes the teams that played members, so read the row afterwards.
+      const computed = await this.standings(league);
+      const row = (await this.leagues.teams(league.id)).find((r) => r.registered_team_id === registeredTeamId);
+      if (!row) continue;
+      views.push({ league: await this.summary(league, computed), status: row.status, standings: computed.standings });
     }
     return views;
   }

@@ -69,3 +69,35 @@ export function loadSeat(sessionId: string | undefined): TeamSeat | null {
     return null;
   }
 }
+
+/** A one-off team on a league night that went to register; picked up by the team page. */
+export interface PendingClaim extends TeamSeat {
+  teamName: string;
+}
+
+const PENDING_CLAIM_KEY = 'quizicius:pending-claim';
+
+export function savePendingClaim(claim: PendingClaim): void {
+  try {
+    sessionStorage.setItem(PENDING_CLAIM_KEY, JSON.stringify(claim));
+  } catch {
+    // Without storage the player can still register later from the team page.
+  }
+}
+
+export function pendingClaim(): PendingClaim | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_CLAIM_KEY);
+    return raw ? (JSON.parse(raw) as PendingClaim) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingClaim(): void {
+  try {
+    sessionStorage.removeItem(PENDING_CLAIM_KEY);
+  } catch {
+    // Nothing to clear.
+  }
+}

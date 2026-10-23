@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
+import type { TeamLeagueDto } from '@quizicius/shared-types';
 import type { Pub } from '../lib/pubs';
 import { saveSeat, type TeamSeat } from '../lib/team-seat';
 
@@ -60,6 +61,20 @@ export const teamApi = {
   renamePlayer: (token: string, teamId: string, playerId: string, name: string) =>
     apiPatch<Player>(`/registered-teams/${teamId}/players/${playerId}`, { name: name.trim() }, token),
   removePlayer: (token: string, teamId: string, playerId: string) => apiDelete(`/registered-teams/${teamId}/players/${playerId}`, token),
+  leagues: (token: string, teamId: string) => apiGet<TeamLeagueDto[]>(`/registered-teams/${teamId}/leagues`, token),
+  respondToLeague: (token: string, teamId: string, leagueId: string, join: boolean) =>
+    apiPost<TeamLeagueDto>(`/registered-teams/${teamId}/leagues/${leagueId}/${join ? 'join' : 'decline'}`, {}, token),
+  /** Links the phone's one-off team (its seat) to this registered team; the seat keeps its token. */
+  claimSeat: async (token: string, teamId: string, seat: TeamSeat): Promise<TeamSeat> => {
+    await apiPost<{ teamId: string; token: string }>(
+      `/registered-teams/${teamId}/sessions/${seat.sessionId}/claim`,
+      { teamToken: seat.token },
+      token,
+    );
+    const claimed = { sessionId: seat.sessionId, teamId: seat.teamId, token: seat.token };
+    saveSeat(claimed);
+    return claimed;
+  },
   /** The captain joins a live session as this registered team; the seat is stored like any team's. */
   joinSession: async (token: string, teamId: string, sessionId: string): Promise<TeamSeat> => {
     const result = await apiPost<{ teamId: string; token: string }>(`/registered-teams/${teamId}/sessions/${sessionId}/join`, {}, token);

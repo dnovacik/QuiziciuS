@@ -1,6 +1,7 @@
+import { useSessionDisplay } from '../../lib/use-quiz-title';
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { BadgeCheck, CirclePlay, Copy, Link2, MonitorPlay, XCircle } from 'lucide-react';
+import { BadgeCheck, CirclePlay, Copy, Link2, MonitorPlay, XCircle, Trophy } from 'lucide-react';
 import { useI18n } from '../../lib/i18n';
 import { btn, ConfirmDialog, useCopy } from '../ui';
 import { joinUrl } from '../sessions';
@@ -22,6 +23,8 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
   const state = room.state!;
   const url = joinUrl(sessionId);
   const online = state.teams.filter((team) => team.isActive).length;
+  const { league } = useSessionDisplay(sessionId);
+  const unregistered = league ? state.teams.filter((team) => !team.registeredTeamId).length : 0;
   const totalPoints = room.questions.reduce((sum, question) => sum + question.points, 0);
   const inLobby = state.status === 'LOBBY';
   const firstQuestion = room.questions.find((question) => question.id === room.selectedId);
@@ -142,6 +145,25 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
             </span>
           </div>
         </div>
+        {league && (
+          <div className="flex flex-wrap items-center gap-space-sm rounded-xl bg-secondary-container/15 p-space-sm text-body-sm text-secondary">
+            <Trophy className="h-4 w-4" />
+            <span className="text-label-md">
+              {t('leagues.lobby.league')}: {league.name}
+            </span>
+            {unregistered > 0 && (
+              <>
+                <span
+                  data-testid="lobby-unregistered-count"
+                  className="rounded-full bg-secondary-container/30 px-space-sm py-0.5 text-label-sm"
+                >
+                  {t('leagues.lobby.unregistered')}: {unregistered} {plural('count.teams', unregistered)}
+                </span>
+                {inLobby && <span className="text-on-surface-variant">{t('leagues.lobby.hint')}</span>}
+              </>
+            )}
+          </div>
+        )}
         {state.teams.length === 0 ? (
           <p className="py-space-lg text-center text-body-md text-on-surface-variant">{t('projector.lobby.noTeams')}</p>
         ) : (
@@ -164,6 +186,14 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
                 </div>
                 <h4 className="flex items-center gap-1 truncate text-label-lg text-on-surface">
                   {team.name}
+                  {league && !team.registeredTeamId && (
+                    <span
+                      className="rounded bg-secondary-container/30 px-1 text-label-sm font-normal text-secondary"
+                      data-testid={`unregistered-${team.id}`}
+                    >
+                      {t('leagues.lobby.badge')}
+                    </span>
+                  )}
                   {team.registeredTeamId && (
                     <BadgeCheck
                       className="h-4 w-4 shrink-0 text-secondary"

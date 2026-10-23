@@ -97,8 +97,8 @@ export const hostApi = {
   listSessions: (token: string) => apiGet<HostSession[]>('/host/sessions', token),
   getSession: (token: string, sessionId: string) => apiGet<HostSession>(`/host/sessions/${sessionId}`, token),
   /** `pubId` null launches without a pub; the API falls back to the quiz's pub only when it is omitted. */
-  createSession: (token: string, quizId: string, pubId: string | null) =>
-    apiPost<HostSession>(`/quizzes/${quizId}/sessions`, { pubId }, token),
+  createSession: (token: string, quizId: string, pubId: string | null, leagueId: string | null = null) =>
+    apiPost<HostSession>(`/quizzes/${quizId}/sessions`, leagueId ? { pubId, leagueId } : { pubId }, token),
   transition: (token: string, sessionId: string, status: QuizState, questionId?: string) =>
     apiPost(`/sessions/${sessionId}/transition`, status === 'LOCK_IN_ROUND' ? { status, questionId } : { status }, token),
   /** Ends answering for the open question now (untimed, or a timed one early). */

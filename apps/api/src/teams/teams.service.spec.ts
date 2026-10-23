@@ -45,6 +45,7 @@ function buildHarness() {
     markReady: jest.fn().mockResolvedValue(undefined),
     listBySession: jest.fn(),
     linkRegistered: jest.fn(),
+    listByRegisteredTeam: jest.fn(),
   };
   const teamTokens = new TeamTokenService(new JwtService({ secret: 'test-secret' }));
   const broadcast = { publish: jest.fn().mockResolvedValue(undefined) } as unknown as RealtimeBroadcastService;

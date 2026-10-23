@@ -52,6 +52,8 @@ function compareRecords(a: LeagueStandingDto, b: LeagueStandingDto): number {
   for (let i = 0; i < countsA.length; i++) {
     if (countsB[i] !== countsA[i]) return countsB[i] - countsA[i];
   }
+  // A team that has not played yet is below every team that has, then fewer nights wins.
+  if ((a.nights === 0) !== (b.nights === 0)) return a.nights === 0 ? 1 : -1;
   return a.nights - b.nights;
 }
 
@@ -96,11 +98,11 @@ export function superLeagueStandings(nights: NightResult[], members: LeagueMembe
   return ranked([...rows.values()], (a, b) => b.points - a.points);
 }
 
-/** The top `perPub` of each pub, in table order; everyone tied at the cut-off qualifies. */
+/** The top `perPub` of each pub, in table order; everyone tied at the cut-off qualifies. Teams that never played do not. */
 export function qualifiers(standings: LeagueStandingDto[], perPub = 3): LeagueStandingDto[] {
   const byPub = new Map<string, LeagueStandingDto[]>();
   for (const row of standings) {
-    if (!row.pubId) continue;
+    if (!row.pubId || row.nights === 0) continue;
     byPub.set(row.pubId, [...(byPub.get(row.pubId) ?? []), row]);
   }
   const qualified = new Set<LeagueStandingDto>();

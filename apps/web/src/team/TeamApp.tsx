@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Award, Hash, LogIn, LogOut, UserRound } from 'lucide-react';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase-client';
+import { clearPendingClaim, pendingClaim } from '../lib/team-seat';
 import { useHostSession } from '../lib/use-host-session';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { Logo } from '../ui/Logo';
@@ -18,6 +19,19 @@ export default function TeamApp() {
   const { session, loading, token } = useHostSession();
   const [teams, setTeams] = useState<RegisteredTeam[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  // A one-off team that chose to register on a league night: link its seat once a team exists.
+  const [claim] = useState(pendingClaim);
+  const [claimError, setClaimError] = useState<{ message: string; sessionId: string } | null>(null);
+  const team0 = teams?.[0] ?? null;
+  useEffect(() => {
+    if (!claim || !token || !team0) return;
+    clearPendingClaim();
+    teamApi
+      .claimSeat(token, team0.id, claim)
+      .then(() => navigate(`/play/${claim.sessionId}`))
+      .catch((err) => setClaimError({ message: describeError(err, t, 'errors.generic'), sessionId: claim.sessionId }));
+  }, [claim, token, team0, navigate, t]);
 
   const load = useCallback(() => {
     if (!token) return;
@@ -63,6 +77,18 @@ export default function TeamApp() {
           {error}
         </p>
       )}
+      {claimError && (
+        <p
+          role="alert"
+          data-testid="team-claim-error"
+          className="mx-auto mb-space-md flex max-w-7xl flex-wrap items-center justify-between gap-space-sm rounded-xl bg-error-container/30 p-space-md text-on-error-container"
+        >
+          {claimError.message}
+          <Link to={`/play/${claimError.sessionId}`} className="text-label-lg underline">
+            {t('team.claim.backToGame')}
+          </Link>
+        </p>
+      )}
       {team ? (
         <TeamDashboard
           token={token}
@@ -74,7 +100,7 @@ export default function TeamApp() {
         <OnboardingPage
           token={token}
           email={email}
-          suggestedName={metadata.team_name ?? ''}
+          suggestedName={claim?.teamName ?? metadata.team_name ?? ''}
           suggestedMembers={metadata.expected_members ?? 4}
           onCreated={(created) => setTeams([created])}
         />
