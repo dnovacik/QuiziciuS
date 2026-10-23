@@ -20,7 +20,7 @@ export function blankQuestion(orderIndex: number): QuestionDraft {
     options: freshOptions(),
     accepted_answers: null,
     correct_numeric: null,
-    points: 10,
+    points: 1,
     time_limit_seconds: 30,
     order_index: orderIndex,
   };
