@@ -34,7 +34,8 @@ export function Logo({ size = 'md', to }: { size?: LogoSize; to?: string }) {
   const content = (
     <>
       <LogoMark size={size} />
-      <span className={`${SIZES[size].text} font-black tracking-tight text-white`}>
+      {/* 800 is the heaviest loaded weight; font-black would make the browser fake a bolder face. */}
+      <span className={`${SIZES[size].text} font-extrabold tracking-tight text-white`}>
         Quiziciu<span className="text-brand-glow">S</span>
       </span>
     </>
