@@ -60,7 +60,7 @@ export function QuestionForm({
   onDuplicate: () => void;
   onDelete: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const [unit, setUnit] = useState('');
   const options = draft.options ?? [];
@@ -405,7 +405,7 @@ export function QuestionForm({
           <div className="flex items-center justify-between">
             <Label htmlFor="editor-points">{t('host.editor.points')}</Label>
             <span className="text-label-md text-secondary">
-              {draft.points} {t('host.common.pointsShort')}
+              {draft.points} {plural('count.pointsShort', draft.points)}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -453,7 +453,7 @@ export function QuestionForm({
           >
             {timerChoices.map((seconds) => (
               <option key={seconds} value={seconds}>
-                {isUntimed(seconds) ? t('host.editor.noTimerOption') : `${seconds} ${t('host.editor.seconds')}`}
+                {isUntimed(seconds) ? t('host.editor.noTimerOption') : `${seconds} ${plural('count.seconds', seconds)}`}
               </option>
             ))}
           </select>

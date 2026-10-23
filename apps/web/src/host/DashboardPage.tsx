@@ -10,7 +10,7 @@ import { btn, ErrorBanner } from './ui';
 
 /** Stitch "Host Dashboard (Hlavný panel moderátora)". */
 export function DashboardPage({ token }: { token: string }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const library = useHostLibrary(token);
   const [creating, setCreating] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -41,7 +41,7 @@ export function DashboardPage({ token }: { token: string }) {
           value={library.loading ? '—' : String(library.quizzes.length)}
           testId="stat-quizzes"
         >
-          {readyQuizzes.length} {t('host.dashboard.statReady')}
+          {readyQuizzes.length} {plural('count.readyQuizzes', readyQuizzes.length)}
         </StatCard>
         <StatCard
           icon={Radio}
@@ -53,7 +53,7 @@ export function DashboardPage({ token }: { token: string }) {
           {running > 0 && (
             <span className="flex items-center gap-1 rounded-full bg-tertiary/20 px-2 py-0.5 text-label-sm text-tertiary">
               <span className="h-1.5 w-1.5 animate-ping rounded-full bg-tertiary" />
-              {running} {t('host.dashboard.statRunning')}
+              {running} {plural('count.runningNow', running)}
             </span>
           )}
         </StatCard>
@@ -116,7 +116,7 @@ export function DashboardPage({ token }: { token: string }) {
             <h2 className="text-headline-sm text-on-surface">{t('host.dashboard.liveTitle')}</h2>
           </div>
           <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">
-            {live.length} {t('host.dashboard.liveCount')}
+            {live.length} {plural('count.activeSessions', live.length)}
           </span>
         </div>
         <div className="grid grid-cols-1 gap-space-md lg:grid-cols-3">

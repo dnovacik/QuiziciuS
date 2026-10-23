@@ -35,7 +35,7 @@ const TABS: { tab: Tab; icon: typeof DoorOpen }[] = [
 /** Stitch "Live Quiz Control Room (Živá réžia moderátora)". */
 export function ControlRoomPage({ token }: { token: string }) {
   const { sessionId = '' } = useParams<{ sessionId: string }>();
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const room = useControlRoom(token, sessionId);
   const { state } = room;
   const [tab, setTab] = useState<Tab>('lobby');
@@ -184,7 +184,7 @@ export function ControlRoomPage({ token }: { token: string }) {
             )}
             <span className="hidden items-center gap-1.5 md:flex">
               <Users className="h-4 w-4 text-tertiary" />
-              {online} {t('host.room.teamsOnline')}
+              {online} {plural('count.teamsOnline', online)}
             </span>
             <Pending feature="timer-controls" badge="inline">
               <span className="flex items-center gap-1 rounded-lg bg-error-container/20 px-space-sm py-1 text-error">

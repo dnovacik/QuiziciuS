@@ -23,7 +23,7 @@ export function PauseScene() {
 
 /** Podium for the top three plus a dense rail for everyone else. */
 export function LeaderboardScene({ teams }: { teams: TeamSummaryDto[] }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const ranked = rankTeams(teams);
   const [first, second, third] = ranked;
   const rest = ranked.slice(3);
@@ -37,7 +37,7 @@ export function LeaderboardScene({ teams }: { teams: TeamSummaryDto[] }) {
           <h2 className="text-display-lg font-extrabold tracking-tight text-on-surface">{t('projector.standings.title')}</h2>
         </div>
         <span className="rounded-full bg-surface-container px-space-md py-space-xs text-label-sm uppercase text-outline">
-          {ranked.length} {t('play.results.teamsTotal')}
+          {ranked.length} {plural('count.teamsTotal', ranked.length)}
         </span>
       </div>
 
@@ -60,7 +60,7 @@ export function LeaderboardScene({ teams }: { teams: TeamSummaryDto[] }) {
                 <span className="truncate text-body-lg font-bold text-on-surface">{team.name}</span>
               </div>
               <span className="text-headline-sm font-bold text-on-surface">
-                {team.score} {t('play.pointsShort')}
+                {team.score} {plural('count.pointsShort', team.score)}
               </span>
             </li>
           ))}
@@ -71,7 +71,7 @@ export function LeaderboardScene({ teams }: { teams: TeamSummaryDto[] }) {
 }
 
 function PodiumCard({ team, place }: { team: { name: string; score: number }; place: 1 | 2 | 3 }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   if (place === 1) {
     return (
       <div
@@ -87,7 +87,7 @@ function PodiumCard({ team, place }: { team: { name: string; score: number }; pl
         </div>
         <div className="flex w-full items-center justify-end rounded-lg bg-secondary-container/20 px-space-md py-space-xs">
           <span className="text-headline-lg font-extrabold text-secondary">
-            {team.score} {t('play.pointsShort')}
+            {team.score} {plural('count.pointsShort', team.score)}
           </span>
         </div>
       </div>
@@ -112,7 +112,7 @@ function PodiumCard({ team, place }: { team: { name: string; score: number }; pl
       </div>
       <div className="mt-space-sm flex w-full items-center justify-end rounded-lg bg-surface-container-high px-space-md py-space-xs">
         <span className="text-headline-sm font-extrabold text-on-surface">
-          {team.score} {t('play.pointsShort')}
+          {team.score} {plural('count.pointsShort', team.score)}
         </span>
       </div>
     </div>
@@ -120,7 +120,7 @@ function PodiumCard({ team, place }: { team: { name: string; score: number }; pl
 }
 
 export function FinishedScene({ teams }: { teams: TeamSummaryDto[] }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const ranked = rankTeams(teams);
   const [champion, ...others] = ranked;
 
@@ -146,7 +146,7 @@ export function FinishedScene({ teams }: { teams: TeamSummaryDto[] }) {
             <span className="text-body-md text-on-surface-variant">
               {t('projector.finished.totalScore')}{' '}
               <strong className="font-bold text-secondary">
-                {champion.score} {t('play.pointsShort')}
+                {champion.score} {plural('count.pointsShort', champion.score)}
               </strong>
             </span>
           </div>
@@ -165,7 +165,7 @@ export function FinishedScene({ teams }: { teams: TeamSummaryDto[] }) {
                   <span className="truncate text-body-lg font-extrabold text-on-surface">{team.name}</span>
                 </div>
                 <span className="text-headline-sm font-bold text-on-surface">
-                  {team.score} {t('play.pointsShort')}
+                  {team.score} {plural('count.pointsShort', team.score)}
                 </span>
               </li>
             ))}

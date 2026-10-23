@@ -40,7 +40,7 @@ export function StatusPill({ status }: { status: QuizState }) {
 
 /** Live session card from the Stitch dashboard ("Živé relácie v reálnom čase"). */
 export function LiveSessionCard({ session, quiz }: { session: HostSession; quiz: Quiz | undefined }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const navigate = useNavigate();
   const copy = useCopy();
   const [state, setState] = useState<QuizSessionStateDto | null>(null);
@@ -90,12 +90,12 @@ export function LiveSessionCard({ session, quiz }: { session: HostSession; quiz:
           <span className="flex items-center gap-1">
             <Users className="h-4 w-4 text-tertiary" />
             <strong className="font-semibold text-tertiary">
-              {teams.filter((team) => team.isActive).length} {t('host.session.teamsConnected')}
+              {teams.filter((team) => team.isActive).length} {plural('count.teamsConnected', teams.filter((team) => team.isActive).length)}
             </strong>
           </span>
           {leader && leader.score > 0 && (
             <span className="text-primary">
-              1. {leader.name} ({leader.score} {t('host.common.pointsShort')})
+              1. {leader.name} ({leader.score} {plural('count.pointsShort', leader.score)})
             </span>
           )}
         </div>

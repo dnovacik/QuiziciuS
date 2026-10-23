@@ -5,7 +5,7 @@ import { correctAnswerText, isUntimed, optionLetter, secondsLeft, useNow } from 
 import { useCurrentQuestionMedia } from '../lib/use-current-question-media';
 
 export function LockInScene({ question, teams = [] }: { question: QuestionPublicDto | null; teams?: TeamSummaryDto[] }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const active = teams.filter((team) => team.isActive);
   const ready = active.filter((team) => team.ready).length;
   return (
@@ -18,7 +18,7 @@ export function LockInScene({ question, teams = [] }: { question: QuestionPublic
         </div>
         {question && (
           <span className="text-label-lg font-extrabold uppercase tracking-widest text-secondary">
-            {t('play.question.number')} {question.orderIndex + 1} • {question.points} {t('projector.points')}
+            {t('play.question.number')} {question.orderIndex + 1} • {question.points} {plural('count.points', question.points)}
           </span>
         )}
         <h2 className="mt-space-xs text-display-lg font-extrabold uppercase tracking-tight text-on-surface">
@@ -32,7 +32,7 @@ export function LockInScene({ question, teams = [] }: { question: QuestionPublic
           />
         </div>
         <p className="mt-space-sm text-headline-sm font-bold text-on-surface" data-testid="projector-ready-count">
-          {ready} / {active.length} {t('projector.lockIn.teamsReady')}
+          {t('projector.lockIn.readyLabel')} {ready} / {active.length}
         </p>
         {active.length > 0 && (
           <ul className="mt-space-md flex flex-wrap justify-center gap-space-xs">
@@ -58,7 +58,7 @@ export function LockInScene({ question, teams = [] }: { question: QuestionPublic
 }
 
 export function QuestionScene({ state, question }: { state: QuizSessionStateDto; question: QuestionPublicDto }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const revealed = state.status === 'QUESTION_REVEAL';
   const { media, error } = useCurrentQuestionMedia(state.id, question.id, state.status);
 
@@ -78,7 +78,7 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
             <span className="text-headline-sm text-on-surface-variant">{t(`play.question.type.${question.type}`)}</span>
           </div>
           <span className="flex items-center gap-space-xs text-headline-sm font-extrabold uppercase text-secondary">
-            <Trophy className="h-5 w-5" />+{question.points} {t('projector.points')}
+            <Trophy className="h-5 w-5" />+{question.points} {plural('count.points', question.points)}
           </span>
         </div>
       )}
@@ -219,7 +219,7 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
 }
 
 function BigTimer({ endsAt, total }: { endsAt: string; total: number }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const now = useNow(250);
   const seconds = secondsLeft(endsAt, now) ?? 0;
   const circumference = 2 * Math.PI * 42;
@@ -229,7 +229,7 @@ function BigTimer({ endsAt, total }: { endsAt: string; total: number }) {
     <div
       className="relative flex h-36 w-36 items-center justify-center"
       role="timer"
-      aria-label={`${seconds} ${t('play.seconds')}`}
+      aria-label={`${seconds} ${plural('count.seconds', seconds)}`}
       data-testid="projector-timer"
     >
       <svg aria-hidden="true" className="h-full w-full -rotate-90" viewBox="0 0 100 100">
@@ -251,7 +251,7 @@ function BigTimer({ endsAt, total }: { endsAt: string; total: number }) {
         <span className={`text-display-lg font-extrabold ${urgent ? 'text-red-300' : 'text-on-surface'}`}>
           {String(seconds).padStart(2, '0')}
         </span>
-        <span className="text-label-sm uppercase tracking-wider text-outline">{t('play.seconds')}</span>
+        <span className="text-label-sm uppercase tracking-wider text-outline">{plural('count.seconds', seconds)}</span>
       </div>
     </div>
   );

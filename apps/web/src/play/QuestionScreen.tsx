@@ -45,7 +45,7 @@ export function QuestionScreen({
   submitted: SubmittedAnswer | undefined;
   onSubmitted: (answer: SubmittedAnswer) => void;
 }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const now = useNow();
   const remaining = secondsLeft(state.questionEndsAt, now);
   const untimed = isUntimed(question.timeLimitSeconds);
@@ -70,7 +70,7 @@ export function QuestionScreen({
               {t('play.question.number')} {question.orderIndex + 1}
             </span>
             <span className="flex items-center gap-1 text-label-sm font-bold text-secondary">
-              <Trophy className="h-3.5 w-3.5" />+{question.points} {t('play.pointsShort')}
+              <Trophy className="h-3.5 w-3.5" />+{question.points} {plural('count.pointsShort', question.points)}
             </span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-highest p-0.5">

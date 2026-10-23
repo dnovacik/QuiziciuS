@@ -57,7 +57,7 @@ type MobileTab = 'list' | 'editor' | 'preview';
 /** Stitch "Správa kvízu a Editor otázok". */
 export function QuizEditorPage({ token }: { token: string }) {
   const { quizId = '' } = useParams<{ quizId: string }>();
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const toast = useToast();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -332,11 +332,11 @@ export function QuizEditorPage({ token }: { token: string }) {
             <div className="flex flex-wrap items-center gap-space-lg pt-1 text-body-sm text-on-surface-variant">
               <span className="flex items-center gap-1.5">
                 <HelpCircle className="h-[18px] w-[18px] text-primary" />
-                {ordered.length} {t('host.common.questions')}
+                {ordered.length} {plural('count.questions', ordered.length)}
               </span>
               <span className="flex items-center gap-1.5">
                 <Trophy className="h-[18px] w-[18px] text-secondary" />
-                {totalPoints} {t('host.common.pointsShort')}
+                {totalPoints} {plural('count.pointsShort', totalPoints)}
               </span>
               <span className="flex items-center gap-1.5">
                 <Clock className="h-[18px] w-[18px] text-tertiary" />~{totalMinutes} min
@@ -466,7 +466,7 @@ export function QuizEditorPage({ token }: { token: string }) {
                           <span>•</span>
                           <span className="text-secondary">
                             {question.points}
-                            {t('host.common.pointsShort')}
+                            {plural('count.pointsShort', question.points)}
                           </span>
                           <span>•</span>
                           <span>{isUntimed(question.time_limit_seconds) ? '∞' : `${question.time_limit_seconds}s`}</span>
@@ -501,7 +501,7 @@ export function QuizEditorPage({ token }: { token: string }) {
               <div className="flex items-center justify-between pt-space-sm text-body-sm text-on-surface-variant">
                 <span>{t('host.editor.totalPoints')}</span>
                 <span className="text-label-lg text-secondary">
-                  {totalPoints} {t('host.common.pointsShort')}
+                  {totalPoints} {plural('count.pointsShort', totalPoints)}
                 </span>
               </div>
             </Card>
@@ -573,7 +573,8 @@ export function QuizEditorPage({ token }: { token: string }) {
               <Card className="flex flex-col gap-2 p-space-md text-body-sm text-on-surface-variant">
                 <span className="text-label-md text-on-surface">{t('host.editor.scoringTitle')}</span>
                 <p>
-                  {t(`host.editor.scoring.${editing.draft.type}`)} ({editing.draft.points} {t('host.common.pointsShort')})
+                  {t(`host.editor.scoring.${editing.draft.type}`)} ({editing.draft.points}{' '}
+                  {plural('count.pointsShort', editing.draft.points)})
                 </p>
               </Card>
             )}
@@ -643,7 +644,7 @@ function QuizSettingsDialog({
   onClose: () => void;
   onSaved: (quiz: Quiz) => void;
 }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const [title, setTitle] = useState(quiz.title);
   const [categoryId, setCategoryId] = useState(quiz.category_id ?? '');
   const { pubs } = useHostPubs(token);
@@ -701,7 +702,7 @@ function QuizSettingsDialog({
             <div>
               <Label>{t('host.editor.defaultTimer')}</Label>
               <select className={`${inputClass} p-space-md`} defaultValue="30">
-                <option value="30">30 {t('host.editor.seconds')}</option>
+                <option value="30">30 {plural('count.seconds', 30)}</option>
               </select>
             </div>
           </Pending>

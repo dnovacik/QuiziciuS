@@ -14,7 +14,7 @@ export function LobbyScene({
   title: string | null;
   pub?: string | null;
 }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const joinUrl = new URL(`/play/${sessionId}`, window.location.origin);
   const active = state.teams.filter((team) => team.isActive).length;
 
@@ -39,7 +39,7 @@ export function LobbyScene({
         <div className="flex items-center gap-space-sm self-start rounded-xl bg-surface-container-high px-space-lg py-space-sm shadow-lg md:self-auto">
           <div className="h-3 w-3 animate-pulse rounded-full bg-tertiary" />
           <span className="text-headline-sm font-bold text-on-surface" data-testid="projector-team-count">
-            {active} {t('projector.lobby.teamsConnected')}
+            {active} {plural('count.teamsConnected', active)}
           </span>
         </div>
       </div>

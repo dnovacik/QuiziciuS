@@ -53,7 +53,7 @@ export function RevealScreen({
   sent: SubmittedAnswer | undefined;
   graded: AnswerSummaryDto | undefined;
 }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const ranked = rankTeams(state.teams);
   const own = ranked.find((team) => team.id === teamId);
   const verdict = verdictOf(sent, graded);
@@ -84,7 +84,7 @@ export function RevealScreen({
             <div className="mt-3 flex w-full items-center justify-between rounded-lg bg-surface-container-lowest/60 p-space-sm">
               <span className={`text-label-md font-extrabold uppercase ${style.text}`}>{t('play.reveal.earned')}</span>
               <span className={`text-headline-sm font-extrabold tracking-tight ${style.text}`} data-testid="player-awarded">
-                +{awarded} {t('play.pointsShort')}
+                +{awarded} {plural('count.pointsShort', awarded)}
               </span>
             </div>
           )}
@@ -188,7 +188,7 @@ export function ResultsScreen({
   title: string | null;
   onExit: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const ranked = rankTeams(state.teams);
   const own = ranked.find((team) => team.id === teamId);
   const [showAll, setShowAll] = useState(false);
@@ -197,7 +197,7 @@ export function ResultsScreen({
 
   async function share() {
     if (!own) return;
-    const text = `🏆 ${own.name} — ${own.rank}. ${t('play.results.place')}, ${own.score} ${t('play.pointsShort')}! #QuiziciuS`;
+    const text = `🏆 ${own.name} — ${own.rank}. ${t('play.results.place')}, ${own.score} ${plural('count.pointsShort', own.score)}! #QuiziciuS`;
     try {
       if (navigator.share) await navigator.share({ text });
       else await navigator.clipboard.writeText(text);
@@ -247,7 +247,7 @@ export function ResultsScreen({
             <span className="ml-auto text-display-lg-mobile leading-none text-secondary" data-testid="player-final-score">
               {own.score}
             </span>
-            <span className="text-label-md text-on-surface-variant">{t('play.pointsShort')}</span>
+            <span className="text-label-md text-on-surface-variant">{plural('count.pointsShort', own.score)}</span>
           </div>
         </section>
       )}
@@ -309,7 +309,7 @@ export function ResultsScreen({
 }
 
 function Podium({ ranked, teamId }: { ranked: RankedTeam[]; teamId: string }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   // Visual order: 2nd, 1st, 3rd.
   const places = [ranked[1], ranked[0], ranked[2]];
   const heights = ['h-16', 'h-24', 'h-12'];
@@ -321,7 +321,7 @@ function Podium({ ranked, teamId }: { ranked: RankedTeam[]; teamId: string }) {
           {t('play.results.podium')}
         </h3>
         <span className="text-label-sm text-on-surface-variant">
-          {ranked.length} {t('play.results.teamsTotal')}
+          {ranked.length} {plural('count.teamsTotal', ranked.length)}
         </span>
       </div>
       <div className="grid grid-cols-3 items-end gap-2 pb-2 pt-6 text-center">
@@ -347,7 +347,7 @@ function Podium({ ranked, teamId }: { ranked: RankedTeam[]; teamId: string }) {
               <span
                 className={`text-label-sm font-bold ${team.id === teamId ? 'text-primary' : slot === 1 ? 'text-secondary' : 'text-on-surface-variant'}`}
               >
-                {team.score} {t('play.pointsShort')}
+                {team.score} {plural('count.pointsShort', team.score)}
               </span>
               <div
                 className={`mt-2 flex w-full flex-col justify-end rounded-t-lg pb-1 shadow-inner ${heights[slot]} ${

@@ -16,7 +16,7 @@ function initials(name: string): string {
 }
 
 export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; sessionId: string; onCancel: () => void }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const copy = useCopy();
   const [confirmStart, setConfirmStart] = useState(false);
   const state = room.state!;
@@ -82,11 +82,11 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
                   {t(inLobby ? 'host.room.readyToStart' : `host.status.${state.status}`)}
                 </span>
                 <span className="text-label-sm text-on-surface-variant">
-                  • {room.questions.length} {t('host.common.questions')}
+                  • {room.questions.length} {plural('count.questions', room.questions.length)}
                 </span>
               </div>
               <span className="text-headline-sm text-tertiary" data-testid="room-online-count">
-                {online} {t('host.session.teamsConnected')}
+                {online} {plural('count.teamsConnected', online)}
               </span>
             </div>
             <h2 className="mt-space-xs text-headline-lg tracking-tight text-on-surface">{room.quiz?.title ?? '…'}</h2>
@@ -135,7 +135,7 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
           </div>
           <div className="flex items-center gap-space-sm">
             <span className="rounded-full bg-surface-container px-space-sm py-1 text-label-sm text-on-surface-variant">
-              {online} {t('host.room.active')}
+              {online} {plural('count.activeTeams', online)}
             </span>
             <span className="rounded-full bg-surface-container px-space-sm py-1 text-label-sm text-tertiary">
               {state.teams.length - online} {t('host.room.offline')}
@@ -178,7 +178,7 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
                   </span>
                   {team.infractionCount > 0 && (
                     <span className="text-error">
-                      {team.infractionCount} {t('host.room.infractions')}
+                      {team.infractionCount} {plural('count.infractions', team.infractionCount)}
                     </span>
                   )}
                 </div>

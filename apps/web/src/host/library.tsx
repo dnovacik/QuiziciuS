@@ -83,7 +83,7 @@ export function QuizLibrary({
   onChanged: () => void;
   onCreate: () => void;
 }) {
-  const { t, locale } = useI18n();
+  const { t, locale, plural } = useI18n();
   const [category, setCategory] = useState('all');
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<Sort>('recent');
@@ -215,13 +215,13 @@ export function QuizLibrary({
                   <div className="flex flex-wrap items-center gap-space-md py-space-sm text-body-sm text-on-surface-variant">
                     <span className="flex items-center gap-1" data-testid={`quiz-question-count-${quiz.id}`}>
                       <HelpCircle className="h-4 w-4" />
-                      {stat ? stat.questions : '—'} {t('host.common.questions')}
+                      {stat ? stat.questions : '—'} {plural('count.questions', stat?.questions ?? 0)}
                     </span>
                     {stat && stat.questions > 0 && (
                       <>
                         <span className="flex items-center gap-1">
                           <Trophy className="h-4 w-4" />
-                          {stat.points} {t('host.common.pointsShort')}
+                          {stat.points} {plural('count.pointsShort', stat.points)}
                         </span>
                         <span className="flex items-center gap-1">
                           <Timer className="h-4 w-4" />~{Math.max(1, Math.round(stat.seconds / 60))} min

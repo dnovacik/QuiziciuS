@@ -5,14 +5,14 @@ import type { RankedTeam } from '../lib/quiz';
 
 /** Circular countdown from the Stitch live-question HUD. */
 export function TimerRing({ seconds, total }: { seconds: number; total: number }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const circumference = 2 * Math.PI * 26;
   const fraction = total > 0 ? Math.min(1, seconds / total) : 0;
   const urgent = seconds <= 5;
   return (
     <div
       role="timer"
-      aria-label={`${seconds} ${t('play.seconds')}`}
+      aria-label={`${seconds} ${plural('count.seconds', seconds)}`}
       data-testid="player-timer"
       className="relative flex h-16 w-16 shrink-0 items-center justify-center"
     >
@@ -81,7 +81,7 @@ export function StatusCard({
 
 /** "#2 · Team · 38 b" pill pinned under the game screens. */
 export function StandingPill({ team, leader }: { team: RankedTeam; leader: RankedTeam | undefined }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const behind = leader && leader.id !== team.id ? leader.score - team.score : 0;
   return (
     <section
@@ -95,12 +95,12 @@ export function StandingPill({ team, leader }: { team: RankedTeam; leader: Ranke
         <div className="min-w-0">
           <span className="block truncate text-label-md font-bold text-on-surface">{team.name}</span>
           <span className="text-label-sm text-on-surface-variant">
-            {team.rank === 1 ? t('play.standing.leading') : `${t('play.standing.behind')} ${behind} ${t('play.pointsShort')}`}
+            {team.rank === 1 ? t('play.standing.leading') : `${t('play.standing.behind')} ${behind} ${plural('count.pointsShort', behind)}`}
           </span>
         </div>
       </div>
       <span className="shrink-0 text-headline-sm font-extrabold text-secondary">
-        {team.score} {t('play.pointsShort')}
+        {team.score} {plural('count.pointsShort', team.score)}
       </span>
     </section>
   );
@@ -108,7 +108,7 @@ export function StandingPill({ team, leader }: { team: RankedTeam; leader: Ranke
 
 /** Ranked list rows used on the reveal (top 3) and final results (everyone). */
 export function StandingRow({ team, isOwn }: { team: RankedTeam; isOwn: boolean }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const podium = team.rank === 1 ? 'text-secondary' : isOwn ? 'text-primary' : 'text-on-surface-variant';
   return (
     <li
@@ -125,7 +125,7 @@ export function StandingRow({ team, isOwn }: { team: RankedTeam; isOwn: boolean 
         )}
       </div>
       <span className={`shrink-0 text-headline-sm font-extrabold ${podium}`}>
-        {team.score} <span className="text-label-sm font-normal text-on-surface-variant">{t('play.pointsShort')}</span>
+        {team.score} <span className="text-label-sm font-normal text-on-surface-variant">{plural('count.pointsShort', team.score)}</span>
       </span>
     </li>
   );

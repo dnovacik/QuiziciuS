@@ -17,7 +17,7 @@ function downloadCsv(filename: string, rows: (string | number)[][]) {
 
 /** Stitch "Výsledky" — podium, the rest of the table, CSV export. */
 export function ResultsPanel({ room, projectorUrl }: { room: ControlRoom; projectorUrl: string }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const state = room.state!;
   const ranked = rankTeams(state.teams);
   const [first, second, third] = ranked;
@@ -87,7 +87,7 @@ export function ResultsPanel({ room, projectorUrl }: { room: ControlRoom; projec
                   {t('host.room.otherTeams')} (4. – {ranked.length}.)
                 </h3>
                 <span className="rounded-lg bg-surface-container px-space-sm py-1 text-label-sm text-on-surface-variant">
-                  {rest.length} {t('host.room.teams')}
+                  {rest.length} {plural('count.teams', rest.length)}
                 </span>
               </div>
               <div className="overflow-x-auto">
@@ -109,7 +109,7 @@ export function ResultsPanel({ room, projectorUrl }: { room: ControlRoom; projec
                           {team.infractionCount}
                         </td>
                         <td className="p-space-sm text-right text-headline-sm">
-                          {team.score} {t('host.common.pointsShort')}
+                          {team.score} {plural('count.pointsShort', team.score)}
                         </td>
                       </tr>
                     ))}
@@ -125,7 +125,7 @@ export function ResultsPanel({ room, projectorUrl }: { room: ControlRoom; projec
 }
 
 function Podium({ team, place }: { team: RankedTeam; place: 1 | 2 | 3 }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   if (place === 1) {
     return (
       <div
@@ -143,7 +143,7 @@ function Podium({ team, place }: { team: RankedTeam; place: 1 | 2 | 3 }) {
         <div className="mt-space-md flex w-full flex-col items-center rounded-2xl bg-surface-container p-space-md shadow-inner">
           <span className="text-label-sm text-on-surface-variant">{t('host.room.winningScore')}</span>
           <span className="text-display-lg font-extrabold text-secondary">
-            {team.score} {t('host.common.pointsShort')}
+            {team.score} {plural('count.pointsShort', team.score)}
           </span>
         </div>
       </div>
@@ -168,7 +168,7 @@ function Podium({ team, place }: { team: RankedTeam; place: 1 | 2 | 3 }) {
       <div className="mt-space-md flex w-full flex-col items-center rounded-xl bg-surface-container p-space-sm">
         <span className="text-label-sm text-on-surface-variant">{t('host.room.totalPoints')}</span>
         <span className="text-headline-lg font-bold text-on-surface">
-          {team.score} {t('host.common.pointsShort')}
+          {team.score} {plural('count.pointsShort', team.score)}
         </span>
       </div>
     </div>

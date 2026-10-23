@@ -43,7 +43,7 @@ export function correctLabel(question: Question): string {
 }
 
 export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; onReview: () => void; onEnd: () => void }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const state = room.state!;
   const now = useNow();
   const status = state.status;
@@ -110,7 +110,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                       </span>
                       <span className="truncate text-body-sm text-on-surface-variant">
                         {question.prompt} • {question.points}
-                        {t('host.common.pointsShort')}
+                        {plural('count.pointsShort', question.points)}
                       </span>
                     </div>
                   </div>
@@ -147,7 +147,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                 </span>
               </div>
               <span className="rounded-full bg-surface-container px-space-sm py-1 text-label-sm text-on-surface">
-                {focus.points} {t('host.common.pointsShort')}
+                {focus.points} {plural('count.pointsShort', focus.points)}
               </span>
             </div>
             <div>
@@ -231,7 +231,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                         <span
                           className={`shrink-0 text-label-sm ${option.isCorrect ? 'font-bold text-primary' : 'text-on-surface-variant'}`}
                         >
-                          {count} {t('host.room.teamsShort')}
+                          {count} {plural('count.teams', count)}
                         </span>
                       )}
                     </div>
@@ -245,7 +245,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                 </span>
                 {showingCurrent && (
                   <span className="text-label-sm text-on-surface-variant">
-                    {answers.length} {t('host.room.answersShort')}
+                    {answers.length} {plural('count.answers', answers.length)}
                   </span>
                 )}
               </div>
@@ -405,7 +405,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                   {team.rank}. {team.name}
                 </span>
                 <span className="text-on-surface">
-                  {team.score} {t('host.common.pointsShort')}
+                  {team.score} {plural('count.pointsShort', team.score)}
                 </span>
               </li>
             ))}
@@ -434,13 +434,13 @@ function useMediaUrl(room: ControlRoom, question: Question | null): string | nul
 }
 
 function Ring({ seconds, total }: { seconds: number; total: number }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const fraction = total > 0 ? Math.min(1, seconds / total) : 0;
   return (
     <div
       className="relative flex h-20 w-20 items-center justify-center"
       role="timer"
-      aria-label={`${seconds} ${t('play.seconds')}`}
+      aria-label={`${seconds} ${plural('count.seconds', seconds)}`}
       data-testid="room-timer"
     >
       <svg aria-hidden="true" className="h-20 w-20 -rotate-90" viewBox="0 0 36 36">

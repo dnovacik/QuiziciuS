@@ -48,7 +48,7 @@ export function TeamDashboard({
   email: string;
   onUpdated: (team: RegisteredTeam) => void;
 }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const [players, setPlayers] = useState<Player[]>([]);
   const [rosterError, setRosterError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -101,7 +101,7 @@ export function TeamDashboard({
                 )}
                 <span className="flex items-center gap-1.5 rounded-xl bg-surface-container-high px-space-sm py-1 text-label-md text-on-surface">
                   <Users className="h-[18px] w-[18px] text-primary" />
-                  {team.expected_members} {t('team.dashboard.atTable')}
+                  {team.expected_members} {plural('count.playersAtTable', team.expected_members)}
                 </span>
                 <span className="flex items-center gap-1 rounded-xl bg-tertiary-container/30 px-space-sm py-1 text-label-md text-tertiary">
                   <Check className="h-4 w-4" />

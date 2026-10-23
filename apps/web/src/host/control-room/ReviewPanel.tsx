@@ -20,7 +20,7 @@ export function ReviewPanel({
   sessionId: string;
   onDone: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   const toast = useToast();
   const state = room.state!;
   const question = room.currentQuestion;
@@ -133,7 +133,8 @@ export function ReviewPanel({
                     data-testid={`dispute-approve-${dispute.id}`}
                   >
                     <Check className="h-[18px] w-[18px]" />
-                    {t('host.room.approve')} (+{disputedQuestion?.points ?? '?'} {t('host.common.pointsShort')})
+                    {t('host.room.approve')} (+{disputedQuestion?.points ?? '?'}{' '}
+                    {plural('count.pointsShort', disputedQuestion?.points ?? 0)})
                   </button>
                   <button
                     type="button"
@@ -143,7 +144,7 @@ export function ReviewPanel({
                     data-testid={`dispute-reject-${dispute.id}`}
                   >
                     <X className="h-[18px] w-[18px]" />
-                    {t('host.room.reject')} (0 {t('host.common.pointsShort')})
+                    {t('host.room.reject')} (0 {plural('count.pointsShort', 0)})
                   </button>
                 </div>
               </div>
@@ -210,7 +211,7 @@ export function ReviewPanel({
                       </td>
                       <td className={`p-space-sm text-right text-headline-sm ${ok ? 'text-tertiary' : 'text-on-surface-variant'}`}>
                         {ok ? '+' : ''}
-                        {answer.scoreAwarded} {t('host.common.pointsShort')}
+                        {answer.scoreAwarded} {plural('count.pointsShort', answer.scoreAwarded)}
                       </td>
                     </tr>
                   );

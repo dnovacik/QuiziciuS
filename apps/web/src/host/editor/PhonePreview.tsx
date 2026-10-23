@@ -15,7 +15,7 @@ export function PhonePreview({
   total: number;
   mediaUrl: string | null;
 }) {
-  const { t } = useI18n();
+  const { t, plural } = useI18n();
   return (
     <div
       className="flex flex-col items-center rounded-2xl bg-surface-container-low/90 p-space-md shadow-xl backdrop-blur-xl"
@@ -102,7 +102,7 @@ export function PhonePreview({
           </div>
           <div className="flex items-center justify-end pt-2 text-[10px] text-on-surface-variant">
             <span className="font-bold text-secondary">
-              {draft.points} {t('host.common.pointsShort')}
+              {draft.points} {plural('count.pointsShort', draft.points)}
             </span>
           </div>
         </div>
