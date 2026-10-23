@@ -1,6 +1,7 @@
 import { Check, Smartphone, Timer } from 'lucide-react';
 import { useI18n } from '../../lib/i18n';
 import { isUntimed, optionLetter } from '../../lib/quiz';
+import { ProjectorMediaCard } from '../../ui/ProjectorMediaCard';
 import type { QuestionDraft } from '../api';
 
 /** "Živý náhľad pre hráčov" — the question as a player's phone shows it, correct answer highlighted. */
@@ -13,6 +14,7 @@ export function PhonePreview({
   draft: QuestionDraft;
   index: number;
   total: number;
+  /** Displayable URL of an image in the question-media slot. */
   mediaUrl: string | null;
 }) {
   const { t, plural } = useI18n();
@@ -48,10 +50,8 @@ export function PhonePreview({
             </div>
           </div>
           <div className="my-auto flex flex-col gap-2">
-            {mediaUrl && draft.media_type === 'image' && <img src={mediaUrl} alt="" className="h-24 w-full rounded-lg object-cover" />}
-            {mediaUrl && draft.media_type === 'video' && (
-              <video src={mediaUrl} muted className="h-24 w-full rounded-lg bg-black object-cover" />
-            )}
+            {mediaUrl && draft.media?.kind === 'image' && <img src={mediaUrl} alt="" className="h-24 w-full rounded-lg object-cover" />}
+            {draft.media && draft.media.kind !== 'image' && <ProjectorMediaCard kind={draft.media.kind} compact />}
             <div className="rounded-xl bg-surface-container/70 p-2.5">
               <p className="text-center text-[15px] font-bold leading-snug text-on-surface" data-testid="preview-prompt">
                 {draft.prompt || t('host.editor.promptPlaceholderShort')}

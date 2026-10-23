@@ -15,8 +15,8 @@ export function blankQuestion(orderIndex: number): QuestionDraft {
   return {
     type: 'MULTIPLE_CHOICE',
     prompt: '',
-    media_type: null,
-    media_path: null,
+    media: null,
+    reveal_media: null,
     options: freshOptions(),
     accepted_answers: null,
     correct_numeric: null,

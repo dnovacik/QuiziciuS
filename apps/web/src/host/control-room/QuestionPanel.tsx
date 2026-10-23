@@ -165,7 +165,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                   <div
                     className={`relative overflow-hidden rounded-xl shadow-md ${status === 'QUESTION_ACTIVE' ? 'sm:col-span-5' : 'sm:col-span-12'}`}
                   >
-                    {focus.media_type === 'video' ? (
+                    {focus.media?.kind === 'video' ? (
                       <video src={mediaUrl} controls preload="metadata" className="h-32 w-full bg-black object-contain" />
                     ) : (
                       <img src={mediaUrl} alt={t('play.question.image')} className="h-32 w-full object-cover" />
@@ -421,7 +421,7 @@ function useMediaUrl(room: ControlRoom, question: Question | null): string | nul
   const { mediaUrl } = room;
   useEffect(() => {
     setUrl(null);
-    if (!question?.media_path) return;
+    if (question?.media?.source !== 'upload') return;
     let active = true;
     mediaUrl(question)
       .then((value) => active && setUrl(value))

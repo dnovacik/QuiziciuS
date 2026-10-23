@@ -39,8 +39,8 @@ function question(id: string, order: number, overrides: Partial<Question> = {}):
     quiz_id: 'quiz1',
     type: 'MULTIPLE_CHOICE',
     prompt: `Question ${id}`,
-    media_type: null,
-    media_path: null,
+    media: null,
+    reveal_media: null,
     options: [
       { id: 'a', label: 'Pulp Fiction', isCorrect: false },
       { id: 'b', label: 'Forrest Gump', isCorrect: true },
@@ -289,9 +289,9 @@ describe('host dashboard', () => {
     await waitFor(() => expect(apiDelete).toHaveBeenCalledWith('/quizzes/quiz2', 'jwt'));
   });
 
-  it('duplicates a quiz with its questions but without media', async () => {
-    db.questions.quiz1[0].media_type = 'image';
-    db.questions.quiz1[0].media_path = 'host/quiz1/pic.jpg';
+  it('duplicates a quiz with its questions, keeping linked clips but not uploaded files', async () => {
+    db.questions.quiz1[0].media = { kind: 'image', source: 'upload', path: 'host/quiz1/pic.jpg' };
+    db.questions.quiz1[0].reveal_media = { kind: 'youtube', source: 'link', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' };
     renderAt('/host', <DashboardPage token="jwt" />, '/host');
     fireEvent.click(await screen.findByTestId('quiz-duplicate-quiz1'));
     fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
@@ -299,7 +299,12 @@ describe('host dashboard', () => {
     await waitFor(() => expect(vi.mocked(apiPost).mock.calls.filter(([path]) => path === '/quizzes/copy1/questions')).toHaveLength(3));
     expect(apiPost).toHaveBeenCalledWith('/quizzes', { title: 'Friday Movies (kópia)', categoryId: 'cat1', pubId: 'pub1' }, 'jwt');
     const firstCopy = vi.mocked(apiPost).mock.calls.find(([path]) => path === '/quizzes/copy1/questions')![1];
-    expect(firstCopy).toMatchObject({ prompt: 'Question q1', mediaPath: null, orderIndex: 0 });
+    expect(firstCopy).toMatchObject({
+      prompt: 'Question q1',
+      media: null,
+      revealMedia: { kind: 'youtube', source: 'link', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+      orderIndex: 0,
+    });
   });
 });
 
@@ -340,6 +345,27 @@ describe('quiz editor', () => {
       ),
     );
     await waitFor(() => expect(screen.queryByTestId('editor-dirty')).not.toBeInTheDocument());
+  });
+
+  it('saves a reveal clip separately from the question media', async () => {
+    db.questions.quiz1[0].media = { kind: 'audio', source: 'link', url: 'https://cdn.example/intro.mp3', startSeconds: 80 };
+    renderEditor();
+    await screen.findByTestId('editor-prompt');
+    fireEvent.click(screen.getByTestId('media-slot-reveal-link'));
+    fireEvent.change(screen.getByTestId('media-slot-reveal-link-input'), { target: { value: 'https://youtu.be/dQw4w9WgXcQ' } });
+    fireEvent.click(screen.getByTestId('media-slot-reveal-link-add'));
+    fireEvent.click(screen.getByTestId('editor-save'));
+
+    await waitFor(() =>
+      expect(apiPatch).toHaveBeenCalledWith(
+        '/quizzes/quiz1/questions/q1',
+        expect.objectContaining({
+          media: { kind: 'audio', source: 'link', url: 'https://cdn.example/intro.mp3', startSeconds: 80 },
+          revealMedia: { kind: 'youtube', source: 'link', url: 'https://youtu.be/dQw4w9WgXcQ' },
+        }),
+        'jwt',
+      ),
+    );
   });
 
   it('blocks saving an invalid new question and lists what is missing', async () => {

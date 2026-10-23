@@ -153,7 +153,7 @@ export function useControlRoom(token: string, sessionId: string) {
   }, [busy, token, sessionId, refetch, t]);
 
   const currentQuestion = questions.find((question) => question.id === currentId) ?? null;
-  const mediaUrl = useCallback((question: Question) => hostApi.mediaUrl(token, question.quiz_id, question.media_path ?? ''), [token]);
+  const mediaUrl = useCallback((question: Question) => hostApi.mediaUrl(token, question.quiz_id, question.media?.path ?? ''), [token]);
   return {
     mediaUrl,
     state,

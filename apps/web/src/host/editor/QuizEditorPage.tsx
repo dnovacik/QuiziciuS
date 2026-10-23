@@ -19,7 +19,7 @@ import {
   TriangleAlert,
   Type,
 } from 'lucide-react';
-import type { QuestionType } from '@quizicius/shared-types';
+import type { MediaRefDto, MediaSlot, QuestionType } from '@quizicius/shared-types';
 import { describeError } from '../../lib/errors';
 import { useI18n } from '../../lib/i18n';
 import { isUntimed } from '../../lib/quiz';
@@ -67,8 +67,7 @@ export function QuizEditorPage({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
-  const [mediaBusy, setMediaBusy] = useState(false);
+  const [mediaBusy, setMediaBusy] = useState<MediaSlot | null>(null);
   const [pendingSwitch, setPendingSwitch] = useState<(() => void) | null>(null);
   const [deleting, setDeleting] = useState<Question | 'current' | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -107,19 +106,10 @@ export function QuizEditorPage({ token }: { token: string }) {
     };
   }, [token, quizId, startEditing, t]);
 
-  useEffect(() => {
-    const path = editing?.draft.media_path;
-    setMediaUrl(null);
-    if (!path) return;
-    let active = true;
-    hostApi
-      .mediaUrl(token, quizId, path)
-      .then((url) => active && setMediaUrl(url))
-      .catch(() => active && setMediaUrl(null));
-    return () => {
-      active = false;
-    };
-  }, [editing?.draft.media_path, token, quizId]);
+  const previewUrls = {
+    question: usePreviewUrl(token, quizId, editing?.draft.media ?? null),
+    reveal: usePreviewUrl(token, quizId, editing?.draft.reveal_media ?? null),
+  };
 
   useEffect(() => {
     if (!dirty) return;
@@ -254,21 +244,22 @@ export function QuizEditorPage({ token }: { token: string }) {
     });
   }
 
-  async function uploadMedia(file: File) {
+  async function uploadMedia(slot: MediaSlot, file: File) {
     if (!editing) return;
     if (!isAcceptedMedia(file)) {
       setError(t('host.editor.mediaInvalid'));
       return;
     }
-    setMediaBusy(true);
+    setMediaBusy(slot);
     setError(null);
     try {
-      const { path, mediaType } = await uploadQuestionMedia(token, quizId, file);
-      setEditing((current) => current && { ...current, draft: { ...current.draft, media_path: path, media_type: mediaType } });
+      const ref = await uploadQuestionMedia(token, quizId, file);
+      const patch = slot === 'question' ? { media: ref } : { reveal_media: ref };
+      setEditing((current) => current && { ...current, draft: { ...current.draft, ...patch } });
     } catch (err) {
       setError(describeError(err, t, 'host.editor.mediaFailed'));
     } finally {
-      setMediaBusy(false);
+      setMediaBusy(null);
     }
   }
 
@@ -515,13 +506,10 @@ export function QuizEditorPage({ token }: { token: string }) {
                 isNew={!editing.id}
                 dirty={questionDirty}
                 busy={busy}
-                mediaUrl={mediaUrl}
+                previewUrls={previewUrls}
                 mediaBusy={mediaBusy}
                 onChange={(patch) => setEditing((current) => current && { ...current, draft: { ...current.draft, ...patch } })}
-                onUploadMedia={(file) => void uploadMedia(file)}
-                onRemoveMedia={() =>
-                  setEditing((current) => current && { ...current, draft: { ...current.draft, media_path: null, media_type: null } })
-                }
+                onUploadMedia={(slot, file) => void uploadMedia(slot, file)}
                 onSave={() => void saveQuestion()}
                 onRevert={() => setEditing((current) => current && { ...current, draft: current.original })}
                 onDuplicate={() => void duplicateQuestion()}
@@ -544,7 +532,12 @@ export function QuizEditorPage({ token }: { token: string }) {
 
           <aside className={`w-full flex-col gap-space-md xl:col-span-3 ${hidden('preview')} flex`}>
             {editing && (
-              <PhonePreview draft={editing.draft} index={editingIndex} total={ordered.length + (editing.id ? 0 : 1)} mediaUrl={mediaUrl} />
+              <PhonePreview
+                draft={editing.draft}
+                index={editingIndex}
+                total={ordered.length + (editing.id ? 0 : 1)}
+                mediaUrl={previewUrls.question}
+              />
             )}
             {editing && (
               <Card className="flex flex-col gap-2 p-space-md" testId="editor-validation">
@@ -730,4 +723,23 @@ function QuizSettingsDialog({
       </div>
     </Modal>
   );
+}
+
+/** A playable URL for a media slot in the editor: links as they are, uploads through a signed link, none for YouTube. */
+function usePreviewUrl(token: string, quizId: string, ref: MediaRefDto | null): string | null {
+  const path = ref?.source === 'upload' ? (ref.path ?? null) : null;
+  const [signed, setSigned] = useState<{ path: string; url: string } | null>(null);
+  useEffect(() => {
+    if (!path) return;
+    let active = true;
+    hostApi
+      .mediaUrl(token, quizId, path)
+      .then((url) => active && setSigned({ path, url }))
+      .catch(() => active && setSigned(null));
+    return () => {
+      active = false;
+    };
+  }, [path, token, quizId]);
+  if (ref?.source === 'link') return ref.kind === 'youtube' ? null : (ref.url ?? null);
+  return path && signed?.path === path ? signed.url : null;
 }
