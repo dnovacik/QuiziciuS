@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { apiGet } from './api-client';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('api client', () => {
   it('asks ngrok to skip its browser warning, so API calls work through a free tunnel', async () => {
