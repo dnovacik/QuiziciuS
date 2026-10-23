@@ -147,7 +147,7 @@ interface MediaRef {
   so play starts quickly; uploads and direct links preload like images do.
 - **Projector → control room status** goes over the existing public realtime channel. Anyone could
   fake a status message, but it only changes what the control room displays, never the game.
-- **Duplicating a quiz** copies both media slots; uploaded files are shared, not copied (as today).
+- **Duplicating a quiz** keeps linked media (direct links, YouTube) in both slots and drops uploaded files, as duplicating does today (uploads belong to the original quiz's storage folder).
 - The old `media_type` / `media_path` columns are removed after migrating into `media`.
 
 ## Calls left to the builder
