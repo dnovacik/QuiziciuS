@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import type { AnswerSummaryDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
-import { optionLetter, rankTeams, secondsLeft, useNow } from '../../lib/quiz';
+import { isUntimed, optionLetter, rankTeams, secondsLeft, useNow } from '../../lib/quiz';
 import { Pending } from '../../ui/Pending';
 import type { Question } from '../api';
 import { btn } from '../ui';
@@ -172,16 +172,16 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                     )}
                   </div>
                 )}
-                {status === 'QUESTION_ACTIVE' && remaining === null && (
+                {status === 'QUESTION_ACTIVE' && isUntimed(focus.time_limit_seconds) && (
                   <div
-                    className={`flex items-center justify-center gap-space-xs p-space-xs text-label-lg text-secondary ${mediaUrl ? 'sm:col-span-7' : 'sm:col-span-12'}`}
+                    className={`flex items-center justify-center gap-space-xs p-space-xs text-label-lg ${remaining === null ? 'text-secondary' : 'text-on-surface-variant'} ${mediaUrl ? 'sm:col-span-7' : 'sm:col-span-12'}`}
                     data-testid="room-untimed"
                   >
-                    <InfinityIcon className="h-6 w-6" />
-                    {t('host.room.untimed')}
+                    {remaining === null ? <InfinityIcon className="h-6 w-6" /> : <Lock className="h-6 w-6" />}
+                    {remaining === null ? t('host.room.untimed') : t('host.room.answersClosed')}
                   </div>
                 )}
-                {status === 'QUESTION_ACTIVE' && remaining !== null && (
+                {status === 'QUESTION_ACTIVE' && !isUntimed(focus.time_limit_seconds) && remaining !== null && (
                   <div
                     className={`flex flex-col items-center justify-center gap-space-xs p-space-xs ${mediaUrl ? 'sm:col-span-7' : 'sm:col-span-12'}`}
                   >

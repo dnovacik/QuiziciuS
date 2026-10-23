@@ -359,6 +359,16 @@ describe('control room', () => {
     await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/close-answers', {}, 'jwt'));
   });
 
+  it('says answers are closed after an untimed question was closed, without a countdown', async () => {
+    db.questions.quiz1[0].time_limit_seconds = 0;
+    live.state = { ...liveState('QUESTION_ACTIVE', 'q1'), questionEndsAt: new Date(Date.now() - 1000).toISOString() };
+    renderRoom();
+
+    expect(await screen.findByTestId('room-untimed')).toHaveTextContent('Odpovede uzavreté');
+    expect(screen.queryByRole('timer')).not.toBeInTheDocument();
+    expect(screen.getByTestId('room-action-close-answers')).toBeDisabled();
+  });
+
   it('shows which teams are ready during the lock-in round, warning when fullscreen is off', async () => {
     live.state = liveState('LOCK_IN_ROUND', 'q1');
     live.state.teams = [
