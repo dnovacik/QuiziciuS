@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { CloudOff, RefreshCw } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 import { useSessionDisplay } from '../lib/use-quiz-title';
+import { usePreloadQuestionMedia } from '../lib/use-current-question-media';
 import { useSessionState } from '../lib/use-session-state';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { Logo } from '../ui/Logo';
@@ -15,6 +16,7 @@ export default function ProjectorApp() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { t } = useI18n();
   const { state, error, refetch } = useSessionState(sessionId);
+  usePreloadQuestionMedia(sessionId, state?.currentQuestion?.id, state?.status);
   const { title, pub } = useSessionDisplay(sessionId);
 
   // Realtime events drive the screen; a slow poll covers a dropped websocket on the venue Wi-Fi.
