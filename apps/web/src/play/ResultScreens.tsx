@@ -16,7 +16,9 @@ import {
 import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto } from '@quizicius/shared-types';
 import { useI18n } from '../lib/i18n';
 import { correctAnswerText, optionLetter, rankTeams, type RankedTeam } from '../lib/quiz';
+import { useCurrentQuestionMedia } from '../lib/use-current-question-media';
 import { Pending } from '../ui/Pending';
+import { ProjectorMediaCard } from '../ui/ProjectorMediaCard';
 import { PlayerShell } from './PlayerShell';
 import { StandingRow } from './parts';
 import { describeResponse, type SubmittedAnswer } from './submitted-answers';
@@ -61,9 +63,19 @@ export function RevealScreen({
   const correctIndex = question.options?.findIndex((option) => option.id === question.correctOptionId) ?? -1;
   const awarded = graded?.scoreAwarded ?? 0;
   const answer = sent ?? (graded ? describeResponse(question, graded.response) : undefined);
+  const { revealMedia } = useCurrentQuestionMedia(state.id, question.id, state.status);
 
   return (
     <PlayerShell joinCode={state.joinCode} phase="reveal" testId="player-reveal">
+      {revealMedia?.kind === 'image' && (
+        <img
+          src={revealMedia.url}
+          alt={t('play.question.image')}
+          className="max-h-56 w-full rounded-xl object-cover shadow-md"
+          data-testid="player-reveal-image"
+        />
+      )}
+      {revealMedia && revealMedia.kind !== 'image' && <ProjectorMediaCard kind={revealMedia.kind} />}
       <section
         data-testid="player-verdict"
         data-verdict={verdict}

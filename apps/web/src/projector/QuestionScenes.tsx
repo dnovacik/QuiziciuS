@@ -3,6 +3,7 @@ import type { QuestionPublicDto, QuizSessionStateDto, TeamSummaryDto } from '@qu
 import { useI18n } from '../lib/i18n';
 import { correctAnswerText, isUntimed, optionLetter, secondsLeft, useNow } from '../lib/quiz';
 import { useCurrentQuestionMedia } from '../lib/use-current-question-media';
+import { ProjectorMedia } from './MediaPlayer';
 
 export function LockInScene({ question, teams = [] }: { question: QuestionPublicDto | null; teams?: TeamSummaryDto[] }) {
   const { t, plural } = useI18n();
@@ -60,7 +61,7 @@ export function LockInScene({ question, teams = [] }: { question: QuestionPublic
 export function QuestionScene({ state, question }: { state: QuizSessionStateDto; question: QuestionPublicDto }) {
   const { t, plural } = useI18n();
   const revealed = state.status === 'QUESTION_REVEAL';
-  const { media, error } = useCurrentQuestionMedia(state.id, question.id, state.status);
+  const { media, revealMedia, error } = useCurrentQuestionMedia(state.id, question.id, state.status);
 
   return (
     <section className="flex w-full flex-col gap-space-lg" data-testid={revealed ? 'projector-reveal' : 'projector-question'}>
@@ -120,26 +121,7 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
         )}
       </div>
 
-      {media?.mediaType === 'image' && media.url && (
-        <img
-          data-testid="projector-image"
-          src={media.url}
-          alt={t('play.question.image')}
-          className="mx-auto max-h-[40vh] max-w-full rounded-xl object-contain shadow-2xl"
-        />
-      )}
-      {media?.mediaType === 'video' && media.url && (
-        <video
-          key={question.id}
-          data-testid="projector-video"
-          src={media.url}
-          autoPlay={!revealed}
-          controls
-          playsInline
-          preload="metadata"
-          className="mx-auto max-h-[45vh] max-w-full rounded-xl bg-black shadow-2xl"
-        />
-      )}
+      <ProjectorMedia sessionId={state.id} questionId={question.id} media={media} revealMedia={revealMedia} revealed={revealed} />
       {error && (
         <p role="alert" className="rounded-xl bg-error-container/60 p-space-md text-center text-body-lg text-on-error-container">
           {t('play.question.mediaUnavailable')}

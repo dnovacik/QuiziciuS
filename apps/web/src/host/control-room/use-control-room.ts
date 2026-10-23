@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AnswerSummaryDto, QuizState } from '@quizicius/shared-types';
+import type { AnswerSummaryDto, MediaAction, MediaPlaybackState, MediaRefDto, MediaSlot, QuizState } from '@quizicius/shared-types';
 import { ApiError } from '../../lib/api-client';
 import { describeError } from '../../lib/errors';
 import { useI18n } from '../../lib/i18n';
+import { subscribeToMediaStatus } from '../../lib/media-channel';
 import { useSessionState } from '../../lib/use-session-state';
 import { hostApi, type HostSession, type Question, type Quiz } from '../api';
 
@@ -153,9 +154,39 @@ export function useControlRoom(token: string, sessionId: string) {
   }, [busy, token, sessionId, refetch, t]);
 
   const currentQuestion = questions.find((question) => question.id === currentId) ?? null;
-  const mediaUrl = useCallback((question: Question) => hostApi.mediaUrl(token, question.quiz_id, question.media_path ?? ''), [token]);
+  /** A displayable URL for an image: links as they are, uploads through a signed link. */
+  const mediaUrl = useCallback(
+    async (question: Question, ref: MediaRefDto) =>
+      ref.source === 'link' ? (ref.url ?? '') : hostApi.mediaUrl(token, question.quiz_id, ref.path ?? ''),
+    [token],
+  );
+
+  // What the projector reports it is doing with each clip, per question and slot.
+  const [mediaStatus, setMediaStatus] = useState<Record<string, { state: MediaPlaybackState; at: number }>>({});
+  useEffect(
+    () =>
+      subscribeToMediaStatus(sessionId, (message) =>
+        setMediaStatus((current) => ({ ...current, [`${message.questionId}:${message.slot}`]: { state: message.state, at: Date.now() } })),
+      ),
+    [sessionId],
+  );
+  const mediaControl = useCallback(
+    async (slot: MediaSlot, action: MediaAction) => {
+      setError(null);
+      try {
+        await hostApi.mediaControl(token, sessionId, slot, action);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409) refetch();
+        setError(describeError(err, t, 'errors.generic'));
+      }
+    },
+    [token, sessionId, refetch, t],
+  );
+
   return {
     mediaUrl,
+    mediaStatus,
+    mediaControl,
     state,
     stateError,
     refetch,

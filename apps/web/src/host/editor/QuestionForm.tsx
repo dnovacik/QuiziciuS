@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   Calculator,
   Check,
   Copy,
+  Eye,
   Hash,
   Image as ImageIcon,
   Info,
@@ -14,12 +15,13 @@ import {
   Type,
   X,
 } from 'lucide-react';
-import type { QuestionType } from '@quizicius/shared-types';
+import type { MediaSlot as MediaSlotName, QuestionType } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
 import { isUntimed, optionLetter } from '../../lib/quiz';
 import { Pending } from '../../ui/Pending';
-import { ACCEPTED_MEDIA, type QuestionDraft } from '../api';
+import type { QuestionDraft } from '../api';
 import { btn, Card, inputClass, Label } from '../ui';
+import { MediaSlot } from './MediaSlot';
 import { MAX_OPTIONS, MAX_PROMPT, nextOptionId, TIMER_CHOICES, withType } from './question-draft';
 
 const TYPES: { type: QuestionType; icon: typeof LayoutGrid }[] = [
@@ -35,11 +37,10 @@ export function QuestionForm({
   isNew,
   dirty,
   busy,
-  mediaUrl,
+  previewUrls,
   mediaBusy,
   onChange,
   onUploadMedia,
-  onRemoveMedia,
   onSave,
   onRevert,
   onDuplicate,
@@ -50,18 +51,18 @@ export function QuestionForm({
   isNew: boolean;
   dirty: boolean;
   busy: boolean;
-  mediaUrl: string | null;
-  mediaBusy: boolean;
+  /** Playable URLs of the two slots (signed links for uploads). */
+  previewUrls: Record<MediaSlotName, string | null>;
+  /** The slot whose file is uploading. */
+  mediaBusy: MediaSlotName | null;
   onChange: (patch: Partial<QuestionDraft>) => void;
-  onUploadMedia: (file: File) => void;
-  onRemoveMedia: () => void;
+  onUploadMedia: (slot: MediaSlotName, file: File) => void;
   onSave: () => void;
   onRevert: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }) {
   const { t, plural } = useI18n();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [unit, setUnit] = useState('');
   const options = draft.options ?? [];
   const accepted = draft.accepted_answers ?? [''];
@@ -159,83 +160,34 @@ export function QuestionForm({
         />
       </div>
 
-      <div className="flex flex-col gap-space-sm rounded-xl bg-surface-container/60 p-space-md" data-testid="editor-media">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ImageIcon className="h-5 w-5 text-secondary" />
-            <span className="text-label-md text-on-surface">{t('host.editor.media')}</span>
-            <span className="text-label-sm text-on-surface-variant">({t('common.optional')})</span>
+      {(['question', 'reveal'] as const).map((slot) => (
+        <div
+          key={slot}
+          className="flex flex-col gap-space-sm rounded-xl bg-surface-container/60 p-space-md"
+          data-testid={`editor-media-${slot}`}
+        >
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              {slot === 'question' ? <ImageIcon className="h-5 w-5 text-secondary" /> : <Eye className="h-5 w-5 text-tertiary" />}
+              <span className="text-label-md text-on-surface">
+                {t(slot === 'question' ? 'host.editor.media' : 'host.editor.revealMedia')}
+              </span>
+              <span className="text-label-sm text-on-surface-variant">({t('common.optional')})</span>
+            </div>
+            <span className="text-body-sm text-on-surface-variant">
+              {t(slot === 'question' ? 'host.editor.mediaHint' : 'host.editor.revealMediaHint')}
+            </span>
           </div>
-          {!draft.media_path && (
-            <button
-              type="button"
-              className="text-label-sm text-primary hover:underline disabled:opacity-50"
-              disabled={mediaBusy}
-              onClick={() => fileRef.current?.click()}
-              data-testid="editor-media-add"
-            >
-              {mediaBusy ? t('host.editor.uploading') : `+ ${t('host.editor.addMedia')}`}
-            </button>
-          )}
+          <MediaSlot
+            slot={slot}
+            value={slot === 'question' ? draft.media : draft.reveal_media}
+            previewUrl={previewUrls[slot]}
+            busy={mediaBusy === slot}
+            onUpload={(file) => onUploadMedia(slot, file)}
+            onChange={(ref) => onChange(slot === 'question' ? { media: ref } : { reveal_media: ref })}
+          />
         </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept={ACCEPTED_MEDIA}
-          className="hidden"
-          data-testid="editor-media-file"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (file) onUploadMedia(file);
-          }}
-        />
-        {draft.media_path && (
-          <div className="flex flex-col items-center gap-space-md pt-2 sm:flex-row">
-            <div className="group relative h-28 w-full shrink-0 overflow-hidden rounded-xl bg-surface-container-high sm:w-48">
-              {mediaUrl && draft.media_type === 'image' && (
-                <img
-                  src={mediaUrl}
-                  alt={t('play.question.image')}
-                  className="h-full w-full object-cover"
-                  data-testid="editor-media-image"
-                />
-              )}
-              {mediaUrl && draft.media_type === 'video' && (
-                <video
-                  src={mediaUrl}
-                  controls
-                  preload="metadata"
-                  className="h-full w-full bg-black object-contain"
-                  data-testid="editor-media-video"
-                />
-              )}
-            </div>
-            <div className="flex flex-1 flex-col gap-1 text-body-sm text-on-surface-variant">
-              <span className="text-label-md text-on-surface">{draft.media_path.split('/').pop()}</span>
-              <span>{t('host.editor.mediaHint')}</span>
-              <div className="mt-2 flex gap-space-md">
-                <button
-                  type="button"
-                  className="text-label-sm text-primary hover:underline"
-                  disabled={mediaBusy}
-                  onClick={() => fileRef.current?.click()}
-                >
-                  {t('host.editor.changeMedia')}
-                </button>
-                <button
-                  type="button"
-                  className="text-label-sm text-error hover:underline"
-                  onClick={onRemoveMedia}
-                  data-testid="editor-media-remove"
-                >
-                  {t('host.editor.removeMedia')}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      ))}
 
       {draft.type === 'MULTIPLE_CHOICE' && (
         <div className="flex flex-col gap-space-md">

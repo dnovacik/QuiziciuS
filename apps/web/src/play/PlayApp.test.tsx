@@ -4,6 +4,7 @@ import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto, QuizStat
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiGet, apiPost } from '../lib/api-client';
 import { I18nProvider } from '../lib/i18n';
+import { clearQuestionMediaCache } from '../lib/use-current-question-media';
 import PlayApp from './PlayApp';
 
 vi.mock('../lib/api-client', async (importOriginal) => ({
@@ -17,6 +18,7 @@ const session = vi.hoisted(() => ({
   state: null as QuizSessionStateDto | null,
   mine: [] as AnswerSummaryDto[],
   league: null as { id: string; name: string } | null,
+  media: { media: null, revealMedia: null } as { media: unknown; revealMedia: unknown },
 }));
 vi.mock('../lib/use-session-state', () => ({
   useSessionState: (id: string | undefined) => ({ state: id ? session.state : null, error: null, refetch: vi.fn() }),
@@ -139,13 +141,15 @@ beforeEach(() => {
   session.state = null;
   session.mine = [];
   session.league = null;
+  session.media = { media: null, revealMedia: null };
+  clearQuestionMediaCache();
   sessionStorage.clear();
   vi.mocked(apiGet)
     .mockReset()
     .mockImplementation(async (path: string) => {
       if (path.endsWith('/display')) return { title: 'Friday Movie Quiz', league: session.league };
       if (path.endsWith('/answers/mine')) return session.mine;
-      if (path.endsWith('/media')) return { mediaType: null, url: null };
+      if (path.endsWith('/media')) return session.media;
       throw new Error(`unexpected GET ${path}`);
     });
   vi.mocked(apiPost).mockReset();
@@ -337,6 +341,40 @@ describe('answering', () => {
     session.state!.teams = session.state!.teams.map((team) => (team.id === 'team-1' ? { ...team, ready: true } : team));
     renderPlay();
     expect(screen.getByTestId('player-ready')).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
+describe('question media on phones', () => {
+  beforeEach(seated);
+  const resolved = (kind: string, url: string) => ({ kind, url, startSeconds: null, durationSeconds: null });
+
+  it('shows a question image', async () => {
+    session.media = { media: resolved('image', 'https://cdn.test/q1.png'), revealMedia: null };
+    activeQuestion();
+    renderPlay();
+
+    expect(await screen.findByTestId('player-question-image')).toHaveAttribute('src', 'https://cdn.test/q1.png');
+  });
+
+  it.each([
+    ['audio', 'Počúvajte projektor'],
+    ['video', 'Sledujte projektor'],
+    ['youtube', 'Sledujte projektor'],
+  ])('points to the projector for a %s clip and plays nothing on the phone', async (kind, text) => {
+    session.media = { media: resolved(kind, 'https://cdn.test/clip'), revealMedia: null };
+    activeQuestion();
+    const { container } = renderPlay();
+
+    expect(await screen.findByTestId('projector-media-card')).toHaveTextContent(text);
+    expect(container.querySelector('audio, video, iframe')).toBeNull();
+  });
+
+  it('shows the reveal image at the reveal', async () => {
+    session.media = { media: null, revealMedia: resolved('image', 'https://cdn.test/answer.png') };
+    setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'b' }) });
+    renderPlay();
+
+    expect(await screen.findByTestId('player-reveal-image')).toHaveAttribute('src', 'https://cdn.test/answer.png');
   });
 });
 

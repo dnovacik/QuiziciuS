@@ -5,7 +5,9 @@ today, and what has to be decided before building it.
 
 ## Short video and audio clips in questions
 
-*Noted 2026-10-23.*
+*Noted 2026-10-23.* **Built 2026-10-24** as designed in
+[`superpowers/specs/2026-10-23-question-clips-design.md`](superpowers/specs/2026-10-23-question-clips-design.md);
+the notes below are the original idea. The rights item (7) is still open for the terms of service.
 
 **Wanted:** short video previews (a film scene, a music-video snippet) and short audio tracks
 ("name the song", "whose voice is this") as part of a question. The host adds them **by upload or by

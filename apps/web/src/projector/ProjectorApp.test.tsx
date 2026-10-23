@@ -7,6 +7,7 @@ import { I18nProvider } from '../lib/i18n';
 import ProjectorApp from './ProjectorApp';
 
 vi.mock('../lib/api-client', () => ({ apiGet: vi.fn() }));
+vi.mock('../lib/media-channel', () => ({ subscribeToMediaControl: vi.fn(() => vi.fn()), sendMediaStatus: vi.fn() }));
 
 const session = vi.hoisted(() => ({ state: null as QuizSessionStateDto | null, error: null as string | null, refetch: vi.fn() }));
 vi.mock('../lib/use-session-state', () => ({
@@ -102,7 +103,7 @@ beforeEach(() => {
     .mockReset()
     .mockImplementation(async (path: string) => {
       if (path.endsWith('/display')) return { title: 'Friday Movie Quiz' };
-      if (path.endsWith('/media')) return { mediaType: null, url: null };
+      if (path.endsWith('/media')) return { media: null, revealMedia: null };
       throw new Error(`unexpected GET ${path}`);
     });
 });
@@ -193,5 +194,26 @@ describe('ProjectorApp', () => {
     renderProjector();
     fireEvent.click(within(screen.getByTestId('projector-offline')).getByRole('button'));
     expect(session.refetch).toHaveBeenCalled();
+  });
+
+  it('asks once for a click to turn on sound, and any click does it', () => {
+    setState('LOBBY');
+    renderProjector();
+    expect(screen.getByTestId('projector-sound-overlay')).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+
+    expect(screen.queryByTestId('projector-sound-overlay')).not.toBeInTheDocument();
+  });
+
+  it('keeps asking for a click after a key the browser does not count, such as Esc', () => {
+    setState('LOBBY');
+    Object.defineProperty(navigator, 'userActivation', { configurable: true, value: { hasBeenActive: false } });
+    renderProjector();
+
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+
+    expect(screen.getByTestId('projector-sound-overlay')).toBeInTheDocument();
+    delete (navigator as { userActivation?: unknown }).userActivation;
   });
 });

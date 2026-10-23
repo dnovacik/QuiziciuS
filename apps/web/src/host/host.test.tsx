@@ -22,6 +22,14 @@ vi.mock('../lib/api-client', async (importOriginal) => ({
 }));
 vi.mock('../lib/supabase-client', () => ({ supabase: { auth: { signOut: vi.fn() } }, subscribeToSession: vi.fn(() => vi.fn()) }));
 
+const mediaStatus = vi.hoisted(() => ({ send: null as null | ((message: { questionId: string; slot: string; state: string }) => void) }));
+vi.mock('../lib/media-channel', () => ({
+  subscribeToMediaStatus: vi.fn((_sessionId: string, onStatus: typeof mediaStatus.send) => {
+    mediaStatus.send = onStatus;
+    return vi.fn();
+  }),
+}));
+
 const pubs = vi.hoisted(() => ({ mine: [] as Pub[], all: [] as Pub[] }));
 const live = vi.hoisted(() => ({ state: null as QuizSessionStateDto | null, refetch: vi.fn() }));
 vi.mock('../lib/use-session-state', () => ({
@@ -39,8 +47,8 @@ function question(id: string, order: number, overrides: Partial<Question> = {}):
     quiz_id: 'quiz1',
     type: 'MULTIPLE_CHOICE',
     prompt: `Question ${id}`,
-    media_type: null,
-    media_path: null,
+    media: null,
+    reveal_media: null,
     options: [
       { id: 'a', label: 'Pulp Fiction', isCorrect: false },
       { id: 'b', label: 'Forrest Gump', isCorrect: true },
@@ -183,7 +191,7 @@ beforeEach(() => {
 });
 
 function renderAt(path: string, element: React.ReactNode, routePath: string) {
-  return render(
+  const tree = () => (
     <I18nProvider>
       <ToastProvider>
         <MemoryRouter initialEntries={[path]}>
@@ -194,8 +202,11 @@ function renderAt(path: string, element: React.ReactNode, routePath: string) {
           </Routes>
         </MemoryRouter>
       </ToastProvider>
-    </I18nProvider>,
+    </I18nProvider>
   );
+  const view = render(tree());
+  /** Renders again, e.g. after the live state changed. */
+  return { ...view, refresh: () => view.rerender(tree()) };
 }
 
 describe('host dashboard', () => {
@@ -289,9 +300,9 @@ describe('host dashboard', () => {
     await waitFor(() => expect(apiDelete).toHaveBeenCalledWith('/quizzes/quiz2', 'jwt'));
   });
 
-  it('duplicates a quiz with its questions but without media', async () => {
-    db.questions.quiz1[0].media_type = 'image';
-    db.questions.quiz1[0].media_path = 'host/quiz1/pic.jpg';
+  it('duplicates a quiz with its questions, keeping linked clips but not uploaded files', async () => {
+    db.questions.quiz1[0].media = { kind: 'image', source: 'upload', path: 'host/quiz1/pic.jpg' };
+    db.questions.quiz1[0].reveal_media = { kind: 'youtube', source: 'link', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' };
     renderAt('/host', <DashboardPage token="jwt" />, '/host');
     fireEvent.click(await screen.findByTestId('quiz-duplicate-quiz1'));
     fireEvent.click(screen.getByTestId('confirm-dialog-confirm'));
@@ -299,7 +310,12 @@ describe('host dashboard', () => {
     await waitFor(() => expect(vi.mocked(apiPost).mock.calls.filter(([path]) => path === '/quizzes/copy1/questions')).toHaveLength(3));
     expect(apiPost).toHaveBeenCalledWith('/quizzes', { title: 'Friday Movies (kópia)', categoryId: 'cat1', pubId: 'pub1' }, 'jwt');
     const firstCopy = vi.mocked(apiPost).mock.calls.find(([path]) => path === '/quizzes/copy1/questions')![1];
-    expect(firstCopy).toMatchObject({ prompt: 'Question q1', mediaPath: null, orderIndex: 0 });
+    expect(firstCopy).toMatchObject({
+      prompt: 'Question q1',
+      media: null,
+      revealMedia: { kind: 'youtube', source: 'link', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+      orderIndex: 0,
+    });
   });
 });
 
@@ -340,6 +356,27 @@ describe('quiz editor', () => {
       ),
     );
     await waitFor(() => expect(screen.queryByTestId('editor-dirty')).not.toBeInTheDocument());
+  });
+
+  it('saves a reveal clip separately from the question media', async () => {
+    db.questions.quiz1[0].media = { kind: 'audio', source: 'link', url: 'https://cdn.example/intro.mp3', startSeconds: 80 };
+    renderEditor();
+    await screen.findByTestId('editor-prompt');
+    fireEvent.click(screen.getByTestId('media-slot-reveal-link'));
+    fireEvent.change(screen.getByTestId('media-slot-reveal-link-input'), { target: { value: 'https://youtu.be/dQw4w9WgXcQ' } });
+    fireEvent.click(screen.getByTestId('media-slot-reveal-link-add'));
+    fireEvent.click(screen.getByTestId('editor-save'));
+
+    await waitFor(() =>
+      expect(apiPatch).toHaveBeenCalledWith(
+        '/quizzes/quiz1/questions/q1',
+        expect.objectContaining({
+          media: { kind: 'audio', source: 'link', url: 'https://cdn.example/intro.mp3', startSeconds: 80 },
+          revealMedia: { kind: 'youtube', source: 'link', url: 'https://youtu.be/dQw4w9WgXcQ' },
+        }),
+        'jwt',
+      ),
+    );
   });
 
   it('blocks saving an invalid new question and lists what is missing', async () => {
@@ -413,6 +450,76 @@ describe('control room', () => {
     await screen.findByTestId('room-lobby');
     expect(screen.queryByTestId('lobby-unregistered-count')).not.toBeInTheDocument();
     expect(screen.queryByTestId('unregistered-t1')).not.toBeInTheDocument();
+  });
+
+  describe('clips', () => {
+    const SONG = {
+      kind: 'audio' as const,
+      source: 'link' as const,
+      url: 'https://cdn.example/song.mp3',
+      startSeconds: 80,
+      durationSeconds: 15,
+    };
+    const FULL = { kind: 'youtube' as const, source: 'link' as const, url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' };
+
+    it('shows the clip and its part, and plays it on the projector', async () => {
+      db.questions.quiz1[0].media = SONG;
+      live.state = liveState('QUESTION_ACTIVE', 'q1');
+      renderRoom();
+
+      const bar = await screen.findByTestId('room-media-question');
+      expect(bar).toHaveTextContent('Zvuk');
+      expect(bar).toHaveTextContent('1:20 – 1:35');
+      fireEvent.click(within(bar).getByTestId('room-media-question-play'));
+
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/media/control', { slot: 'question', action: 'play' }, 'jwt'));
+    });
+
+    it('offers the reveal clip only at the reveal', async () => {
+      db.questions.quiz1[0].reveal_media = FULL;
+      live.state = liveState('QUESTION_ACTIVE', 'q1');
+      const view = renderRoom();
+      await screen.findByTestId('room-question');
+      expect(screen.queryByTestId('room-media-reveal')).not.toBeInTheDocument();
+
+      live.state = liveState('QUESTION_REVEAL', 'q1');
+      view.unmount();
+      renderRoom();
+
+      fireEvent.click(within(await screen.findByTestId('room-media-reveal')).getByTestId('room-media-reveal-replay'));
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/media/control', { slot: 'reveal', action: 'replay' }, 'jwt'));
+    });
+
+    it('does not carry a "projector not responding" warning over to the next question', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      db.questions.quiz1[0].media = SONG;
+      db.questions.quiz1[1].media = SONG;
+      live.state = liveState('QUESTION_ACTIVE', 'q1');
+      const view = renderRoom();
+      fireEvent.click(within(await screen.findByTestId('room-media-question')).getByTestId('room-media-question-play'));
+      act(() => vi.advanceTimersByTime(4100));
+      expect(screen.getByTestId('room-media-question-state')).toHaveTextContent('Projektor neodpovedá');
+
+      live.state = liveState('QUESTION_ACTIVE', 'q2');
+      view.refresh();
+      await screen.findByText('Question q2');
+
+      expect(screen.queryByTestId('room-media-question-state')).not.toBeInTheDocument();
+      vi.useRealTimers();
+    });
+
+    it('says when the projector has no sound, and when it cannot play the clip', async () => {
+      db.questions.quiz1[0].media = SONG;
+      live.state = liveState('QUESTION_ACTIVE', 'q1');
+      renderRoom();
+      await screen.findByTestId('room-media-question');
+
+      act(() => mediaStatus.send!({ questionId: 'q1', slot: 'question', state: 'blocked' }));
+      expect(screen.getByTestId('room-media-question-state')).toHaveTextContent('Projektor nemá zapnutý zvuk');
+
+      act(() => mediaStatus.send!({ questionId: 'q1', slot: 'question', state: 'error' }));
+      expect(screen.getByTestId('room-media-question-state')).toHaveTextContent('Projektor klip neprehrá');
+    });
   });
 
   it('closes answers for an untimed question', async () => {

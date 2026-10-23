@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   Timer,
   Trophy,
-  Video,
   ZoomIn,
 } from 'lucide-react';
 import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto } from '@quizicius/shared-types';
@@ -23,6 +22,7 @@ import { useI18n } from '../lib/i18n';
 import { formatClock, isUntimed, optionLetter, rankTeams, secondsLeft, useNow } from '../lib/quiz';
 import type { TeamSeat } from '../lib/team-seat';
 import { useCurrentQuestionMedia } from '../lib/use-current-question-media';
+import { ProjectorMediaCard } from '../ui/ProjectorMediaCard';
 import { Modal } from '../ui/Modal';
 import { PlayerShell } from './PlayerShell';
 import { StandingPill, TimerRing } from './parts';
@@ -124,7 +124,7 @@ function QuestionCard({ state, question }: { state: QuizSessionStateDto; questio
       <h1 className="text-headline-sm font-extrabold leading-snug tracking-tight text-on-surface" data-testid="player-prompt">
         {question.prompt}
       </h1>
-      {media?.mediaType === 'image' && media.url && (
+      {media?.kind === 'image' && (
         <button
           type="button"
           onClick={() => setZoomed(true)}
@@ -148,21 +148,13 @@ function QuestionCard({ state, question }: { state: QuizSessionStateDto; questio
           </div>
         </button>
       )}
-      {media?.mediaType === 'video' && (
-        <p
-          data-testid="player-question-video"
-          className="flex items-center gap-2 rounded-xl bg-surface-container-lowest/70 p-3 text-body-sm text-on-surface-variant"
-        >
-          <Video className="h-4 w-4 text-secondary" />
-          {t('play.question.videoOnProjector')}
-        </p>
-      )}
+      {media && media.kind !== 'image' && <ProjectorMediaCard kind={media.kind} />}
       {error && (
         <p role="alert" className="rounded-xl bg-error-container/60 p-3 text-body-sm text-on-error-container">
           {t('play.question.mediaUnavailable')}
         </p>
       )}
-      {zoomed && media?.url && (
+      {zoomed && media?.kind === 'image' && (
         <Modal labelledBy="player-image-title" onClose={() => setZoomed(false)} className="max-w-md bg-surface-container-high p-2 sm:p-2">
           <img src={media.url} alt={t('play.question.image')} className="max-h-[70vh] w-full rounded-xl object-contain" />
           <p id="player-image-title" className="p-2 text-center text-body-md font-semibold text-on-surface">

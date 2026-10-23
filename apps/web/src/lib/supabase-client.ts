@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
 
 const PASSWORD_NEEDED_KEY = 'quizicius:set-password';
 
@@ -36,19 +36,54 @@ export function clearPendingPasswordLink(): void {
 
 export const supabase = createClient(import.meta.env.VITE_SUPABASE_URL as string, import.meta.env.VITE_SUPABASE_ANON_KEY as string);
 
-export type SessionBroadcastEvent = 'STATE_CHANGE' | 'SCORE_UPDATE';
+export type SessionBroadcastEvent = 'STATE_CHANGE' | 'SCORE_UPDATE' | 'MEDIA_CONTROL' | 'MEDIA_STATUS';
+type Listener = { events: SessionBroadcastEvent[]; onEvent: (event: SessionBroadcastEvent, payload: Record<string, unknown>) => void };
 
+const EVENTS: SessionBroadcastEvent[] = ['STATE_CHANGE', 'SCORE_UPDATE', 'MEDIA_CONTROL', 'MEDIA_STATUS'];
+/** One realtime channel per session, shared by everything on the page that listens or sends. */
+const channels = new Map<string, { channel: RealtimeChannel; listeners: Set<Listener> }>();
+
+function joinSession(sessionId: string) {
+  let entry = channels.get(sessionId);
+  if (!entry) {
+    const listeners = new Set<Listener>();
+    const channel = supabase.channel(`quiz:${sessionId}`);
+    for (const event of EVENTS) {
+      channel.on('broadcast', { event }, ({ payload }) => {
+        for (const listener of [...listeners]) if (listener.events.includes(event)) listener.onEvent(event, payload);
+      });
+    }
+    channel.subscribe();
+    entry = { channel, listeners };
+    channels.set(sessionId, entry);
+  }
+  return entry;
+}
+
+/** Listens to the session's broadcasts; by default only the game updates (state and scores). */
 export function subscribeToSession(
   sessionId: string,
   onEvent: (event: SessionBroadcastEvent, payload: Record<string, unknown>) => void,
+  events: SessionBroadcastEvent[] = ['STATE_CHANGE', 'SCORE_UPDATE'],
 ): () => void {
-  const channel = supabase.channel(`quiz:${sessionId}`);
-  channel
-    .on('broadcast', { event: 'STATE_CHANGE' }, ({ payload }) => onEvent('STATE_CHANGE', payload))
-    .on('broadcast', { event: 'SCORE_UPDATE' }, ({ payload }) => onEvent('SCORE_UPDATE', payload))
-    .subscribe();
-
+  const entry = joinSession(sessionId);
+  const listener = { events, onEvent };
+  entry.listeners.add(listener);
   return () => {
-    supabase.removeChannel(channel);
+    entry.listeners.delete(listener);
+    if (entry.listeners.size === 0 && channels.get(sessionId) === entry) {
+      channels.delete(sessionId);
+      void supabase.removeChannel(entry.channel);
+    }
   };
+}
+
+/** Sends a message to everyone on the session's channel; only while this page is subscribed to it. */
+export function broadcastToSession(sessionId: string, event: SessionBroadcastEvent, payload: Record<string, unknown>): void {
+  void channels
+    .get(sessionId)
+    ?.channel.send({ type: 'broadcast', event, payload })
+    .catch(() => {
+      // Best effort: a lost status message only affects what the control room displays.
+    });
 }
