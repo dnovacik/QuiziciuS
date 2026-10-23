@@ -20,8 +20,7 @@ link**.
 
 **To decide before building:**
 
-1. **Where the sound plays.** Most likely the projector only, with the phones staying silent so 30
-   phones don't play out of sync. Should the phones show the video without sound, or not at all?
+1. ~~**Where the sound plays.**~~ **Decided (2026-10-23): projector only.** Phones stay silent.
 2. **Who controls playback.** Proposal: the host can play, pause and replay from the control room,
    and the projector follows. Should it autoplay when the question opens?
 3. **Links.** Which kinds:

@@ -5,6 +5,7 @@
     "test": "pnpm -r test",
     "build": "pnpm -r build",
     "dev": "pnpm -r dev",
+    "live": "node scripts/live-night.mjs",
     "format": "prettier --write \"apps/*/src/**/*.{ts,tsx,css,json}\" \"packages/*/src/**/*.ts\"",
     "format:check": "prettier --check \"apps/*/src/**/*.{ts,tsx,css,json}\" \"packages/*/src/**/*.ts\""
   },

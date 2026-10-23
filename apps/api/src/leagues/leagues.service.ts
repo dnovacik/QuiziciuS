@@ -12,11 +12,11 @@ import {
   TeamLeagueDto,
 } from '@quizicius/shared-types';
 import { today } from '../accounts/subscription';
-import { LeagueHostRecord, LeagueRecord, LeaguesRepository, LeagueTeamRecord } from '../data/leagues.repository';
+import { LeagueHostRecord, LeaguePubRecord, LeagueRecord, LeaguesRepository, LeagueTeamRecord } from '../data/leagues.repository';
 import { ProfilesRepository } from '../data/profiles.repository';
 import { PubsRepository } from '../data/pubs.repository';
 import { RegisteredTeamsRepository } from '../data/registered-teams.repository';
-import { SessionsRepository } from '../data/sessions.repository';
+import { SessionRecord, SessionsRepository } from '../data/sessions.repository';
 import { TeamsRepository } from '../data/teams.repository';
 import { QuizEngineService } from '../quiz-engine/quiz-engine.service';
 import { CreateLeagueDto, UpdateLeagueDto } from './dto/league.dto';
@@ -25,6 +25,22 @@ import { leagueStandings, LeagueMember, NightResult, qualifiers, superLeagueStan
 const LEAGUE_NOT_FOUND = () => new NotFoundException({ code: 'LEAGUE_NOT_FOUND', message: 'League not found' });
 const NOT_LEAGUE_OWNER = () => new ForbiddenException({ code: 'NOT_LEAGUE_OWNER', message: 'Only the league owner can do this' });
 const LEAGUE_CLOSED = () => new ConflictException({ code: 'LEAGUE_CLOSED', message: 'The league is closed' });
+/** A league with everything its pages read: hosts, pubs, team rows and finished nights. */
+interface LeagueData {
+  league: LeagueRecord;
+  hosts: LeagueHostRecord[];
+  pubs: LeaguePubRecord[];
+  teams: LeagueTeamRecord[];
+  finished: SessionRecord[];
+}
+
+/** A league table plus the team rows it was computed from (after "playing is joining") and team names. */
+interface Computed {
+  standings: LeagueStandingDto[];
+  teams: LeagueTeamRecord[];
+  names: Map<string, string>;
+}
+
 const PUB_NOT_IN_LEAGUE = () => new BadRequestException({ code: 'PUB_NOT_IN_LEAGUE', message: 'The pub is not part of this league' });
 
 /**
@@ -58,12 +74,15 @@ export class LeaguesService {
     return league;
   }
 
-  /** The league and the caller's host row; hosts with no row get LEAGUE_NOT_FOUND. */
-  private async requireHostOf(hostId: string, leagueId: string): Promise<{ league: LeagueRecord; mine: LeagueHostRecord }> {
-    const league = await this.requireLeague(leagueId);
-    const mine = (await this.leagues.hosts(leagueId)).find((row) => row.host_id === hostId);
-    if (!mine) throw LEAGUE_NOT_FOUND();
-    return { league, mine };
+  /** The league, its hosts and the caller's host row; hosts with no row get LEAGUE_NOT_FOUND. */
+  private async requireHostOf(
+    hostId: string,
+    leagueId: string,
+  ): Promise<{ league: LeagueRecord; hosts: LeagueHostRecord[]; mine: LeagueHostRecord }> {
+    const [league, hosts] = await Promise.all([this.leagues.findById(leagueId), this.leagues.hosts(leagueId)]);
+    const mine = hosts.find((row) => row.host_id === hostId);
+    if (!league || !mine) throw LEAGUE_NOT_FOUND();
+    return { league, hosts, mine };
   }
 
   private async requireOwner(hostId: string, leagueId: string): Promise<LeagueRecord> {
@@ -77,15 +96,26 @@ export class LeaguesService {
     return profile?.display_name ?? profile?.email ?? '—';
   }
 
-  private async teamName(teamId: string): Promise<string> {
-    return (await this.teams.findById(teamId))?.name ?? '—';
+  private async teamNames(teamIds: string[]): Promise<Map<string, string>> {
+    const entries = await Promise.all([...new Set(teamIds)].map(async (id) => [id, (await this.teams.findById(id))?.name ?? '—'] as const));
+    return new Map(entries);
+  }
+
+  /** Everything a league's pages need, read once and in parallel. */
+  private async loadData(league: LeagueRecord, hosts?: LeagueHostRecord[]): Promise<LeagueData> {
+    const [hostRows, pubs, teams, sessions] = await Promise.all([
+      hosts ?? this.leagues.hosts(league.id),
+      this.leagues.pubs(league.id),
+      this.leagues.teams(league.id),
+      this.sessions.listByLeague(league.id),
+    ]);
+    return { league, hosts: hostRows, pubs, teams, finished: sessions.filter((session) => session.status === 'FINISHED') };
   }
 
   /** Final scores of every finished night ticked for the league. */
-  async nights(league: LeagueRecord): Promise<NightResult[]> {
-    const finished = (await this.sessions.listByLeague(league.id)).filter((session) => session.status === 'FINISHED');
+  private async nights(data: LeagueData): Promise<NightResult[]> {
     return Promise.all(
-      finished.map(async (session) => {
+      data.finished.map(async (session) => {
         const state = await this.engine.getState(session.id);
         return {
           sessionId: session.id,
@@ -106,78 +136,79 @@ export class LeaguesService {
   /**
    * Playing is joining: registered teams that played a night become members. A Super League only
    * has the teams that qualified, so there it promotes existing rows and adds nobody.
+   * Returns the league's team rows after the changes.
    */
-  async syncPlayed(league: LeagueRecord, nights: NightResult[]): Promise<void> {
-    const rows = new Map((await this.leagues.teams(league.id)).map((row) => [row.registered_team_id, row]));
-    const leaguePubIds = (await this.leagues.pubs(league.id)).map((row) => row.pub_id);
+  private async syncPlayed(data: LeagueData, nights: NightResult[]): Promise<LeagueTeamRecord[]> {
+    const rows = new Map(data.teams.map((row) => [row.registered_team_id, row]));
+    const leaguePubIds = data.pubs.map((row) => row.pub_id);
     const firstNightPub = new Map<string, string | null>();
     for (const night of [...nights].sort((a, b) => a.finishedAt.localeCompare(b.finishedAt))) {
       for (const team of night.teams) {
         if (team.registeredTeamId && !firstNightPub.has(team.registeredTeamId)) firstNightPub.set(team.registeredTeamId, night.pubId);
       }
     }
-    for (const [teamId, nightPub] of firstNightPub) {
+    const pending = [...firstNightPub].filter(([teamId]) => {
       const row = rows.get(teamId);
       // A member that joined from its invitation may still lack a pub; its first night supplies one.
-      if (row?.status === 'JOINED' && row.pub_id) continue;
-      if (!row && league.kind === 'SUPER') continue;
-      const pubId = row?.pub_id ?? (await this.pubSnapshot(teamId, leaguePubIds, nightPub));
-      await this.leagues.setTeamStatus(league.id, teamId, 'JOINED', pubId);
-    }
-  }
-
-  private async liveStandings(league: LeagueRecord): Promise<{ standings: LeagueStandingDto[]; nightsPlayed: number }> {
-    const nights = await this.nights(league);
-    await this.syncPlayed(league, nights);
-    const members: LeagueMember[] = await Promise.all(
-      (await this.leagues.teams(league.id))
-        .filter((row) => row.status === 'JOINED')
-        .map(async (row) => ({
-          registeredTeamId: row.registered_team_id,
-          teamName: await this.teamName(row.registered_team_id),
-          pubId: row.pub_id,
-        })),
-    );
-    const standings = league.kind === 'SUPER' ? superLeagueStandings(nights, members) : leagueStandings(nights, members);
-    return { standings, nightsPlayed: nights.length };
-  }
-
-  /** Frozen once closed; live from the nights until then. */
-  private async standings(league: LeagueRecord): Promise<{ standings: LeagueStandingDto[]; nightsPlayed: number }> {
-    if (!league.closed_at) return this.liveStandings(league);
-    const results = await this.leagues.results(league.id);
-    const nightsPlayed = (await this.sessions.listByLeague(league.id)).filter((s) => s.status === 'FINISHED').length;
-    return {
-      nightsPlayed,
-      standings: results.map((row) => ({
-        rank: row.rank,
-        registeredTeamId: row.registered_team_id ?? '',
-        teamName: row.team_name,
-        pubId: row.pub_id,
-        points: row.points,
-        nights: row.nights,
-        placements: row.placements,
-      })),
-    };
-  }
-
-  private async summary(
-    league: LeagueRecord,
-    computed?: { standings: LeagueStandingDto[]; nightsPlayed: number },
-  ): Promise<LeagueSummaryDto> {
-    const [pubRows, teamRows, ownerName] = await Promise.all([
-      this.leagues.pubs(league.id),
-      this.leagues.teams(league.id),
-      this.hostName(league.owner_host_id),
-    ]);
-    const pubs = await Promise.all(
-      pubRows.map(async (row) => {
-        const pub = await this.pubs.findById(row.pub_id);
-        return { id: row.pub_id, name: pub?.name ?? '—', city: pub?.city ?? '', hostId: row.host_id };
+      if (row?.status === 'JOINED' && row.pub_id) return false;
+      return Boolean(row) || data.league.kind !== 'SUPER';
+    });
+    const joined = await Promise.all(
+      pending.map(async ([teamId, nightPub]): Promise<LeagueTeamRecord> => {
+        const pubId = rows.get(teamId)?.pub_id ?? (await this.pubSnapshot(teamId, leaguePubIds, nightPub));
+        await this.leagues.setTeamStatus(data.league.id, teamId, 'JOINED', pubId);
+        return { league_id: data.league.id, registered_team_id: teamId, status: 'JOINED', pub_id: pubId };
       }),
     );
-    const nightsPlayed =
-      computed?.nightsPlayed ?? (await this.sessions.listByLeague(league.id)).filter((s) => s.status === 'FINISHED').length;
+    for (const row of joined) rows.set(row.registered_team_id, row);
+    return [...rows.values()];
+  }
+
+  /** The table (live until closed, then frozen), the team rows after "playing is joining", and team names. */
+  private async computeStandings(data: LeagueData): Promise<Computed> {
+    const { league } = data;
+    if (league.closed_at) {
+      const [results, names] = await Promise.all([
+        this.leagues.results(league.id),
+        this.teamNames(data.teams.map((r) => r.registered_team_id)),
+      ]);
+      return {
+        teams: data.teams,
+        names,
+        standings: results.map((row) => ({
+          rank: row.rank,
+          registeredTeamId: row.registered_team_id ?? '',
+          teamName: row.team_name,
+          pubId: row.pub_id,
+          points: row.points,
+          nights: row.nights,
+          placements: row.placements,
+        })),
+      };
+    }
+    const [nights, names] = await Promise.all([this.nights(data), this.teamNames(data.teams.map((r) => r.registered_team_id))]);
+    const teams = await this.syncPlayed(data, nights);
+    const unnamed = teams.map((row) => row.registered_team_id).filter((id) => !names.has(id));
+    if (unnamed.length) for (const [id, name] of await this.teamNames(unnamed)) names.set(id, name);
+    const members: LeagueMember[] = teams
+      .filter((row) => row.status === 'JOINED')
+      .map((row) => ({ registeredTeamId: row.registered_team_id, teamName: names.get(row.registered_team_id) ?? '—', pubId: row.pub_id }));
+    const standings = league.kind === 'SUPER' ? superLeagueStandings(nights, members) : leagueStandings(nights, members);
+    return { teams, names, standings };
+  }
+
+  /** `teams` are the rows after "playing is joining" when the table was computed alongside. */
+  private async summaryOf(data: LeagueData, teams: LeagueTeamRecord[] = data.teams): Promise<LeagueSummaryDto> {
+    const { league } = data;
+    const [ownerName, pubs] = await Promise.all([
+      this.hostName(league.owner_host_id),
+      Promise.all(
+        data.pubs.map(async (row) => {
+          const pub = await this.pubs.findById(row.pub_id);
+          return { id: row.pub_id, name: pub?.name ?? '—', city: pub?.city ?? '', hostId: row.host_id };
+        }),
+      ),
+    ]);
     return {
       id: league.id,
       name: league.name,
@@ -189,51 +220,48 @@ export class LeaguesService {
       ownerHostId: league.owner_host_id,
       ownerName,
       pubs,
-      nightsPlayed,
-      joinedTeams: teamRows.filter((row) => row.status === 'JOINED').length,
+      nightsPlayed: data.finished.length,
+      joinedTeams: teams.filter((row) => row.status === 'JOINED').length,
       parentLeagueId: league.parent_league_id,
     };
   }
 
-  private async hostView(league: LeagueRecord, hostId: string, myStatus: LeagueHostStatus): Promise<HostLeagueDto> {
-    return { ...(await this.summary(league)), myStatus, isOwner: league.owner_host_id === hostId };
+  /** The summary and the table of a league together, with no repeated reads. */
+  private async summaryAndStandings(data: LeagueData): Promise<{ summary: LeagueSummaryDto; computed: Computed }> {
+    const [summary, computed] = await Promise.all([this.summaryOf(data), this.computeStandings(data)]);
+    return { computed, summary: { ...summary, joinedTeams: computed.teams.filter((row) => row.status === 'JOINED').length } };
   }
 
   async list(hostId: string): Promise<HostLeagueDto[]> {
     const leagues = await this.leagues.listForHost(hostId);
     return Promise.all(
       leagues.map(async (league) => {
-        const mine = (await this.leagues.hosts(league.id)).find((row) => row.host_id === hostId)!;
-        return this.hostView(league, hostId, mine.status);
+        const data = await this.loadData(league);
+        const mine = data.hosts.find((row) => row.host_id === hostId)!;
+        return { ...(await this.summaryOf(data)), myStatus: mine.status, isOwner: league.owner_host_id === hostId };
       }),
     );
   }
 
   async detail(hostId: string, leagueId: string): Promise<LeagueDetailDto> {
-    const { league, mine } = await this.requireHostOf(hostId, leagueId);
-    const computed = await this.standings(league);
-    const [summary, hostRows, teamRows, superLeague] = await Promise.all([
-      this.summary(league, computed),
-      this.leagues.hosts(league.id),
-      this.leagues.teams(league.id),
-      this.leagues.findSuperLeagueOf(league.id),
+    const { league, hosts, mine } = await this.requireHostOf(hostId, leagueId);
+    const [data, superLeague] = await Promise.all([this.loadData(league, hosts), this.leagues.findSuperLeagueOf(league.id)]);
+    const [{ summary, computed }, hostViews] = await Promise.all([
+      this.summaryAndStandings(data),
+      Promise.all(data.hosts.map(async (row) => ({ id: row.host_id, name: await this.hostName(row.host_id), status: row.status }))),
     ]);
     const isOwner = league.owner_host_id === hostId;
     return {
       ...summary,
       myStatus: mine.status,
       isOwner,
-      hosts: await Promise.all(
-        hostRows.map(async (row) => ({ id: row.host_id, name: await this.hostName(row.host_id), status: row.status })),
-      ),
-      teams: await Promise.all(
-        teamRows.map(async (row) => ({
-          registeredTeamId: row.registered_team_id,
-          name: await this.teamName(row.registered_team_id),
-          status: row.status,
-          pubId: row.pub_id,
-        })),
-      ),
+      hosts: hostViews,
+      teams: computed.teams.map((row) => ({
+        registeredTeamId: row.registered_team_id,
+        name: computed.names.get(row.registered_team_id) ?? '—',
+        status: row.status,
+        pubId: row.pub_id,
+      })),
       standings: computed.standings,
       qualified: league.closed_at && league.kind === 'LEAGUE' ? qualifiers(computed.standings) : [],
       superLeagueId: superLeague?.id ?? null,
@@ -332,7 +360,7 @@ export class LeaguesService {
   async close(hostId: string, leagueId: string): Promise<LeagueDetailDto> {
     const league = await this.requireOwner(hostId, leagueId);
     if (league.closed_at) throw LEAGUE_CLOSED();
-    const { standings } = await this.liveStandings(league);
+    const { standings } = await this.computeStandings(await this.loadData(league));
     await this.leagues.saveResults(
       leagueId,
       standings.map((row) => ({
@@ -359,7 +387,7 @@ export class LeaguesService {
     if (await this.leagues.findSuperLeagueOf(leagueId)) {
       throw new ConflictException({ code: 'SUPER_LEAGUE_EXISTS', message: 'This league already has a Super League' });
     }
-    const { standings } = await this.standings(parent);
+    const { standings } = await this.computeStandings(await this.loadData(parent));
     const superLeague = await this.leagues.create({
       name: `Super liga — ${parent.name}`,
       kind: 'SUPER',
@@ -400,9 +428,11 @@ export class LeaguesService {
 
   // ---------- teams ----------
 
-  private async teamView(league: LeagueRecord, row: LeagueTeamRecord): Promise<TeamLeagueDto> {
-    const computed = await this.standings(league);
-    return { league: await this.summary(league, computed), status: row.status, standings: computed.standings };
+  /** The team's view of a league; null when the team has no row in it (after "playing is joining"). */
+  private async teamView(league: LeagueRecord, registeredTeamId: string): Promise<TeamLeagueDto | null> {
+    const { summary, computed } = await this.summaryAndStandings(await this.loadData(league));
+    const row = computed.teams.find((r) => r.registered_team_id === registeredTeamId);
+    return row ? { league: summary, status: row.status, standings: computed.standings } : null;
   }
 
   /** Leagues of the finished nights the team played, whether or not it was ever invited. */
@@ -414,20 +444,13 @@ export class LeaguesService {
 
   /** The team's invitations and leagues; a league it played in shows as joined. */
   async forTeam(registeredTeamId: string): Promise<TeamLeagueDto[]> {
-    const invited = await this.leagues.listForTeam(registeredTeamId);
-    const playedIds = (await this.leaguesPlayedBy(registeredTeamId)).filter((id) => !invited.some((league) => league.id === id));
-    const played = (await Promise.all([...new Set(playedIds)].map((id) => this.leagues.findById(id)))).filter(
+    const [invited, playedIds] = await Promise.all([this.leagues.listForTeam(registeredTeamId), this.leaguesPlayedBy(registeredTeamId)]);
+    const extraIds = [...new Set(playedIds)].filter((id) => !invited.some((league) => league.id === id));
+    const played = (await Promise.all(extraIds.map((id) => this.leagues.findById(id)))).filter(
       (league): league is LeagueRecord => league !== null,
     );
-    const views: TeamLeagueDto[] = [];
-    for (const league of [...invited, ...played]) {
-      // Computing the table also makes the teams that played members, so read the row afterwards.
-      const computed = await this.standings(league);
-      const row = (await this.leagues.teams(league.id)).find((r) => r.registered_team_id === registeredTeamId);
-      if (!row) continue;
-      views.push({ league: await this.summary(league, computed), status: row.status, standings: computed.standings });
-    }
-    return views;
+    const views = await Promise.all([...invited, ...played].map((league) => this.teamView(league, registeredTeamId)));
+    return views.filter((view): view is TeamLeagueDto => view !== null);
   }
 
   async respondAsTeam(registeredTeamId: string, leagueId: string, join: boolean): Promise<TeamLeagueDto> {
@@ -439,6 +462,6 @@ export class LeaguesService {
     const leaguePubIds = (await this.leagues.pubs(leagueId)).map((r) => r.pub_id);
     const pubId = join ? (row.pub_id ?? (await this.pubSnapshot(registeredTeamId, leaguePubIds, null))) : row.pub_id;
     await this.leagues.setTeamStatus(leagueId, registeredTeamId, status, pubId);
-    return this.teamView(league, { ...row, status, pub_id: pubId });
+    return (await this.teamView(league, registeredTeamId))!;
   }
 }
