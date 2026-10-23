@@ -1,6 +1,21 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Beer, Bell, CirclePlus, LayoutGrid, LogOut, Menu, NotebookPen, Radio, Settings, Trophy, UserRound, X } from 'lucide-react';
+import {
+  Beer,
+  Bell,
+  CirclePlus,
+  LayoutGrid,
+  LogOut,
+  Menu,
+  NotebookPen,
+  Radio,
+  Settings,
+  ShieldCheck,
+  TriangleAlert,
+  Trophy,
+  UserRound,
+  X,
+} from 'lucide-react';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase-client';
@@ -8,6 +23,7 @@ import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { LogoMark } from '../ui/Logo';
 import { Modal } from '../ui/Modal';
 import { Pending } from '../ui/Pending';
+import type { AccountDto } from '@quizicius/shared-types';
 import { hostApi, type Category, type HostSession } from './api';
 import { PubSelect, useHostPubs } from './pubs';
 import { btn, inputClass, Label } from './ui';
@@ -18,7 +34,7 @@ const NAV_ACTIVE =
   'bg-primary-container text-on-primary-container shadow-[0_0_20px_-4px_rgba(160,120,255,0.4)] hover:bg-primary-container hover:text-on-primary-container';
 
 /** Sidebar + top bar from the Stitch host dashboard and quiz editor. */
-export function HostShell({ token, email, children }: { token: string; email: string; children: ReactNode }) {
+export function HostShell({ token, email, account, children }: { token: string; email: string; account: AccountDto; children: ReactNode }) {
   const { t } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -75,6 +91,12 @@ export function HostShell({ token, email, children }: { token: string; email: st
               <Beer className="h-5 w-5" />
               {t('host.nav.pubs')}
             </NavLink>
+            {account.role === 'SUPER_ADMIN' && (
+              <NavLink to="/host/admin" className={navLink} data-testid="host-nav-admin">
+                <ShieldCheck className="h-5 w-5" />
+                {t('host.nav.admin')}
+              </NavLink>
+            )}
             <Pending feature="leagues">
               <span className={`${NAV_ITEM} text-on-surface-variant`}>
                 <Trophy className="h-5 w-5" />
@@ -95,7 +117,7 @@ export function HostShell({ token, email, children }: { token: string; email: st
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20">
             <UserRound className="h-4 w-4 text-primary" />
           </div>
-          <span className="text-label-sm uppercase text-secondary">{t('host.nav.account')}</span>
+          <span className="text-label-sm uppercase text-secondary">{t(`account.role.${account.role}`)}</span>
         </div>
         <div className="truncate text-body-md font-semibold text-on-surface" title={email}>
           {email}
@@ -157,7 +179,7 @@ export function HostShell({ token, email, children }: { token: string; email: st
             <div className="hidden items-center gap-space-sm sm:flex">
               <div className="flex flex-col text-right">
                 <span className="max-w-[200px] truncate text-label-lg text-on-surface">{email}</span>
-                <span className="text-body-sm text-on-surface-variant">{t('host.header.role')}</span>
+                <span className="text-body-sm text-on-surface-variant">{t(`account.role.${account.role}`)}</span>
               </div>
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
                 <UserRound className="h-[18px] w-[18px] text-on-primary" />
@@ -165,7 +187,19 @@ export function HostShell({ token, email, children }: { token: string; email: st
             </div>
           </div>
         </header>
-        <main className="relative min-h-screen w-full px-space-md pb-16 pt-20 sm:px-space-lg">{children}</main>
+        <main className="relative min-h-screen w-full px-space-md pb-16 pt-20 sm:px-space-lg">
+          {account.deactivated && (
+            <p
+              role="status"
+              data-testid="host-deactivated"
+              className="mb-space-md flex items-center gap-space-sm rounded-xl bg-error-container/30 p-space-md text-body-md text-on-error-container"
+            >
+              <TriangleAlert className="h-5 w-5 shrink-0" />
+              {t('account.deactivatedBanner')}
+            </p>
+          )}
+          {children}
+        </main>
       </div>
 
       {creating && <CreateQuizDialog token={token} onClose={() => setCreating(false)} />}

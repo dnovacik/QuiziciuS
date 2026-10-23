@@ -74,15 +74,10 @@ describe('LandingPage host card', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid login credentials');
   });
 
-  it('asks for email confirmation when registration returns no session', async () => {
-    auth.signUp.mockResolvedValue({ data: { session: null }, error: null } as never);
+  it('offers no host registration: host accounts are created on request', () => {
     renderLanding();
-    fireEvent.click(screen.getByTestId('host-tab-register'));
-    type('host-email', 'new@example.com');
-    type('host-password', 'secret1');
-    fireEvent.submit(screen.getByTestId('host-auth-form'));
-
-    expect(await screen.findByRole('status')).toHaveTextContent('Potvrďte e-mail');
+    expect(screen.queryByTestId('host-tab-register')).not.toBeInTheDocument();
+    expect(screen.getByTestId('host-invite-only')).toBeInTheDocument();
   });
 
   it('sends a password reset link from the recovery mode', async () => {
@@ -94,7 +89,7 @@ describe('LandingPage host card', () => {
     fireEvent.submit(screen.getByTestId('host-auth-form'));
 
     await screen.findByRole('status');
-    expect(auth.resetPasswordForEmail).toHaveBeenCalledWith('host@example.com');
+    expect(auth.resetPasswordForEmail).toHaveBeenCalledWith('host@example.com', { redirectTo: `${window.location.origin}/host` });
   });
 
   it('renders unsupported Stitch features disabled and flagged', () => {

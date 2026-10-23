@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AccountsModule } from './accounts/accounts.module';
 import { AnswersModule } from './answers/answers.module';
 import { CategoriesModule } from './categories/categories.module';
 import { validateEnv } from './config/env.validation';
@@ -31,6 +32,7 @@ import { TeamsModule } from './teams/teams.module';
     CategoriesModule,
     PubsModule,
     RegisteredTeamsModule,
+    AccountsModule,
   ],
 })
 export class AppModule {}

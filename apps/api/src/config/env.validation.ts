@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { IsNotEmpty, IsString, validateSync } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, validateSync } from 'class-validator';
 
 class EnvVars {
   @IsString()
@@ -13,6 +13,11 @@ class EnvVars {
   @IsString()
   @IsNotEmpty()
   TEAM_TOKEN_SECRET!: string;
+
+  /** Public web app URL, where host invite links land (falls back to the Supabase Site URL). */
+  @IsOptional()
+  @IsString()
+  WEB_APP_URL?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvVars {

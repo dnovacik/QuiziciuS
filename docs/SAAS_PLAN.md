@@ -22,7 +22,6 @@ Missing for a paid product:
 
 | Gap | Why it matters |
 |---|---|
-| No roles | Anyone who signs in is effectively a host; captains use the same account type |
 | No organizations | A quiz company with several hosts cannot share quizzes, pubs or billing |
 | No billing | No way to charge, trial or stop access |
 | No plan limits | Realtime traffic and media storage grow with every customer |
@@ -41,6 +40,10 @@ Missing for a paid product:
 - A short security review now that strangers' data will sit side by side.
 
 ### Phase 1 — Accounts, roles and organizations (2 weeks)
+
+**Roles are done** (see `ACCOUNTS.md`): `SUPER_ADMIN`, `HOST` (invited by a super admin) and
+self-registered `TEAM_CAPTAIN`, with host deactivation and team moderation in `/host/admin`.
+Organizations below are still open.
 
 - `organizations` and `organization_members (role: owner | host)`. A solo host is a one-person
   organization, so nothing changes for them.
@@ -109,7 +112,7 @@ paper), how many nights per month they run, and whether branding or leagues are 
 
 ## Decisions needed
 
-1. Organizations from the start, or solo hosts only for the beta?
+1. Organizations from the start, or solo hosts only for the beta? (Roles are in place; hosts are invite-only.)
 2. Trial length, and whether a permanently free tier exists (e.g. one quiz night per month).
 3. Who owns cross-host leagues: organizations, or the platform?
 4. Company / invoicing setup (Slovak s.r.o., VAT registration) before taking payments.

@@ -136,3 +136,20 @@ describe('TeamsService.markReady', () => {
     expect(teams.markReady).not.toHaveBeenCalled();
   });
 });
+
+describe('TeamsService.join by a host-captain', () => {
+  it("refuses a host's own team in the host's own quiz night", async () => {
+    const { service, teams } = buildHarness();
+
+    await expect(service.join('s1', 'The Quizzards', 'rt1', 'host1')).rejects.toMatchObject({ response: { code: 'OWN_QUIZ' } });
+    expect(teams.upsertJoin).not.toHaveBeenCalled();
+  });
+
+  it('lets the same captain join quiz nights run by someone else', async () => {
+    const { service, teams } = buildHarness();
+
+    await service.join('s1', 'The Quizzards', 'rt1', 'another-host');
+
+    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', 'rt1');
+  });
+});

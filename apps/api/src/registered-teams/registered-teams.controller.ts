@@ -10,17 +10,16 @@ import {
   Patch,
   Delete,
   Body,
-  UseGuards,
 } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
-import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
+import { RequireRole } from '../auth/require-role';
 import { PubsService } from '../pubs/pubs.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { JoinResult, TeamsService } from '../teams/teams.service';
 import { EditTeamDto, PlayerDto, RegisterTeamDto } from './dto/registered-team.dto';
 
 @Controller('registered-teams')
-@UseGuards(SupabaseAuthGuard)
+@RequireRole('TEAM_CAPTAIN')
 export class RegisteredTeamsController {
   constructor(
     private readonly supabase: SupabaseService,
@@ -102,7 +101,7 @@ export class RegisteredTeamsController {
     @Param('sessionId') sessionId: string,
   ): Promise<JoinResult> {
     const team = await this.own(id, user.id);
-    return this.sessionTeams.join(sessionId, team.name, team.id);
+    return this.sessionTeams.join(sessionId, team.name, team.id, user.id);
   }
   @Get(':id/players')
   async players(@CurrentHost() user: CurrentHostPayload, @Param('id') id: string) {

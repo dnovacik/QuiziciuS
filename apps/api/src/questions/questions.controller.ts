@@ -12,16 +12,15 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
-import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
+import { RequireRole } from '../auth/require-role';
 import { QuestionsRepository } from '../data/questions.repository';
 import { QuizzesRepository } from '../data/quizzes.repository';
 import { CreateQuestionDto } from './dto/create-question.dto';
 
 @Controller('quizzes/:quizId/questions')
-@UseGuards(SupabaseAuthGuard)
+@RequireRole('HOST')
 export class QuestionsController {
   constructor(
     private readonly quizzes: QuizzesRepository,

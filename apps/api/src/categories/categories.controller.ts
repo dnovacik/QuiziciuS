@@ -1,9 +1,9 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
+import { Controller, Get } from '@nestjs/common';
+import { RequireRole } from '../auth/require-role';
 import { CategoriesRepository } from '../data/categories.repository';
 
 @Controller('categories')
-@UseGuards(SupabaseAuthGuard)
+@RequireRole('HOST')
 export class CategoriesController {
   constructor(private readonly categories: CategoriesRepository) {}
 
