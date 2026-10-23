@@ -15,6 +15,10 @@ interface SlotHandle {
   replay(): void;
 }
 type Report = (state: MediaPlaybackState) => void;
+/** A YouTube player that is not ready by then is reported as an error… */
+const READY_TIMEOUT_MS = 10_000;
+/** …and a play that has not started by then as blocked sound. */
+const START_TIMEOUT_MS = 3000;
 
 /**
  * The current question's media on the projector. Nothing plays by itself: the host plays, pauses
@@ -75,7 +79,7 @@ function MediaStage({
           return;
         }
         if (message.slot === 'reveal') {
-          setRevealPlaying(true);
+          if (message.action !== 'pause') setRevealPlaying(true);
           questionSlot.current?.pause();
         } else if (message.action !== 'pause') {
           setRevealPlaying(false);
@@ -226,6 +230,7 @@ const YouTubeSlot = forwardRef<SlotHandle, { slot: MediaSlot; media: ResolvedMed
   const started = useRef(false);
   const ended = useRef(false);
   const playingNow = useRef(false);
+  const watchdog = useRef<number | undefined>(undefined);
   const reportRef = useRef(report);
   reportRef.current = report;
   const { start, end } = partOf(media);
@@ -246,6 +251,11 @@ const YouTubeSlot = forwardRef<SlotHandle, { slot: MediaSlot; media: ResolvedMed
       started.current = true;
       ended.current = false;
       yt.playVideo();
+      // A play the browser refuses (no click on the projector yet) leaves YouTube silent: say so.
+      window.clearTimeout(watchdog.current);
+      watchdog.current = window.setTimeout(() => {
+        if (!playingNow.current) reportRef.current('blocked');
+      }, START_TIMEOUT_MS);
     },
     [start],
   );
@@ -267,23 +277,31 @@ const YouTubeSlot = forwardRef<SlotHandle, { slot: MediaSlot; media: ResolvedMed
       {
         onStateChange: (state) => {
           playingNow.current = state === YT_STATE.PLAYING;
-          if (state === YT_STATE.PLAYING) reportRef.current('playing');
-          else if (state === YT_STATE.PAUSED && !ended.current) reportRef.current('paused');
+          if (state === YT_STATE.PLAYING) {
+            window.clearTimeout(watchdog.current);
+            reportRef.current('playing');
+          } else if (state === YT_STATE.PAUSED && !ended.current) reportRef.current('paused');
           else if (state === YT_STATE.ENDED) {
             ended.current = true;
             reportRef.current('ended');
           }
         },
-        onError: () => reportRef.current('error'),
+        onError: () => {
+          window.clearTimeout(watchdog.current);
+          reportRef.current('error');
+        },
       },
     )
       .then((created) => {
         if (!alive) return created.destroy();
+        window.clearTimeout(notReady);
         player.current = created;
         if (waiting.current) act(waiting.current);
         waiting.current = null;
       })
       .catch(() => alive && reportRef.current('error'));
+    // YouTube blocked on the network, or a player that never loads, must not fail silently.
+    const notReady = window.setTimeout(() => reportRef.current('error'), READY_TIMEOUT_MS);
     // YouTube's own end time is not reliable after seeking: stop at the end of the part ourselves.
     const timer = window.setInterval(() => {
       const yt = player.current;
@@ -295,6 +313,8 @@ const YouTubeSlot = forwardRef<SlotHandle, { slot: MediaSlot; media: ResolvedMed
     return () => {
       alive = false;
       window.clearInterval(timer);
+      window.clearTimeout(notReady);
+      window.clearTimeout(watchdog.current);
       player.current?.destroy();
       player.current = null;
       box.innerHTML = '';

@@ -77,3 +77,20 @@ export function formatPart(ref: { startSeconds?: number | null; durationSeconds?
   if (duration === null) return `${formatTime(start!)} –`;
   return `${formatTime(start ?? 0)} – ${formatTime((start ?? 0) + duration)}`;
 }
+
+const MIME_ALIASES: Record<string, string> = {
+  'audio/x-m4a': 'audio/mp4',
+  'audio/m4a': 'audio/mp4',
+  'audio/x-wav': 'audio/wav',
+  'audio/wave': 'audio/wav',
+  'audio/vnd.wave': 'audio/wav',
+  'audio/mp3': 'audio/mpeg',
+  'audio/x-mpeg': 'audio/mpeg',
+};
+const MIME_BY_EXTENSION: Record<string, string> = { m4a: 'audio/mp4', mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg' };
+
+/** The file's type as the API and storage know it (Windows, for one, calls .m4a "audio/x-m4a"). */
+export function uploadMimeType(file: { type: string; name: string }): string {
+  if (file.type) return MIME_ALIASES[file.type] ?? file.type;
+  return MIME_BY_EXTENSION[file.name.split('.').pop()?.toLowerCase() ?? ''] ?? '';
+}

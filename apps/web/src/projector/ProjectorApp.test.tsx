@@ -205,4 +205,15 @@ describe('ProjectorApp', () => {
 
     expect(screen.queryByTestId('projector-sound-overlay')).not.toBeInTheDocument();
   });
+
+  it('keeps asking for a click after a key the browser does not count, such as Esc', () => {
+    setState('LOBBY');
+    Object.defineProperty(navigator, 'userActivation', { configurable: true, value: { hasBeenActive: false } });
+    renderProjector();
+
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+
+    expect(screen.getByTestId('projector-sound-overlay')).toBeInTheDocument();
+    delete (navigator as { userActivation?: unknown }).userActivation;
+  });
 });

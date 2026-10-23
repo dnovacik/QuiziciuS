@@ -346,7 +346,7 @@
   "host.editor.uploading": "Uploading…",
   "host.editor.mediaHint": "Teams also see images on their phones. Video, audio and YouTube play on the projector only, started from the control room.",
   "host.editor.removeMedia": "Remove",
-  "host.editor.mediaInvalid": "Supported: JPG, PNG, WebP up to 10 MB, MP3, M4A, OGG, WAV up to 25 MB and MP4, WebM up to 100 MB.",
+  "host.editor.mediaInvalid": "Supported: JPG, PNG, WebP up to 10 MB, MP3, M4A, OGG, WAV up to 25 MB and MP4, WebM up to 50 MB (add longer videos as a link or YouTube).",
   "host.editor.mediaFailed": "The file could not be uploaded.",
   "host.editor.options": "Answer options",
   "host.editor.optionsHint": "Mark exactly one correct option.",

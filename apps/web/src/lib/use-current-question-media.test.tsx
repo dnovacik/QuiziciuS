@@ -70,6 +70,8 @@ describe('question media', () => {
     clearQuestionMediaCache();
     renderHook(() => usePreloadQuestionMedia('s1', 'q2', 'LOCK_IN_ROUND', { clips: true }));
     await waitFor(() => expect(load).toHaveBeenCalledTimes(1));
+    // Only the start of the file: the projector's own player downloads the rest, once.
+    expect((load.mock.instances[0] as unknown as HTMLMediaElement).preload).toBe('metadata');
   });
 
   it('loads the next question fresh', async () => {

@@ -162,6 +162,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
 
             {showingCurrent && focus.media && focus.media.kind !== 'image' && (
               <MediaControls
+                key={`${focus.id}:question`}
                 slot="question"
                 media={focus.media}
                 status={room.mediaStatus[`${focus.id}:question`] ?? null}
@@ -171,6 +172,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
             )}
             {status === 'QUESTION_REVEAL' && focus.reveal_media && focus.reveal_media.kind !== 'image' && (
               <MediaControls
+                key={`${focus.id}:reveal`}
                 slot="reveal"
                 media={focus.reveal_media}
                 status={room.mediaStatus[`${focus.id}:reveal`] ?? null}

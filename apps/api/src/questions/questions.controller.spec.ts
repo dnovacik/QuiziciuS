@@ -88,11 +88,11 @@ describe('QuestionsController', () => {
       await expect(controller.createMediaUpload(quizId, host, { mimeType: 'audio/mpeg', fileSize: 30 * MB })).rejects.toThrow();
     });
 
-    it('accepts full-length videos up to 100 MB', async () => {
-      await expect(controller.createMediaUpload(quizId, host, { mimeType: 'video/mp4', fileSize: 90 * MB })).resolves.toMatchObject({
+    it("accepts videos up to 50 MB, the storage plan's upload limit", async () => {
+      await expect(controller.createMediaUpload(quizId, host, { mimeType: 'video/mp4', fileSize: 45 * MB })).resolves.toMatchObject({
         mediaType: 'video',
       });
-      await expect(controller.createMediaUpload(quizId, host, { mimeType: 'video/mp4', fileSize: 101 * MB })).rejects.toThrow();
+      await expect(controller.createMediaUpload(quizId, host, { mimeType: 'video/mp4', fileSize: 60 * MB })).rejects.toThrow();
     });
   });
 });

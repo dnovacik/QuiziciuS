@@ -191,7 +191,7 @@ beforeEach(() => {
 });
 
 function renderAt(path: string, element: React.ReactNode, routePath: string) {
-  return render(
+  const tree = () => (
     <I18nProvider>
       <ToastProvider>
         <MemoryRouter initialEntries={[path]}>
@@ -202,8 +202,11 @@ function renderAt(path: string, element: React.ReactNode, routePath: string) {
           </Routes>
         </MemoryRouter>
       </ToastProvider>
-    </I18nProvider>,
+    </I18nProvider>
   );
+  const view = render(tree());
+  /** Renders again, e.g. after the live state changed. */
+  return { ...view, refresh: () => view.rerender(tree()) };
 }
 
 describe('host dashboard', () => {
@@ -485,6 +488,24 @@ describe('control room', () => {
 
       fireEvent.click(within(await screen.findByTestId('room-media-reveal')).getByTestId('room-media-reveal-replay'));
       await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/media/control', { slot: 'reveal', action: 'replay' }, 'jwt'));
+    });
+
+    it('does not carry a "projector not responding" warning over to the next question', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      db.questions.quiz1[0].media = SONG;
+      db.questions.quiz1[1].media = SONG;
+      live.state = liveState('QUESTION_ACTIVE', 'q1');
+      const view = renderRoom();
+      fireEvent.click(within(await screen.findByTestId('room-media-question')).getByTestId('room-media-question-play'));
+      act(() => vi.advanceTimersByTime(4100));
+      expect(screen.getByTestId('room-media-question-state')).toHaveTextContent('Projektor neodpovedá');
+
+      live.state = liveState('QUESTION_ACTIVE', 'q2');
+      view.refresh();
+      await screen.findByText('Question q2');
+
+      expect(screen.queryByTestId('room-media-question-state')).not.toBeInTheDocument();
+      vi.useRealTimers();
     });
 
     it('says when the projector has no sound, and when it cannot play the clip', async () => {

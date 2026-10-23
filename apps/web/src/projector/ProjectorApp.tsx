@@ -23,7 +23,11 @@ export default function ProjectorApp() {
   const [sound, setSound] = useState(false);
   useEffect(() => {
     if (sound) return;
-    const enable = () => setSound(true);
+    // Only input the browser counts as interaction unlocks sound (Esc, for one, does not).
+    const enable = () => {
+      if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
+      setSound(true);
+    };
     document.addEventListener('pointerdown', enable);
     document.addEventListener('keydown', enable);
     return () => {

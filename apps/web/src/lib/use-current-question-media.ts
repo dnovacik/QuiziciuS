@@ -42,8 +42,9 @@ function warm(media: ResolvedMediaDto | null, clips: boolean): void {
   } else if (clips && media.kind === 'youtube') {
     void loadYouTubeApi().catch(() => undefined);
   } else if (clips && (media.kind === 'audio' || media.kind === 'video')) {
+    // Only the start of the file: the projector's own player then downloads the rest, once.
     const element = document.createElement(media.kind);
-    element.preload = 'auto';
+    element.preload = 'metadata';
     element.muted = true;
     element.src = media.url;
     element.load();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectLink, formatPart, formatTime, parseTime } from './media-ref';
+import { detectLink, formatPart, formatTime, parseTime, uploadMimeType } from './media-ref';
 
 describe('detectLink', () => {
   it.each([
@@ -48,5 +48,15 @@ describe('times', () => {
     expect(formatPart({ startSeconds: 80 })).toBe('1:20 –');
     expect(formatPart({ durationSeconds: 15 })).toBe('0:00 – 0:15');
     expect(formatPart({})).toBe('');
+  });
+});
+
+describe('uploadMimeType', () => {
+  it('accepts the names Windows and other systems give to the same audio formats', () => {
+    expect(uploadMimeType({ type: 'audio/x-m4a', name: 'song.m4a' })).toBe('audio/mp4');
+    expect(uploadMimeType({ type: 'audio/x-wav', name: 'clip.wav' })).toBe('audio/wav');
+    expect(uploadMimeType({ type: 'audio/mp3', name: 'clip.mp3' })).toBe('audio/mpeg');
+    expect(uploadMimeType({ type: '', name: 'clip.M4A' })).toBe('audio/mp4');
+    expect(uploadMimeType({ type: 'image/png', name: 'a.png' })).toBe('image/png');
   });
 });

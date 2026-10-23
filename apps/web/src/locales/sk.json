@@ -346,7 +346,7 @@
   "host.editor.uploading": "Nahrávam…",
   "host.editor.mediaHint": "Obrázok uvidia tímy aj v telefónoch. Video, zvuk a YouTube hrajú len na projekcii a spúšťate ich v riadiacej miestnosti.",
   "host.editor.removeMedia": "Odstrániť",
-  "host.editor.mediaInvalid": "Podporované sú JPG, PNG, WebP do 10 MB, MP3, M4A, OGG, WAV do 25 MB a MP4, WebM do 100 MB.",
+  "host.editor.mediaInvalid": "Podporované sú JPG, PNG, WebP do 10 MB, MP3, M4A, OGG, WAV do 25 MB a MP4, WebM do 50 MB (dlhšie videá pridajte ako odkaz alebo YouTube).",
   "host.editor.mediaFailed": "Súbor sa nepodarilo nahrať.",
   "host.editor.options": "Možnosti odpovedí",
   "host.editor.optionsHint": "Označte práve jednu správnu možnosť.",

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '../lib/i18n';
 import type { MediaControlMessage } from '../lib/media-channel';
 import { sendMediaStatus } from '../lib/media-channel';
+import { createYouTubePlayer } from '../lib/youtube';
 import { ProjectorMedia, ProjectorSound } from './MediaPlayer';
 
 const channel = vi.hoisted(() => ({ onControl: null as ((message: MediaControlMessage) => void) | null }));
@@ -75,6 +76,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 function show(props: Partial<Parameters<typeof ProjectorMedia>[0]> = {}, sound = true) {
@@ -194,5 +196,50 @@ describe('projector media', () => {
 
     act(() => youtube.events!.onError(150));
     expect(statuses()).toContain('question:error');
+  });
+
+  it('keeps the question media on screen when the reveal clip is only paused', () => {
+    show({ revealed: true, revealMedia: FULL });
+
+    control('pause', 'reveal');
+
+    expect(screen.getByTestId('projector-media-question')).toBeVisible();
+  });
+
+  describe('YouTube that does not start', () => {
+    const CLIP: ResolvedMediaDto = { kind: 'youtube', url: 'https://youtu.be/dQw4w9WgXcQ', startSeconds: null, durationSeconds: null };
+
+    it('reports blocked sound when the video does not start after play', async () => {
+      vi.useFakeTimers();
+      show({ media: CLIP });
+      await act(async () => undefined);
+
+      control('play');
+      act(() => vi.advanceTimersByTime(3000));
+
+      expect(statuses()).toContain('question:blocked');
+    });
+
+    it('stays quiet when the video starts', async () => {
+      vi.useFakeTimers();
+      show({ media: CLIP });
+      await act(async () => undefined);
+
+      control('play');
+      act(() => youtube.events!.onStateChange(1));
+      act(() => vi.advanceTimersByTime(3000));
+
+      expect(statuses()).toEqual(['question:playing']);
+    });
+
+    it('reports an error when the player never gets ready', () => {
+      vi.useFakeTimers();
+      vi.mocked(createYouTubePlayer).mockImplementationOnce(() => new Promise(() => undefined));
+      show({ media: CLIP });
+
+      act(() => vi.advanceTimersByTime(15_000));
+
+      expect(statuses()).toContain('question:error');
+    });
   });
 });

@@ -1,5 +1,6 @@
 import type { AnswerSummaryDto, MediaAction, MediaRefDto, MediaSlot, QuestionType, QuizState } from '@quizicius/shared-types';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
+import { uploadMimeType } from '../lib/media-ref';
 import { supabase } from '../lib/supabase-client';
 
 export interface Quiz {
@@ -124,18 +125,18 @@ const MEDIA_LIMITS: Record<string, number> = {
   'image/jpeg': 10,
   'image/png': 10,
   'image/webp': 10,
-  'video/mp4': 100,
-  'video/webm': 100,
+  'video/mp4': 50,
+  'video/webm': 50,
   'audio/mpeg': 25,
   'audio/mp4': 25,
   'audio/ogg': 25,
   'audio/wav': 25,
 };
 
-export const ACCEPTED_MEDIA = Object.keys(MEDIA_LIMITS).join(',');
+export const ACCEPTED_MEDIA = [...Object.keys(MEDIA_LIMITS), '.m4a', '.wav', '.mp3'].join(',');
 
 export function isAcceptedMedia(file: File): boolean {
-  const limitMb = MEDIA_LIMITS[file.type];
+  const limitMb = MEDIA_LIMITS[uploadMimeType(file)];
   return limitMb !== undefined && file.size > 0 && file.size <= limitMb * 1024 * 1024;
 }
 
@@ -143,12 +144,12 @@ export function isAcceptedMedia(file: File): boolean {
 export async function uploadQuestionMedia(token: string, quizId: string, file: File): Promise<MediaRefDto> {
   const upload = await apiPost<{ path: string; token: string; mediaType: 'image' | 'video' | 'audio' }>(
     `/quizzes/${quizId}/questions/media/upload-url`,
-    { mimeType: file.type, fileSize: file.size },
+    { mimeType: uploadMimeType(file), fileSize: file.size },
     token,
   );
   const { error } = await supabase.storage
     .from('question-media')
-    .uploadToSignedUrl(upload.path, upload.token, file, { contentType: file.type });
+    .uploadToSignedUrl(upload.path, upload.token, file, { contentType: uploadMimeType(file) });
   if (error) throw error;
   return { kind: upload.mediaType, source: 'upload', path: upload.path };
 }
