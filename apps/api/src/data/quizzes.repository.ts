@@ -4,7 +4,6 @@ import { SupabaseService } from '../supabase/supabase.service';
 export interface QuizRecord {
   id: string;
   host_id: string;
-  league_id: string | null;
   category_id: string | null;
   /** Default pub new sessions of this quiz are played at. */
   pub_id: string | null;

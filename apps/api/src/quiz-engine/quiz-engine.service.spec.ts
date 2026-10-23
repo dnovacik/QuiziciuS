@@ -15,6 +15,7 @@ const BASE_SESSION: SessionRecord = {
   host_id: 'host1',
   join_code: 'AB12',
   pub_id: null,
+  league_id: null,
   status: 'LOBBY',
   current_question_id: null,
   question_ends_at: null,
@@ -41,6 +42,7 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
 
   const sessions: SessionsRepository = {
     listByHost: jest.fn(),
+    listByLeague: jest.fn(),
     create: jest.fn(),
     findById: jest.fn().mockResolvedValue(session),
     findByJoinCode: jest.fn().mockResolvedValue(session),

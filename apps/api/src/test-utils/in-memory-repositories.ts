@@ -17,12 +17,30 @@ import {
   RegisteredTeamRecord,
   RegisteredTeamsRepository,
 } from '../data/registered-teams.repository';
+import {
+  LeagueHostRecord,
+  LeaguePatch,
+  LeaguePubRecord,
+  LeagueRecord,
+  LeagueResultRecord,
+  LeaguesRepository,
+  LeagueTeamRecord,
+  NewLeague,
+  PubTeam,
+} from '../data/leagues.repository';
+import { LeagueHostStatus, LeagueTeamStatus } from '@quizicius/shared-types';
 import { NewPub, PubRecord, PubsRepository, pubKey, TeamPubRecord } from '../data/pubs.repository';
 
 export class InMemorySessionsRepository extends SessionsRepository {
   private rows = new Map<string, SessionRecord>();
 
-  async create(quizId: string, hostId: string, joinCode: string, pubId: string | null = null): Promise<SessionRecord> {
+  async create(
+    quizId: string,
+    hostId: string,
+    joinCode: string,
+    pubId: string | null = null,
+    leagueId: string | null = null,
+  ): Promise<SessionRecord> {
     const record: SessionRecord = {
       id: randomUUID(),
       quiz_id: quizId,
@@ -30,6 +48,7 @@ export class InMemorySessionsRepository extends SessionsRepository {
       join_code: joinCode,
       status: 'LOBBY',
       pub_id: pubId,
+      league_id: leagueId,
       current_question_id: null,
       question_ends_at: null,
       created_at: new Date().toISOString(),
@@ -42,6 +61,10 @@ export class InMemorySessionsRepository extends SessionsRepository {
 
   async listByHost(hostId: string): Promise<SessionRecord[]> {
     return [...this.rows.values()].filter((row) => row.host_id === hostId);
+  }
+
+  async listByLeague(leagueId: string): Promise<SessionRecord[]> {
+    return [...this.rows.values()].filter((row) => row.league_id === leagueId);
   }
 
   async findById(id: string): Promise<SessionRecord | null> {
@@ -270,7 +293,6 @@ export class InMemoryQuizzesRepository extends QuizzesRepository {
     const record: QuizRecord = {
       id: randomUUID(),
       host_id: hostId,
-      league_id: null,
       category_id: categoryId,
       pub_id: pubId,
       title,
@@ -474,5 +496,109 @@ export class InMemoryRegisteredTeamsRepository extends RegisteredTeamsRepository
     const remaining = roster.filter((p) => p.id !== playerId);
     this.players.set(teamId, remaining);
     return remaining.length !== roster.length;
+  }
+}
+
+/**
+ * `teamPubs` and `playedAt` stand in for `registered_team_pubs` and finished nights, which
+ * `teamsOfPubs` reads in the real repository; tests fill them.
+ */
+export class InMemoryLeaguesRepository extends LeaguesRepository {
+  readonly rows = new Map<string, LeagueRecord>();
+  readonly hostRows: LeagueHostRecord[] = [];
+  readonly pubRows: LeaguePubRecord[] = [];
+  readonly teamRows: LeagueTeamRecord[] = [];
+  readonly resultRows: LeagueResultRecord[] = [];
+  readonly teamPubs = new Map<string, { pubIds: string[]; primary: string | null }>();
+  readonly playedAt = new Map<string, string[]>();
+
+  async create(league: NewLeague): Promise<LeagueRecord> {
+    const record: LeagueRecord = { ...league, id: randomUUID(), closed_at: null, created_at: new Date().toISOString() };
+    this.rows.set(record.id, record);
+    return record;
+  }
+
+  async findById(id: string): Promise<LeagueRecord | null> {
+    return this.rows.get(id) ?? null;
+  }
+
+  async update(id: string, patch: LeaguePatch): Promise<LeagueRecord> {
+    const updated = { ...this.rows.get(id)!, ...patch };
+    this.rows.set(id, updated);
+    return updated;
+  }
+
+  async findSuperLeagueOf(parentId: string): Promise<LeagueRecord | null> {
+    return [...this.rows.values()].find((row) => row.parent_league_id === parentId) ?? null;
+  }
+
+  async listForHost(hostId: string): Promise<LeagueRecord[]> {
+    const ids = new Set(this.hostRows.filter((row) => row.host_id === hostId).map((row) => row.league_id));
+    return [...this.rows.values()].filter((row) => ids.has(row.id));
+  }
+
+  async listForTeam(registeredTeamId: string): Promise<LeagueRecord[]> {
+    const ids = new Set(this.teamRows.filter((row) => row.registered_team_id === registeredTeamId).map((row) => row.league_id));
+    return [...this.rows.values()].filter((row) => ids.has(row.id));
+  }
+
+  async hosts(leagueId: string): Promise<LeagueHostRecord[]> {
+    return this.hostRows.filter((row) => row.league_id === leagueId);
+  }
+
+  async setHost(leagueId: string, hostId: string, status: LeagueHostStatus): Promise<void> {
+    const existing = this.hostRows.find((row) => row.league_id === leagueId && row.host_id === hostId);
+    if (existing) existing.status = status;
+    else this.hostRows.push({ league_id: leagueId, host_id: hostId, status });
+  }
+
+  async pubs(leagueId: string): Promise<LeaguePubRecord[]> {
+    return this.pubRows.filter((row) => row.league_id === leagueId);
+  }
+
+  async addPubs(leagueId: string, hostId: string, pubIds: string[]): Promise<void> {
+    for (const pubId of pubIds) {
+      if (!this.pubRows.some((row) => row.league_id === leagueId && row.pub_id === pubId)) {
+        this.pubRows.push({ league_id: leagueId, pub_id: pubId, host_id: hostId });
+      }
+    }
+  }
+
+  async teams(leagueId: string): Promise<LeagueTeamRecord[]> {
+    return this.teamRows.filter((row) => row.league_id === leagueId);
+  }
+
+  async inviteTeams(leagueId: string, teams: { registeredTeamId: string; pubId: string | null }[]): Promise<void> {
+    for (const team of teams) {
+      if (!this.teamRows.some((row) => row.league_id === leagueId && row.registered_team_id === team.registeredTeamId)) {
+        this.teamRows.push({ league_id: leagueId, registered_team_id: team.registeredTeamId, status: 'INVITED', pub_id: team.pubId });
+      }
+    }
+  }
+
+  async setTeamStatus(leagueId: string, registeredTeamId: string, status: LeagueTeamStatus, pubId?: string | null): Promise<void> {
+    const existing = this.teamRows.find((row) => row.league_id === leagueId && row.registered_team_id === registeredTeamId);
+    if (existing) {
+      existing.status = status;
+      if (pubId !== undefined) existing.pub_id = pubId;
+    } else {
+      this.teamRows.push({ league_id: leagueId, registered_team_id: registeredTeamId, status, pub_id: pubId ?? null });
+    }
+  }
+
+  async results(leagueId: string): Promise<LeagueResultRecord[]> {
+    return this.resultRows.filter((row) => row.league_id === leagueId).sort((a, b) => a.rank - b.rank);
+  }
+
+  async saveResults(leagueId: string, rows: LeagueResultRecord[]): Promise<void> {
+    for (let i = this.resultRows.length - 1; i >= 0; i--) if (this.resultRows[i].league_id === leagueId) this.resultRows.splice(i, 1);
+    this.resultRows.push(...rows);
+  }
+
+  async teamsOfPubs(pubIds: string[]): Promise<PubTeam[]> {
+    const ids = new Set<string>();
+    for (const [teamId, entry] of this.teamPubs) if (entry.pubIds.some((id) => pubIds.includes(id))) ids.add(teamId);
+    for (const [teamId, pubs] of this.playedAt) if (pubs.some((id) => pubIds.includes(id))) ids.add(teamId);
+    return [...ids].map((id) => ({ registeredTeamId: id, primaryPubId: this.teamPubs.get(id)?.primary ?? null }));
   }
 }

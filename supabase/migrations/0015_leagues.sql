@@ -2,6 +2,12 @@
 -- tick quiz nights for it, and close it into a frozen table. A SUPER league is the final between
 -- the top 3 per pub of a closed league, scored by raw quiz points.
 -- See docs/superpowers/specs/2026-10-23-leagues-design.md.
+
+-- The prototype's `leagues` table (0001) and `quizzes.league_id` were never used; a league is now
+-- attached to quiz nights, not to quizzes.
+alter table quizzes drop column league_id;
+drop table leagues;
+
 create table leagues (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(btrim(name)) between 3 and 60),
