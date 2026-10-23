@@ -31,7 +31,7 @@ function build() {
   const leaguesRepo = new InMemoryLeaguesRepository();
   const profiles = new InMemoryProfilesRepository();
   const engine = { getState: async () => ({ teams: [] }) } as unknown as QuizEngineService;
-  const leagues = new LeaguesService(leaguesRepo, sessions, pubsRepo, profiles, registered, engine);
+  const leagues = new LeaguesService(leaguesRepo, sessions, pubsRepo, profiles, registered, engine, sessionTeams);
   const service = new RegisteredTeamsService(registered, new PubsService(pubsRepo), teamsService, leagues, tokens);
   return { service, registered, pubsRepo, sessions, sessionTeams, teamsService, leagues, leaguesRepo, profiles, tokens };
 }

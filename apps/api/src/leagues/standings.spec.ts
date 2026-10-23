@@ -15,7 +15,7 @@ function member(id: string, pubId: string | null = 'pub-1'): LeagueMember {
 }
 
 function row(id: string, rank: number, pubId: string | null): LeagueStandingDto {
-  return { rank, registeredTeamId: id, teamName: id, pubId, points: 0, nights: 0, placements: [] };
+  return { rank, registeredTeamId: id, teamName: id, pubId, points: 0, nights: 1, placements: [] };
 }
 
 describe('placePoints', () => {
@@ -127,5 +127,24 @@ describe('qualifiers', () => {
 
   it('never qualifies a team without a pub', () => {
     expect(qualifiers([row('A1', 1, null), row('A2', 2, 'p1')]).map((s) => s.registeredTeamId)).toEqual(['A2']);
+  });
+});
+
+describe('teams that have not played', () => {
+  it('rank below teams that played, even when those scored no points', () => {
+    const tenth = Object.fromEntries([...'123456789'].map((n, i) => [`T${n}`, 100 - i]));
+    const standings = leagueStandings([night(1, { ...tenth, Late: 1 })], [member('Absent'), member('Late')]);
+
+    expect(standings.map((s) => [s.registeredTeamId, s.points, s.rank])).toEqual([
+      ['Late', 0, 1],
+      ['Absent', 0, 2],
+    ]);
+  });
+
+  it('never qualify', () => {
+    const played = row('A1', 1, 'p1');
+    const absent = ['Z1', 'Z2', 'Z3'].map((id) => ({ ...row(id, 2, 'p1'), nights: 0 }));
+
+    expect(qualifiers([played, ...absent]).map((s) => s.registeredTeamId)).toEqual(['A1']);
   });
 });

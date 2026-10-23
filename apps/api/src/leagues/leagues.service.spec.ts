@@ -5,6 +5,7 @@ import {
   InMemoryPubsRepository,
   InMemoryRegisteredTeamsRepository,
   InMemorySessionsRepository,
+  InMemoryTeamsRepository,
 } from '../test-utils/in-memory-repositories';
 import { CreateLeagueDto } from './dto/league.dto';
 import { LeaguesService } from './leagues.service';
@@ -23,7 +24,8 @@ async function build() {
   const engine = {
     getState: async (sessionId: string) => ({ teams: (scores.get(sessionId) ?? []).map((t) => ({ ...t, id: 'x', name: 'x' })) }),
   } as unknown as QuizEngineService;
-  const service = new LeaguesService(leagues, sessions, pubs, profiles, teams, engine);
+  const sessionTeams = new InMemoryTeamsRepository();
+  const service = new LeaguesService(leagues, sessions, pubs, profiles, teams, engine, sessionTeams);
 
   profiles.add(OWNER, 'HOST', 'owner@pub.sk');
   profiles.add(COHOST, 'HOST', 'co@pub.sk');
@@ -53,6 +55,8 @@ async function build() {
     const session = await sessions.create('quiz', OWNER, `C${day}`, pubId, leagueId);
     day += 1;
     await sessions.updateStatus(session.id, { status: 'FINISHED', finished_at: `2027-01-${String(10 + day).padStart(2, '0')}T22:00:00Z` });
+    for (const registeredTeamId of Object.keys(result))
+      await sessionTeams.upsertJoin(session.id, `seat-${registeredTeamId}`, registeredTeamId);
     scores.set(session.id, [
       ...Object.entries(result).map(([registeredTeamId, score]) => ({ registeredTeamId, score })),
       ...oneOff.map((score) => ({ registeredTeamId: null, score })),
@@ -72,7 +76,8 @@ async function build() {
     };
   }
 
-  return { service, leagues, sessions, scores, hoffman: hoffman.id, mamut: mamut.id, team, night, dto };
+  const elsewhere = await pubs.create({ name: 'Elsewhere', city: 'Martin', address: null });
+  return { service, leagues, sessions, scores, hoffman: hoffman.id, mamut: mamut.id, elsewhere: elsewhere.id, team, night, dto };
 }
 
 // "Today" is 23 Oct 2026 in Slovakia.
@@ -295,6 +300,67 @@ describe('LeaguesService', () => {
       await expect(service.assertCanLaunch(COHOST, league.id, mamut)).rejects.toMatchObject({ response: { code: 'NOT_LEAGUE_HOST' } });
       await service.close(OWNER, league.id);
       await expect(service.assertCanLaunch(OWNER, league.id, hoffman)).rejects.toMatchObject({ response: { code: 'LEAGUE_CLOSED' } });
+    });
+  });
+
+  describe('review fixes', () => {
+    it("qualifies a team that joined from its invitation and played at a co-host's pub, through that pub", async () => {
+      const { service, hoffman, mamut, elsewhere, team, night, dto, leagues } = await build();
+      const traveller = await team('Travellers', elsewhere);
+      leagues.playedAt.set(traveller, [hoffman]);
+      const league = await service.create(OWNER, dto({ inviteHostIds: [COHOST] }));
+      await service.respond(COHOST, league.id, true, [mamut]);
+      await service.respondAsTeam(traveller, league.id, true);
+      await night(league.id, mamut, { [traveller]: 40 });
+
+      const closed = await service.close(OWNER, league.id);
+
+      expect(closed.teams.find((t) => t.registeredTeamId === traveller)?.pubId).toBe(mamut);
+      expect(closed.qualified.map((s) => [s.registeredTeamId, s.pubId])).toEqual([[traveller, mamut]]);
+    });
+
+    it("does not invite a co-host's teams into a Super League", async () => {
+      const { service, hoffman, mamut, team, night, dto } = await build();
+      const winner = await team('Winners', hoffman);
+      const coRegular = await team('Mamut Regulars', mamut);
+      const league = await service.create(OWNER, dto({ inviteHostIds: [COHOST] }));
+      await service.respond(COHOST, league.id, true, [mamut]);
+      await night(league.id, hoffman, { [winner]: 40 });
+      await service.close(OWNER, league.id);
+      const superLeague = await service.createSuperLeague(OWNER, league.id);
+
+      const accepted = await service.respond(COHOST, superLeague.id, true, [mamut]);
+
+      expect(accepted.teams.map((t) => t.registeredTeamId)).not.toContain(coRegular);
+      await expect(service.respondAsTeam(coRegular, superLeague.id, true)).rejects.toMatchObject({
+        response: { code: 'LEAGUE_NOT_FOUND' },
+      });
+    });
+
+    it('never qualifies teams that joined but did not play a single night', async () => {
+      const { service, hoffman, team, night, dto } = await build();
+      const player = await team('Players', hoffman);
+      const absent = [];
+      for (const name of ['Ghost A', 'Ghost B', 'Ghost C']) absent.push(await team(name, hoffman));
+      const league = await service.create(OWNER, dto());
+      for (const id of absent) await service.respondAsTeam(id, league.id, true);
+      await night(league.id, hoffman, { [player]: 40 });
+
+      const closed = await service.close(OWNER, league.id);
+
+      expect(closed.qualified.map((s) => s.registeredTeamId)).toEqual([player]);
+    });
+
+    it('shows a league on the team page as soon as the team has played in it, without an invitation', async () => {
+      const { service, hoffman, team, night, dto } = await build();
+      const newcomer = await team('Newcomers', null);
+      const league = await service.create(OWNER, dto());
+      await night(league.id, hoffman, { [newcomer]: 40 });
+
+      const leagues = await service.forTeam(newcomer);
+
+      expect(leagues.map((l) => [l.league.id, l.status])).toEqual([[league.id, 'JOINED']]);
+      expect(leagues[0].standings[0]).toMatchObject({ registeredTeamId: newcomer, points: 10 });
     });
   });
 });
