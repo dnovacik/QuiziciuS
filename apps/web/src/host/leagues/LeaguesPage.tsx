@@ -162,7 +162,7 @@ function HostInvitation({ token, league, onDone }: { token: string; league: Host
       <LeagueFacts league={league} />
       {pubs.length > 0 && (
         <fieldset className="flex flex-col gap-1">
-          <legend className="mb-1 text-label-md text-on-surface-variant">{t('leagues.acceptPubs')}</legend>
+          <legend className="mb-1 text-label-sm uppercase tracking-wider text-on-surface-variant">{t('leagues.acceptPubs')}</legend>
           {pubs.map((pub) => (
             <label key={pub.id} className="flex items-center gap-space-xs text-body-sm text-on-surface">
               <input
@@ -263,7 +263,7 @@ function NewLeagueDialog({ token, onClose }: { token: string; onClose: () => voi
           />
         </div>
         <fieldset className="flex flex-col gap-1">
-          <legend className="mb-1 text-label-md text-on-surface-variant">{t('leagues.form.pubs')}</legend>
+          <legend className="mb-1 text-label-sm uppercase tracking-wider text-on-surface-variant">{t('leagues.form.pubs')}</legend>
           {!pubsLoading && pubs.length === 0 && (
             <Link to="/host/pubs" className="text-body-sm text-primary hover:underline">
               {t('leagues.form.needPub')}
@@ -301,7 +301,7 @@ function NewLeagueDialog({ token, onClose }: { token: string; onClose: () => voi
           </div>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-label-md text-on-surface-variant">{t('leagues.form.hosts')}</span>
+          <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">{t('leagues.form.hosts')}</span>
           {hosts.length === 0 && <span className="text-body-sm text-on-surface-variant">{t('leagues.form.noHosts')}</span>}
           <div className="flex flex-wrap gap-space-xs">
             {hosts.map((host) => {
