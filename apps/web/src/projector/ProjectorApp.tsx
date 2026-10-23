@@ -1,40 +1,111 @@
-import {useEffect,useState} from 'react';
-import {useParams} from 'react-router-dom';
-import {useSessionState} from '../lib/use-session-state';
-import {apiGet} from '../lib/api-client';
-import {useCurrentQuestionMedia} from '../lib/use-current-question-media';
-import {I18nProvider,useI18n} from '../lib/i18n';
-import {CountdownRing} from './CountdownRing';
-import {Scoreboard} from './Scoreboard';
-import './stitch-projector.css';
-const symbol=(name:string)=><span aria-hidden="true" className="material-symbols-outlined">{name}</span>;
-function Stage(){
- const {sessionId}=useParams<{sessionId:string}>();
- const {state,error,refetch}=useSessionState(sessionId);
- const {t,locale,setLocale}=useI18n();
- const [title,setTitle]=useState('');
- useEffect(()=>{if(!sessionId)return;let active=true;apiGet<{title:string}>(`/sessions/${sessionId}/display`).then(data=>{if(active)setTitle(data.title)}).catch(()=>{});return()=>{active=false}},[sessionId]);
- useEffect(()=>{const id=setInterval(()=>refetch(),15000);return()=>clearInterval(id)},[refetch]);
- const teams=[...(state?.teams??[])].sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
- const active=teams.filter(team=>team.isActive).length;
- const q=state?.currentQuestion;
- const {media,error:mediaError}=useCurrentQuestionMedia(sessionId,q?.id,state?.status);
- const isReveal=state?.status==='QUESTION_REVEAL';
- const correct=q?.type==='MULTIPLE_CHOICE'?q.options?.find(o=>o.id===q.correctOptionId)?.label:q?.type==='FREE_TEXT'?q.acceptedAnswers?.join(', '):q?.correctNumeric?.toString();
- const joinUrl=typeof window!=='undefined'?new URL(`/play/${sessionId??''}`,window.location.origin).href:'';
- return <div data-testid="projector-app" className="pr-screen">
- <header className="pr-header"><div className="pr-brand">ϟ QuiziciuS</div><div className="pr-pill">{t('projector.room')} <strong>#{state?.joinCode??'—'}</strong></div><div className="pr-top-right"><span className="pr-pill">{title||t('projector.event')}</span><button data-testid="projector-language" onClick={()=>setLocale(locale==='sk'?'en':'sk')} className="pr-lang">{locale.toUpperCase()}</button></div></header>
- {error&&<div role="alert" data-testid="projector-error" className="pr-alert">{error}</div>}
- {!state?<main className="pr-middle" data-testid="projector-loading"><div className="pr-hero-icon">{symbol('hourglass_top')}</div><h1>{t('projector.loading')}</h1></main>:<>
- <div className="pr-heading"><div className="pr-eyebrow">{symbol('trophy')} {t('projector.pubQuiz')}</div><h1>{title||t('projector.event')}</h1></div>
- {state.status==='LOBBY'&&<main className="pr-lobby" data-testid="projector-lobby"><section className="pr-card pr-join"><p className="pr-eyebrow">{t('projector.howToJoin')}</p><h2>{t('projector.scanOrVisit')}</h2><div className="pr-qr-fallback" data-testid="projector-join-link"><span className="pr-hero-icon">{symbol('phone_iphone')}</span><p>{joinUrl}</p></div><div className="pr-join-code"><span>{t('projector.roomCode')}</span><strong data-testid="projector-join-code">#{state.joinCode}</strong></div></section><section className="pr-card pr-teams"><div className="pr-panel-head"><h2>{symbol('groups')} {t('projector.teamsInRoom')}</h2><span>{active} {t('projector.connected')}</span></div><div className="pr-team-grid">{teams.map(team=><div className="pr-team" key={team.id}><span className={team.isActive?'pr-dot':'pr-dot pr-offline'}/><span>{team.name}</span></div>)}{!teams.length&&<p className="pr-muted">{t('projector.waitingTeams')}</p>}</div><footer className="pr-wait">{symbol('sync')} {t('projector.waitingHost')}</footer></section></main>}
- {state.status==='LOCK_IN_ROUND'&&<main className="pr-middle" data-testid="projector-lock-in"><div className="pr-hero-icon">{symbol('bolt')}</div><div className="pr-eyebrow">{t('projector.nextQuestion')}</div><h2>{t('projector.getReady')}</h2><p className="pr-muted">{t('projector.lockIn')}</p></main>}
- {(state.status==='QUESTION_ACTIVE'||isReveal)&&q&&<main className="pr-question" data-testid={isReveal?'projector-reveal':'projector-question'}><div className="pr-question-meta"><span>{t('projector.question')} {q.orderIndex+1}</span><span>{q.points} {t('projector.points')}</span></div><h2>{q.prompt}</h2>{media?.mediaType==='image'&&media.url&&<img data-testid="projector-question-image" src={media.url} alt={t('projector.questionImage')} className="pr-question-media" />}{media?.mediaType==='video'&&media.url&&<video key={q.id} data-testid="projector-question-video" className="pr-question-media" src={media.url} autoPlay controls playsInline preload="metadata" />}{mediaError&&<p role="alert" className="pr-alert">{t('projector.mediaUnavailable')}</p>}{state.status==='QUESTION_ACTIVE'&&state.questionEndsAt&&<div className="pr-clock" data-testid="projector-timer"><CountdownRing endsAt={state.questionEndsAt} totalSeconds={q.timeLimitSeconds}/></div>}{q.type==='MULTIPLE_CHOICE'&&<div className="pr-options">{q.options?.map((o,i)=><div data-testid={`projector-option-${o.id}`} className={isReveal?(o.id===q.correctOptionId?'pr-option pr-correct':'pr-option pr-muted-option'):'pr-option'} key={o.id}><strong>{String.fromCharCode(65+i)}</strong><span>{o.label}</span></div>)}</div>}{q.type!=='MULTIPLE_CHOICE'&&!isReveal&&<p className="pr-instruction">{q.type==='FREE_TEXT'?t('projector.enterText'):t('projector.enterNumber')}</p>}{isReveal&&<div className="pr-answer" data-testid="reveal-banner"><div className="pr-eyebrow">{t('projector.correctAnswer')}</div><strong data-testid="projector-correct-answer">{correct||'—'}</strong></div>}</main>}
- {state.status==='PAUSE_BREAK'&&<main className="pr-middle" data-testid="projector-break"><div className="pr-hero-icon">{symbol('coffee')}</div><h2>{t('projector.break')}</h2><p className="pr-muted">{t('projector.backSoon')}</p><div className="pr-standings"><Scoreboard teams={state.teams}/></div></main>}
- {state.status==='FINISHED'&&<main className="pr-finished" data-testid="projector-finished"><div className="pr-eyebrow">{t('projector.finished')}</div><h2>{t('projector.winner')}</h2>{teams[0]&&<div className="pr-champion">{symbol('emoji_events')} {teams[0].name}<span>{teams[0].score} {t('projector.points')}</span></div>}<div className="pr-standings"><Scoreboard teams={state.teams}/></div></main>}
- {state.status==='QUESTION_ACTIVE'&&!q&&<main className="pr-middle" data-testid="projector-missing-question">{t('projector.noQuestion')}</main>}
- </>}
- <footer className="pr-footer"><span>QuiziciuS · PUB ENGINE</span><span>{state?.status??'…'}</span></footer>
- </div>;
+import { useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { CloudOff, RefreshCw } from 'lucide-react';
+import { useI18n } from '../lib/i18n';
+import { useQuizTitle } from '../lib/use-quiz-title';
+import { useSessionState } from '../lib/use-session-state';
+import { LanguageSwitcher } from '../ui/LanguageSwitcher';
+import { Logo } from '../ui/Logo';
+import { FinishedScene, LeaderboardScene, PauseScene } from './StandingsScenes';
+import { LobbyScene } from './LobbyScene';
+import { LockInScene, QuestionScene } from './QuestionScenes';
+
+/** Big-screen view for the room — Stitch "Projector View (Veľkoplošná projekcia v sále)". */
+export default function ProjectorApp() {
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const { t } = useI18n();
+  const { state, error, refetch } = useSessionState(sessionId);
+  const title = useQuizTitle(sessionId);
+
+  // Realtime events drive the screen; a slow poll covers a dropped websocket on the venue Wi-Fi.
+  useEffect(() => {
+    const timer = setInterval(refetch, 15000);
+    return () => clearInterval(timer);
+  }, [refetch]);
+
+  return (
+    <div data-testid="projector-app" className="flex min-h-screen flex-col overflow-x-hidden bg-surface-container-lowest text-on-surface">
+      <header className="fixed left-0 right-0 top-0 z-50 bg-surface-container-lowest/80 shadow-[0_1px_8px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+        <div className="flex h-20 w-full items-center justify-between gap-gutter px-margin-lg">
+          <div className="flex items-center gap-space-lg">
+            <Logo size="md" />
+            {state && (
+              <div className="flex items-center gap-space-xs rounded-full bg-surface-container-high px-space-md py-space-xs shadow-[0_0_12px_rgba(255,185,95,0.15)]">
+                <span className="text-label-sm uppercase text-on-surface-variant">{t('projector.room')}</span>
+                <span className="text-label-lg font-bold tracking-wider text-secondary" data-testid="projector-room-code">
+                  #{state.joinCode}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-space-lg">
+            <div className="hidden items-center gap-space-xs rounded-full bg-surface-container-high px-space-md py-space-xs sm:flex">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${error ? 'bg-error' : 'animate-ping bg-tertiary'}`} />
+                <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${error ? 'bg-error' : 'bg-tertiary'}`} />
+              </span>
+              <span className={`text-label-sm uppercase ${error ? 'text-error' : 'text-tertiary'}`}>{error ? t('projector.offline') : 'LIVE'}</span>
+            </div>
+            <LanguageSwitcher />
+          </div>
+        </div>
+      </header>
+
+      <main className="relative flex w-full flex-1 flex-col justify-center px-margin-lg pb-margin-lg pt-24">
+        <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary-container/15 blur-[128px]" />
+        <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-secondary-container/15 blur-[128px]" />
+        <div className="relative mx-auto w-full max-w-[1720px]">
+          {!state ? (
+            <div className="flex justify-center py-space-xl" data-testid="projector-loading">
+              <span className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            </div>
+          ) : (
+            <Scene state={state} sessionId={sessionId!} title={title} />
+          )}
+        </div>
+
+        {error && state && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-surface-container-lowest/90 p-space-lg backdrop-blur-2xl" data-testid="projector-offline" role="alert">
+            <div className="flex w-full max-w-md flex-col items-center rounded-xl bg-surface-container-high p-space-xl text-center shadow-2xl">
+              <div className="mb-space-md flex h-16 w-16 animate-pulse items-center justify-center rounded-full bg-error-container text-on-error-container">
+                <CloudOff className="h-9 w-9" />
+              </div>
+              <h3 className="text-headline-md font-extrabold text-on-surface">{t('projector.offlineTitle')}</h3>
+              <p className="mt-space-xs text-body-md text-on-surface-variant">{t('projector.offlineText')}</p>
+              <button
+                type="button"
+                onClick={refetch}
+                className="mt-space-lg flex w-full items-center justify-center gap-space-xs rounded-lg bg-primary-container px-space-md py-space-sm text-label-lg font-bold text-on-primary-container"
+              >
+                <RefreshCw className="h-[18px] w-[18px]" />
+                {t('projector.retry')}
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
 }
-export default function ProjectorApp(){return <I18nProvider><Stage/></I18nProvider>}
+
+function Scene({ state, sessionId, title }: { state: NonNullable<ReturnType<typeof useSessionState>['state']>; sessionId: string; title: string | null }) {
+  const question = state.currentQuestion;
+  switch (state.status) {
+    case 'LOBBY':
+      return <LobbyScene state={state} sessionId={sessionId} title={title} />;
+    case 'LOCK_IN_ROUND':
+      return <LockInScene question={question} />;
+    case 'QUESTION_ACTIVE':
+    case 'QUESTION_REVEAL':
+      return question ? <QuestionScene state={state} question={question} /> : <LockInScene question={null} />;
+    case 'PAUSE_BREAK':
+      return (
+        <div className="flex flex-col gap-space-lg">
+          <PauseScene />
+          <LeaderboardScene teams={state.teams} />
+        </div>
+      );
+    case 'FINISHED':
+      return <FinishedScene teams={state.teams} />;
+  }
+}

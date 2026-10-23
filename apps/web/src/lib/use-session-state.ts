@@ -14,7 +14,10 @@ export function useSessionState(sessionId: string | undefined): {
   const refetch = useCallback(() => {
     if (!sessionId) return;
     apiGet<QuizSessionStateDto>(`/sessions/${sessionId}/state`)
-      .then(setState)
+      .then((next) => {
+        setState(next);
+        setError(null);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load session'));
   }, [sessionId]);
 

@@ -30,7 +30,12 @@ These are omitted from the screens (no fake values); adding them needs API work 
 | Who submitted + teams-answered progress ("13 / 14") | player locked | per-question answered flags in session state |
 | Speed bonus, streaks, jokers, accuracy %, max score | player question, reveal, results | scoring features |
 | Host trivia comment after reveal | player reveal | comment field on questions |
-| Connection latency / "Supabase Live" health | player question, locked | realtime connection status from the subscription |
+| Connection latency / "Supabase Live" health | player question, locked, projector header | realtime connection status from the subscription |
+| Venue Wi-Fi name, players at tables ("56 hráčov") | projector lobby | venue settings, player counts per team |
+| Teams answered ("12 zo 14 tímov") | projector question | per-question answered count in session state |
+| Room success rate, fastest team | projector reveal | per-question answer stats after reveal |
+| Points gained this round per team | projector leaderboard | score history per question |
+| Break countdown, bar promo text | projector pause | break duration + host message |
 
 ## Left out on purpose
 
