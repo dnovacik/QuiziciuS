@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { AnswerGradePatch, AnswerRecord, AnswersRepository } from '../data/answers.repository';
 import { InfractionRecord, InfractionsRepository } from '../data/infractions.repository';
 import { QuestionRecord, QuestionsRepository } from '../data/questions.repository';
-import { QuizRecord, QuizzesRepository } from '../data/quizzes.repository';
+import { QuizPatch, QuizRecord, QuizzesRepository } from '../data/quizzes.repository';
 import { ScoreAdjustmentRecord, ScoreAdjustmentsRepository } from '../data/score-adjustments.repository';
 import { SessionRecord, SessionsRepository, SessionStatusPatch } from '../data/sessions.repository';
 import { TeamRecord, TeamsRepository } from '../data/teams.repository';
@@ -257,5 +257,15 @@ export class InMemoryQuizzesRepository extends QuizzesRepository {
 
   async listByHost(hostId: string): Promise<QuizRecord[]> {
     return [...this.rows.values()].filter((q) => q.host_id === hostId);
+  }
+
+  async update(id: string, patch: QuizPatch): Promise<QuizRecord> {
+    const record = { ...this.rows.get(id)!, ...patch };
+    this.rows.set(id, record);
+    return record;
+  }
+
+  async remove(id: string): Promise<void> {
+    this.rows.delete(id);
   }
 }

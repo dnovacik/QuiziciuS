@@ -7,6 +7,7 @@ import { RealtimeBroadcastService } from '../realtime/realtime-broadcast.service
 import { gradeFreeText } from '../quiz-engine/grading/free-text-grader';
 import { gradeMultipleChoice } from '../quiz-engine/grading/multiple-choice-grader';
 import { isAnswerResultVisible, RESULT_GRACE_MS } from '../quiz-engine/result-visibility';
+import { toAnswerSummary } from './answer-summary';
 
 const LATE_SUBMISSION_GRACE_MS = RESULT_GRACE_MS;
 
@@ -52,7 +53,7 @@ export class AnswersService {
     await this.broadcast.publish(sessionId, 'SCORE_UPDATE', { teamId });
     // The grade stays hidden until the question closes: answers can be resubmitted while the
     // question is open, so returning it here would let a team probe for the correct option.
-    return this.toSummary(graded, false);
+    return toAnswerSummary(graded, false);
   }
 
   /** The team's own answers in this session; grading is included only where results are public. */
@@ -62,7 +63,7 @@ export class AnswersService {
     const answers = await this.answers.listBySession(sessionId);
     return answers
       .filter((answer) => answer.team_id === teamId)
-      .map((answer) => this.toSummary(answer, isAnswerResultVisible(answer, session)));
+      .map((answer) => toAnswerSummary(answer, isAnswerResultVisible(answer, session)));
   }
 
   private async gradeImmediately(question: QuestionRecord, answer: AnswerRecord): Promise<AnswerRecord> {
@@ -91,20 +92,5 @@ export class AnswersService {
 
     // NUMERIC_NEAREST is graded once the round closes (QuizEngineService, on QUESTION_REVEAL).
     return answer;
-  }
-
-  private toSummary(answer: AnswerRecord, includeGrade: boolean): AnswerSummaryDto {
-    return {
-      id: answer.id,
-      sessionId: answer.session_id,
-      questionId: answer.question_id,
-      teamId: answer.team_id,
-      response: answer.response,
-      isCorrect: includeGrade ? answer.is_correct : null,
-      confidence: includeGrade ? answer.confidence : null,
-      needsReview: includeGrade ? answer.needs_review : false,
-      gradedBy: includeGrade ? answer.graded_by : null,
-      scoreAwarded: includeGrade ? answer.score_awarded : 0,
-    };
   }
 }

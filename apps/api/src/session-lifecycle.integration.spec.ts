@@ -187,4 +187,42 @@ describe('Session lifecycle (integration)', () => {
     expect(res.status).toBe(409);
     expect(res.body.currentState).toBe('LOBBY');
   });
+
+  it('lets the host see every team answer to a question, graded', async () => {
+    const server = app.getHttpServer();
+    const sessionId: string = (await request(server).post(`/quizzes/${quizId}/sessions`).send({})).body.id;
+    const teamToken: string = (await request(server).post(`/sessions/${sessionId}/teams/join`).send({ name: 'Answerers' })).body.token;
+    await request(server).post(`/sessions/${sessionId}/transition`).send({ status: 'LOCK_IN_ROUND', questionId }).expect(201);
+    await request(server).post(`/sessions/${sessionId}/transition`).send({ status: 'QUESTION_ACTIVE' }).expect(201);
+    await request(server)
+      .post(`/sessions/${sessionId}/answers`)
+      .set('Authorization', `Bearer ${teamToken}`)
+      .send({ questionId, response: { optionId: 'b' } })
+      .expect(201);
+
+    const res = await request(server).get(`/host/sessions/${sessionId}/answers`).query({ questionId });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([expect.objectContaining({ questionId, isCorrect: false, scoreAwarded: 0, response: { optionId: 'b' } })]);
+  });
+
+  it('renames a quiz and refuses to delete it while a session is in progress', async () => {
+    const server = app.getHttpServer();
+    const quizRes = await request(server).post('/quizzes').send({ title: 'Disposable' });
+    const id: string = quizRes.body.id;
+
+    const renamed = await request(server).patch(`/quizzes/${id}`).send({ title: '  Renamed  ', categoryId: null });
+    expect(renamed.status).toBe(200);
+    expect(renamed.body).toMatchObject({ title: 'Renamed', category_id: null });
+
+    const sessionId: string = (await request(server).post(`/quizzes/${id}/sessions`).send({})).body.id;
+    const refused = await request(server).delete(`/quizzes/${id}`);
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('QUIZ_IN_PLAY');
+
+    await request(server).post(`/sessions/${sessionId}/transition`).send({ status: 'FINISHED' }).expect(201);
+    await request(server).delete(`/quizzes/${id}`).expect(204);
+    const list = await request(server).get('/quizzes');
+    expect(list.body.map((quiz: { id: string }) => quiz.id)).not.toContain(id);
+  });
 });

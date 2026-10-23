@@ -40,9 +40,9 @@ export function LeaderboardScene({ teams }: { teams: TeamSummaryDto[] }) {
       </div>
 
       <div className="grid grid-cols-1 items-end gap-space-md md:grid-cols-3">
-        {second ? <PodiumCard team={second} place={2} /> : <div className="hidden md:block" />}
+        {second ? <PodiumCard team={second} place={2} /> : <div className="hidden md:order-1 md:block" />}
         <PodiumCard team={first} place={1} />
-        {third ? <PodiumCard team={third} place={3} /> : <div className="hidden md:block" />}
+        {third ? <PodiumCard team={third} place={3} /> : <div className="order-3 hidden md:block" />}
       </div>
 
       {rest.length > 0 && (

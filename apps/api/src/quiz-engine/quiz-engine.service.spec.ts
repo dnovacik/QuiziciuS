@@ -443,18 +443,37 @@ describe('QuizEngineService.resolveDispute', () => {
 describe('QuizEngineService.listDisputes', () => {
   it('returns answers needing review for a host-owned session', async () => {
     const { service, answers } = buildHarness();
-    (answers.listNeedsReview as jest.Mock).mockResolvedValue([{ id: 'a1', needs_review: true }]);
+    (answers.listNeedsReview as jest.Mock).mockResolvedValue([{ id: 'a1', team_id: 't1', needs_review: true }]);
 
     const result = await service.listDisputes('s1', 'host1');
 
     expect(answers.listNeedsReview).toHaveBeenCalledWith('s1');
-    expect(result).toEqual([{ id: 'a1', needs_review: true }]);
+    expect(result).toEqual([expect.objectContaining({ id: 'a1', teamId: 't1', needsReview: true })]);
   });
 
   it('rejects a host who does not own the session', async () => {
     const { service } = buildHarness();
 
     await expect(service.listDisputes('s1', 'someone-else')).rejects.toBeInstanceOf(ForbiddenException);
+  });
+});
+
+describe('QuizEngineService.listAnswers', () => {
+  it('returns graded answers of one question for the owning host', async () => {
+    const { service, answers } = buildHarness();
+    (answers.listByQuestion as jest.Mock).mockResolvedValue([
+      { id: 'a1', team_id: 't1', question_id: 'q1', is_correct: true, score_awarded: 2, needs_review: false },
+    ]);
+
+    const result = await service.listAnswers('s1', 'host1', 'q1');
+
+    expect(answers.listByQuestion).toHaveBeenCalledWith('s1', 'q1');
+    expect(result).toEqual([expect.objectContaining({ teamId: 't1', isCorrect: true, scoreAwarded: 2 })]);
+  });
+
+  it('rejects a host who does not own the session', async () => {
+    const { service } = buildHarness();
+    await expect(service.listAnswers('s1', 'someone-else')).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
 

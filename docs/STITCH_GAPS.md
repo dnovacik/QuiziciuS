@@ -15,6 +15,16 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 | `qr-scanner` | Player join | In-app camera QR scanner (phones can already scan the projector QR with the camera app) | |
 | `answer-dispute` | Player reveal | Endpoint for a team to dispute its graded answer + host review queue entry | |
 | `result-certificate` | Player final results | Generated certificate (PDF/image) for a team's result | |
+| `leagues` | Host sidebar | Leagues & venues section | |
+| `host-settings` | Host sidebar | Host account / venue settings page | |
+| `notifications` | Host top bar | Notification feed (new teams, disputes) | |
+| `team-ratings` | Host dashboard stat | Teams rate the night after it ends | |
+| `scheduled-sessions` | Host dashboard | Sessions planned ahead (date, venue, table capacity, reservations) | |
+| `venues` | Start-session dialog, quiz settings | Venue model attached to quizzes / sessions | |
+| `quiz-default-timer` | Quiz settings | Default answer time stored per quiz | |
+| `numeric-unit` | Quiz editor | `unit` column on numeric questions, shown to players and on the projector | |
+| `timer-controls` | Control room | Pause / +10 s / stop answers early / host pause — needs a pausable timer in the quiz engine | |
+| `session-archive` | Control room results | Archiving into league tables, deactivating the code | |
 
 ## Data the designs show but the API does not provide
 
@@ -36,6 +46,18 @@ These are omitted from the screens (no fake values); adding them needs API work 
 | Room success rate, fastest team | projector reveal | per-question answer stats after reveal |
 | Points gained this round per team | projector leaderboard | score history per question |
 | Break countdown, bar promo text | projector pause | break duration + host message |
+| Host name ("Michal Kováč") | host dashboard, editor header | display name on the host profile (the email is shown) |
+| Rounds, quiz description, AI question generator | host dashboard, editor | rounds model, description field |
+| Projector connected ("HDMI #1 • 4K"), average ping | control room lobby | projector presence in realtime |
+| Answer time per team ("04.1s") and speed bonus | control room question/review | `submitted_at` in the answer summary, scoring rules |
+| Per-round score change, streaks, accuracy | control room results | score history per question |
+
+## Added API endpoints (host screens)
+
+- `PATCH /quizzes/:quizId` — rename / change category (editor title, settings dialog)
+- `DELETE /quizzes/:quizId` — delete a quiz; refused with `409 QUIZ_IN_PLAY` while a session is not finished
+- `GET /host/sessions/:sessionId/answers?questionId=` — every team's graded answers for the host (answer split, answered counter, review table)
+- `GET /sessions/:sessionId/disputes` now returns answer summaries (camelCase), like every other answer endpoint
 
 ## Left out on purpose
 

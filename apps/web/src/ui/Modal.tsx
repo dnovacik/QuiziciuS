@@ -14,12 +14,15 @@ export function Modal({
   children,
   className = '',
   testId,
+  tone = 'glass',
 }: {
   labelledBy: string;
   onClose: () => void;
   children: ReactNode;
   className?: string;
   testId?: string;
+  /** `glass` for the public pages, `surface` for the solid host-app dialogs. */
+  tone?: 'glass' | 'surface';
 }) {
   const { t } = useI18n();
   const panelRef = useRef<HTMLElement>(null);
@@ -58,7 +61,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
+      className={`fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-md ${tone === 'glass' ? 'bg-black/80' : 'bg-surface-container-lowest/80'}`}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -69,7 +72,9 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={labelledBy}
         data-testid={testId}
-        className={`glass-card relative max-h-[92vh] w-full overflow-y-auto overflow-x-hidden rounded-3xl border-white/20 p-6 shadow-2xl sm:p-8 ${className}`}
+        className={`relative max-h-[92vh] w-full overflow-y-auto overflow-x-hidden shadow-2xl ${
+          tone === 'glass' ? 'glass-card rounded-3xl border-white/20 p-6 sm:p-8' : 'rounded-2xl bg-surface-container-low p-space-lg'
+        } ${className}`}
       >
         <button
           type="button"

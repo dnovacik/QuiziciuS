@@ -1,4 +1,4 @@
-import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { QuizzesRepository } from '../data/quizzes.repository';
@@ -100,5 +100,15 @@ export class SessionsController {
   @UseGuards(SupabaseAuthGuard)
   listDisputes(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload) {
     return this.quizEngine.listDisputes(sessionId, host.id);
+  }
+
+  @Get('host/sessions/:sessionId/answers')
+  @UseGuards(SupabaseAuthGuard)
+  listAnswers(
+    @Param('sessionId') sessionId: string,
+    @CurrentHost() host: CurrentHostPayload,
+    @Query('questionId') questionId?: string,
+  ) {
+    return this.quizEngine.listAnswers(sessionId, host.id, questionId);
   }
 }

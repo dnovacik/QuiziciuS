@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
+import { AnswerSummaryDto, QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
+import { toAnswerSummary } from '../answers/answer-summary';
 import { AnswerRecord, AnswersRepository } from '../data/answers.repository';
 import { InfractionsRepository } from '../data/infractions.repository';
 import { QuestionsRepository } from '../data/questions.repository';
@@ -162,9 +163,16 @@ export class QuizEngineService {
     return updated;
   }
 
-  async listDisputes(sessionId: string, hostId: string): Promise<AnswerRecord[]> {
+  async listDisputes(sessionId: string, hostId: string): Promise<AnswerSummaryDto[]> {
     await this.requireOwnedSession(sessionId, hostId);
-    return this.answers.listNeedsReview(sessionId);
+    return (await this.answers.listNeedsReview(sessionId)).map((answer) => toAnswerSummary(answer));
+  }
+
+  /** Every team's answers in the session (optionally for one question), graded — for the host only. */
+  async listAnswers(sessionId: string, hostId: string, questionId?: string): Promise<AnswerSummaryDto[]> {
+    await this.requireOwnedSession(sessionId, hostId);
+    const answers = questionId ? await this.answers.listByQuestion(sessionId, questionId) : await this.answers.listBySession(sessionId);
+    return answers.map((answer) => toAnswerSummary(answer));
   }
 
   async addPaperScore(
