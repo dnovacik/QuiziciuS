@@ -84,3 +84,74 @@ export interface SubscriptionDto {
   /** Whether the forever flag is set (super admins are FOREVER without it). */
   forever: boolean;
 }
+
+/** League points for 1st, 2nd, … 8th place on a league night; lower places get 0. */
+export const LEAGUE_PLACE_POINTS = [10, 8, 6, 5, 4, 3, 2, 1] as const;
+
+export type LeagueKind = 'LEAGUE' | 'SUPER';
+export type LeaguePhase = 'PREPARING' | 'RUNNING' | 'CLOSED';
+export type LeagueHostStatus = 'INVITED' | 'ACCEPTED' | 'DECLINED';
+export type LeagueTeamStatus = 'INVITED' | 'JOINED' | 'DECLINED';
+
+export interface LeaguePubDto {
+  id: string;
+  name: string;
+  city: string;
+  hostId: string;
+}
+
+export interface LeagueStandingDto {
+  rank: number;
+  registeredTeamId: string;
+  teamName: string;
+  /** The pub the team represents (qualification); null when it never got one. */
+  pubId: string | null;
+  points: number;
+  nights: number;
+  /** Place per night played, in night order. */
+  placements: number[];
+}
+
+export interface LeagueSummaryDto {
+  id: string;
+  name: string;
+  kind: LeagueKind;
+  phase: LeaguePhase;
+  startsOn: string;
+  endsOn: string | null;
+  message: string | null;
+  ownerHostId: string;
+  ownerName: string;
+  pubs: LeaguePubDto[];
+  nightsPlayed: number;
+  joinedTeams: number;
+  parentLeagueId: string | null;
+}
+
+export interface HostLeagueDto extends LeagueSummaryDto {
+  myStatus: LeagueHostStatus;
+  isOwner: boolean;
+}
+
+export interface LeagueDetailDto extends HostLeagueDto {
+  hosts: { id: string; name: string; status: LeagueHostStatus }[];
+  teams: { registeredTeamId: string; name: string; status: LeagueTeamStatus; pubId: string | null }[];
+  standings: LeagueStandingDto[];
+  /** Top 3 per pub of a closed LEAGUE; empty otherwise. */
+  qualified: LeagueStandingDto[];
+  superLeagueId: string | null;
+  /** The owner should close the league: its end date has passed. */
+  endedAwaitingClose: boolean;
+}
+
+export interface TeamLeagueDto {
+  league: LeagueSummaryDto;
+  status: LeagueTeamStatus;
+  standings: LeagueStandingDto[];
+}
+
+export interface InvitableHostDto {
+  id: string;
+  name: string;
+  pubs: { id: string; name: string; city: string }[];
+}
