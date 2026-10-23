@@ -28,9 +28,9 @@ export class SessionQuestionMediaController {
     if (!session || !session.current_question_id || !['LOCK_IN_ROUND', 'QUESTION_ACTIVE', 'QUESTION_REVEAL'].includes(session.status))
       return { mediaType: null, url: null };
     const question = await this.questions.findById(session.current_question_id);
-    if (!question || question.quiz_id !== session.quiz_id || !question.media_path || !question.media_type)
-      return { mediaType: null, url: null };
-    return { mediaType: question.media_type, url: await this.signedUrl(question.media_path) };
+    const media = question?.quiz_id === session.quiz_id ? question.media : null;
+    if (!media || media.source !== 'upload' || !media.path) return { mediaType: null, url: null };
+    return { mediaType: media.kind, url: await this.signedUrl(media.path) };
   }
 
   private async signedUrl(path: string): Promise<string> {

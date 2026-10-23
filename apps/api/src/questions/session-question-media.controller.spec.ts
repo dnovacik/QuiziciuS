@@ -11,7 +11,11 @@ describe('SessionQuestionMediaController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     sessions.findById.mockResolvedValue({ id: 's1', quiz_id: 'quiz', current_question_id: 'q1', status: 'QUESTION_ACTIVE' });
-    questions.findById.mockResolvedValue({ id: 'q1', quiz_id: 'quiz', media_type: 'image', media_path: 'host/quiz/a.png' });
+    questions.findById.mockResolvedValue({
+      id: 'q1',
+      quiz_id: 'quiz',
+      media: { kind: 'image', source: 'upload', path: 'host/quiz/a.png' },
+    });
   });
   it('issues short lived URL for active current question', async () => {
     await expect(controller.currentQuestionMedia('s1')).resolves.toEqual({ mediaType: 'image', url: 'https://example.test/signed' });
@@ -23,7 +27,7 @@ describe('SessionQuestionMediaController', () => {
     expect(questions.findById).not.toHaveBeenCalled();
   });
   it('does not expose question media from a different quiz', async () => {
-    questions.findById.mockResolvedValueOnce({ quiz_id: 'another', media_type: 'video', media_path: 'other.mp4' });
+    questions.findById.mockResolvedValueOnce({ quiz_id: 'another', media: { kind: 'video', source: 'upload', path: 'other.mp4' } });
     await expect(controller.currentQuestionMedia('s1')).resolves.toEqual({ mediaType: null, url: null });
     expect(sign).not.toHaveBeenCalled();
   });

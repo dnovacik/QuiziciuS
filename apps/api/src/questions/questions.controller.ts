@@ -15,9 +15,23 @@ import {
 } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { RequireRole } from '../auth/require-role';
-import { QuestionsRepository } from '../data/questions.repository';
+import { QuestionRecord, QuestionsRepository } from '../data/questions.repository';
 import { QuizzesRepository } from '../data/quizzes.repository';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { normalizeMediaRef } from './media-ref';
+
+const MB = 1024 * 1024;
+const UPLOADS: Record<string, { ext: string; type: 'image' | 'video' | 'audio'; max: number }> = {
+  'image/jpeg': { ext: 'jpg', type: 'image', max: 10 * MB },
+  'image/png': { ext: 'png', type: 'image', max: 10 * MB },
+  'image/webp': { ext: 'webp', type: 'image', max: 10 * MB },
+  'video/mp4': { ext: 'mp4', type: 'video', max: 100 * MB },
+  'video/webm': { ext: 'webm', type: 'video', max: 100 * MB },
+  'audio/mpeg': { ext: 'mp3', type: 'audio', max: 25 * MB },
+  'audio/mp4': { ext: 'm4a', type: 'audio', max: 25 * MB },
+  'audio/ogg': { ext: 'ogg', type: 'audio', max: 25 * MB },
+  'audio/wav': { ext: 'wav', type: 'audio', max: 25 * MB },
+};
 
 @Controller('quizzes/:quizId/questions')
 @RequireRole('HOST')
@@ -35,14 +49,7 @@ export class QuestionsController {
     @Body() body: { mimeType?: string; fileSize?: number },
   ) {
     await this.requireOwnedQuiz(quizId, host.id);
-    const allowed: Record<string, { ext: string; type: 'image' | 'video'; max: number }> = {
-      'image/jpeg': { ext: 'jpg', type: 'image', max: 10 * 1024 * 1024 },
-      'image/png': { ext: 'png', type: 'image', max: 10 * 1024 * 1024 },
-      'image/webp': { ext: 'webp', type: 'image', max: 10 * 1024 * 1024 },
-      'video/mp4': { ext: 'mp4', type: 'video', max: 50 * 1024 * 1024 },
-      'video/webm': { ext: 'webm', type: 'video', max: 50 * 1024 * 1024 },
-    };
-    const policy = body.mimeType && allowed[body.mimeType];
+    const policy = body.mimeType && UPLOADS[body.mimeType];
     if (!policy || !Number.isSafeInteger(body.fileSize) || body.fileSize! > policy.max || body.fileSize! <= 0)
       throw new BadRequestException('Unsupported media type or file size');
     const path = `${host.id}/${quizId}/${randomUUID()}.${policy.ext}`;
@@ -63,28 +70,10 @@ export class QuestionsController {
     if (error || !data) throw new NotFoundException('Media not found');
     return { url: data.signedUrl };
   }
-  private requireValidMedia(mediaType: string | null | undefined, path: string | null | undefined, hostId: string, quizId: string) {
-    if (!mediaType && !path) return;
-    if ((mediaType !== 'image' && mediaType !== 'video') || !path?.startsWith(`${hostId}/${quizId}/`) || path.includes('..'))
-      throw new BadRequestException('Invalid question media');
-  }
-
   @Post()
   async create(@Param('quizId') quizId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: CreateQuestionDto) {
     await this.requireOwnedQuiz(quizId, host.id);
-    this.requireValidMedia(dto.mediaType, dto.mediaPath, host.id, quizId);
-    return this.questions.create(quizId, {
-      type: dto.type,
-      media_type: dto.mediaType ?? null,
-      media_path: dto.mediaPath ?? null,
-      prompt: dto.prompt,
-      options: dto.options ?? null,
-      accepted_answers: dto.acceptedAnswers ?? null,
-      correct_numeric: dto.correctNumeric ?? null,
-      points: dto.points ?? 1,
-      time_limit_seconds: dto.timeLimitSeconds ?? 30,
-      order_index: dto.orderIndex,
-    });
+    return this.questions.create(quizId, this.toRecord(dto, host.id, quizId));
   }
 
   @Get()
@@ -101,19 +90,7 @@ export class QuestionsController {
     @Body() dto: CreateQuestionDto,
   ) {
     await this.requireOwnedQuiz(quizId, host.id);
-    this.requireValidMedia(dto.mediaType, dto.mediaPath, host.id, quizId);
-    const updated = await this.questions.update(quizId, questionId, {
-      type: dto.type,
-      media_type: dto.mediaType ?? null,
-      media_path: dto.mediaPath ?? null,
-      prompt: dto.prompt,
-      options: dto.options ?? null,
-      accepted_answers: dto.acceptedAnswers ?? null,
-      correct_numeric: dto.correctNumeric ?? null,
-      points: dto.points ?? 1,
-      time_limit_seconds: dto.timeLimitSeconds ?? 30,
-      order_index: dto.orderIndex,
-    });
+    const updated = await this.questions.update(quizId, questionId, this.toRecord(dto, host.id, quizId));
     if (!updated) throw new NotFoundException('Question not found');
     return updated;
   }
@@ -122,6 +99,21 @@ export class QuestionsController {
     await this.requireOwnedQuiz(quizId, host.id);
     if (!(await this.questions.remove(quizId, questionId))) throw new NotFoundException('Question not found');
     return { deleted: true };
+  }
+  /** Throws INVALID_MEDIA, before anything is stored, when either media slot is invalid. */
+  private toRecord(dto: CreateQuestionDto, hostId: string, quizId: string): Omit<QuestionRecord, 'id' | 'quiz_id'> {
+    return {
+      type: dto.type,
+      media: normalizeMediaRef(dto.media, hostId, quizId),
+      reveal_media: normalizeMediaRef(dto.revealMedia, hostId, quizId),
+      prompt: dto.prompt,
+      options: dto.options ?? null,
+      accepted_answers: dto.acceptedAnswers ?? null,
+      correct_numeric: dto.correctNumeric ?? null,
+      points: dto.points ?? 1,
+      time_limit_seconds: dto.timeLimitSeconds ?? 30,
+      order_index: dto.orderIndex,
+    };
   }
   private async requireOwnedQuiz(quizId: string, hostId: string): Promise<void> {
     const quiz = await this.quizzes.findById(quizId);

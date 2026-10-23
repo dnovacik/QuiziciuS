@@ -1,12 +1,14 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { QuestionType } from '@quizicius/shared-types';
+import { MediaRefDto, QuestionType } from '@quizicius/shared-types';
 import { SupabaseService } from '../supabase/supabase.service';
 
 export interface QuestionRecord {
   id: string;
   quiz_id: string;
-  media_type?: 'image' | 'video' | null;
-  media_path?: string | null;
+  /** Shown or played with the question. */
+  media?: MediaRefDto | null;
+  /** Shown or played at the answer reveal only. */
+  reveal_media?: MediaRefDto | null;
   type: QuestionType;
   prompt: string;
   options: { id: string; label: string; isCorrect: boolean }[] | null;
