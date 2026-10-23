@@ -120,7 +120,7 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
         )}
       </div>
 
-      {media?.mediaType === 'image' && media.url && (
+      {media?.kind === 'image' && (
         <img
           data-testid="projector-image"
           src={media.url}
@@ -128,7 +128,7 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
           className="mx-auto max-h-[40vh] max-w-full rounded-xl object-contain shadow-2xl"
         />
       )}
-      {media?.mediaType === 'video' && media.url && (
+      {media?.kind === 'video' && (
         <video
           key={question.id}
           data-testid="projector-video"

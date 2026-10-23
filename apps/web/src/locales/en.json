@@ -129,7 +129,6 @@
   "play.question.type.NUMERIC_NEAREST": "Estimate — closest number wins",
   "play.question.image": "Question image",
   "play.question.zoomImage": "Enlarge image",
-  "play.question.videoOnProjector": "This question has a video — watch the big screen.",
   "play.question.mediaUnavailable": "The question image could not be loaded.",
   "play.question.textLabel": "Your answer",
   "play.question.textPlaceholder": "e.g. Forrest Gump",

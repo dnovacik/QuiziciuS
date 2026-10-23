@@ -102,7 +102,7 @@ beforeEach(() => {
     .mockReset()
     .mockImplementation(async (path: string) => {
       if (path.endsWith('/display')) return { title: 'Friday Movie Quiz' };
-      if (path.endsWith('/media')) return { mediaType: null, url: null };
+      if (path.endsWith('/media')) return { media: null, revealMedia: null };
       throw new Error(`unexpected GET ${path}`);
     });
 });

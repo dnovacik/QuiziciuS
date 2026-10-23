@@ -16,7 +16,7 @@ export default function ProjectorApp() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { t } = useI18n();
   const { state, error, refetch } = useSessionState(sessionId);
-  usePreloadQuestionMedia(sessionId, state?.currentQuestion?.id, state?.status);
+  usePreloadQuestionMedia(sessionId, state?.currentQuestion?.id, state?.status, { clips: true });
   const { title, pub } = useSessionDisplay(sessionId);
 
   // Realtime events drive the screen; a slow poll covers a dropped websocket on the venue Wi-Fi.
