@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { ArrowRight, BadgeCheck, Check, CheckCircle2, Gavel, PenLine, ShieldAlert, X, XCircle } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Check, CheckCircle2, Flag, Gavel, PenLine, ShieldAlert, X, XCircle } from 'lucide-react';
 import type { AnswerSummaryDto } from '@quizicius/shared-types';
 import { describeError } from '../../lib/errors';
 import { isTranslationKey, useI18n } from '../../lib/i18n';
@@ -123,6 +123,13 @@ export function ReviewPanel({
                       </span>
                     )}
                   </div>
+                  {dispute.disputed && (
+                    <p className="mt-1 flex items-start gap-1 text-body-sm text-secondary" data-testid={`dispute-note-${dispute.id}`}>
+                      <Flag className="mt-0.5 h-4 w-4 shrink-0" />
+                      {t('host.room.teamDisputes')}
+                      {dispute.disputeNote ? `: „${dispute.disputeNote}“` : ''}
+                    </p>
+                  )}
                 </div>
                 <div className="flex w-full items-center gap-space-sm md:w-auto">
                   <button

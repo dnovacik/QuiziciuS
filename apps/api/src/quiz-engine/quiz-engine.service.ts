@@ -15,7 +15,14 @@ import { isAnswerResultVisible } from './result-visibility';
 
 export interface TransitionOptions {
   questionId?: string;
+  /** PAUSE_BREAK only: the break's planned length and a message for the room. */
+  breakMinutes?: number;
+  breakMessage?: string;
 }
+
+export type TimerAction = 'pause' | 'resume' | 'extend';
+/** How much "+ time" adds when the host does not say. */
+export const DEFAULT_EXTEND_SECONDS = 10;
 
 @Injectable()
 export class QuizEngineService {
@@ -60,6 +67,12 @@ export class QuizEngineService {
     // Readiness only means something while the current question is locked in.
     const readyFor = session.status === 'LOCK_IN_ROUND' ? session.current_question_id : null;
     const revealSafe = (['QUESTION_REVEAL', 'PAUSE_BREAK', 'FINISHED'] as QuizState[]).includes(session.status);
+    // Only how many teams answered, never who or what: that is safe while answering is open.
+    const answering = session.status === 'QUESTION_ACTIVE' || session.status === 'QUESTION_REVEAL';
+    const answeredCount =
+      answering && session.current_question_id
+        ? new Set(answers.filter((answer) => answer.question_id === session.current_question_id).map((answer) => answer.team_id)).size
+        : null;
 
     return {
       id: session.id,
@@ -80,6 +93,10 @@ export class QuizEngineService {
           }
         : null,
       questionEndsAt: session.question_ends_at,
+      questionPausedAt: session.question_paused_at ?? null,
+      answeredCount,
+      breakEndsAt: session.status === 'PAUSE_BREAK' ? (session.break_ends_at ?? null) : null,
+      breakMessage: session.status === 'PAUSE_BREAK' ? (session.break_message ?? null) : null,
       teams: teams.map((team) => ({
         id: team.id,
         name: team.name,
@@ -97,7 +114,18 @@ export class QuizEngineService {
     const session = await this.requireOwnedSession(sessionId, hostId);
     assertValidTransition(session.status, newState);
 
-    const patch: Parameters<SessionsRepository['updateStatus']>[1] = { status: newState };
+    // A pause belongs to one question, and break details to one break.
+    const patch: Parameters<SessionsRepository['updateStatus']>[1] = {
+      status: newState,
+      question_paused_at: null,
+      break_ends_at: null,
+      break_message: null,
+    };
+
+    if (newState === 'PAUSE_BREAK') {
+      if (options.breakMinutes) patch.break_ends_at = new Date(Date.now() + options.breakMinutes * 60_000).toISOString();
+      patch.break_message = options.breakMessage?.trim() || null;
+    }
 
     if (newState === 'LOCK_IN_ROUND') {
       if (!options.questionId) {
@@ -136,12 +164,7 @@ export class QuizEngineService {
       await this.gradeNumericAnswers(updated.id, updated.current_question_id);
     }
 
-    await this.broadcast.publish(sessionId, 'STATE_CHANGE', {
-      status: updated.status,
-      currentQuestionId: updated.current_question_id,
-      questionEndsAt: updated.question_ends_at,
-    });
-
+    await this.publishState(updated);
     return updated;
   }
 
@@ -154,14 +177,42 @@ export class QuizEngineService {
     if (session.status !== 'QUESTION_ACTIVE') {
       throw new ConflictException({ code: 'NO_OPEN_QUESTION', message: 'No question is open for answers' });
     }
-    if (session.question_ends_at && Date.parse(session.question_ends_at) <= Date.now()) return session;
+    if (session.question_ends_at && !session.question_paused_at && Date.parse(session.question_ends_at) <= Date.now()) return session;
 
-    const updated = await this.sessions.updateStatus(sessionId, { question_ends_at: new Date().toISOString() });
-    await this.broadcast.publish(sessionId, 'STATE_CHANGE', {
-      status: updated.status,
-      currentQuestionId: updated.current_question_id,
-      questionEndsAt: updated.question_ends_at,
-    });
+    const updated = await this.sessions.updateStatus(sessionId, { question_ends_at: new Date().toISOString(), question_paused_at: null });
+    await this.publishState(updated);
+    return updated;
+  }
+
+  /**
+   * The host's timer controls for the open, timed question: pause and resume the countdown, or add
+   * time. A question whose time has run out stays closed: teams may already have seen their result.
+   */
+  async controlTimer(sessionId: string, hostId: string, action: TimerAction, seconds = DEFAULT_EXTEND_SECONDS): Promise<SessionRecord> {
+    const session = await this.requireOwnedSession(sessionId, hostId);
+    if (session.status !== 'QUESTION_ACTIVE' || !session.question_ends_at) {
+      throw new ConflictException({ code: 'NO_RUNNING_TIMER', message: 'No question timer is running' });
+    }
+    const now = Date.now();
+    const endsAt = Date.parse(session.question_ends_at);
+    const pausedAt = session.question_paused_at ? Date.parse(session.question_paused_at) : null;
+    if (pausedAt === null && endsAt <= now) {
+      throw new ConflictException({ code: 'ANSWERS_CLOSED', message: 'Answering has already closed' });
+    }
+
+    let patch: Parameters<SessionsRepository['updateStatus']>[1];
+    if (action === 'pause') {
+      if (pausedAt !== null) return session;
+      patch = { question_paused_at: new Date(now).toISOString() };
+    } else if (action === 'resume') {
+      if (pausedAt === null) return session;
+      patch = { question_ends_at: new Date(endsAt + (now - pausedAt)).toISOString(), question_paused_at: null };
+    } else {
+      patch = { question_ends_at: new Date(endsAt + seconds * 1000).toISOString() };
+    }
+
+    const updated = await this.sessions.updateStatus(sessionId, patch);
+    await this.publishState(updated);
     return updated;
   }
 
@@ -254,6 +305,15 @@ export class QuizEngineService {
     }
 
     await this.broadcast.publish(sessionId, 'SCORE_UPDATE', { questionId });
+  }
+
+  private publishState(session: SessionRecord): Promise<void> {
+    return this.broadcast.publish(session.id, 'STATE_CHANGE', {
+      status: session.status,
+      currentQuestionId: session.current_question_id,
+      questionEndsAt: session.question_ends_at,
+      questionPausedAt: session.question_paused_at ?? null,
+    });
   }
 
   private async requireSession(sessionId: string): Promise<SessionRecord> {

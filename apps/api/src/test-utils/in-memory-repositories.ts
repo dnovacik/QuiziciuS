@@ -51,6 +51,9 @@ export class InMemorySessionsRepository extends SessionsRepository {
       league_id: leagueId,
       current_question_id: null,
       question_ends_at: null,
+      question_paused_at: null,
+      break_ends_at: null,
+      break_message: null,
       created_at: new Date().toISOString(),
       started_at: null,
       finished_at: null,
@@ -212,6 +215,8 @@ export class InMemoryAnswersRepository extends AnswersRepository {
       graded_at: null,
       submitted_at: new Date().toISOString(),
       score_awarded: 0,
+      disputed_at: null,
+      dispute_note: null,
     };
     this.rows.set(record.id, record);
     return record;
@@ -237,6 +242,14 @@ export class InMemoryAnswersRepository extends AnswersRepository {
     const existing = this.rows.get(id);
     if (!existing) throw new Error('answer not found');
     const updated = { ...existing, ...patch, graded_at: patch.graded_at ?? new Date().toISOString() };
+    this.rows.set(id, updated);
+    return updated;
+  }
+
+  async markDisputed(id: string, note: string | null): Promise<AnswerRecord> {
+    const existing = this.rows.get(id);
+    if (!existing) throw new Error('answer not found');
+    const updated = { ...existing, needs_review: true, disputed_at: new Date().toISOString(), dispute_note: note };
     this.rows.set(id, updated);
     return updated;
   }

@@ -7,12 +7,14 @@ import {
   Image as ImageIcon,
   LockKeyhole,
   Minus,
+  Pause,
   PencilLine,
   Plus,
   Send,
   ShieldCheck,
   Timer,
   Trophy,
+  Users,
   ZoomIn,
 } from 'lucide-react';
 import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto } from '@quizicius/shared-types';
@@ -47,7 +49,7 @@ export function QuestionScreen({
 }) {
   const { t, plural } = useI18n();
   const now = useNow();
-  const remaining = secondsLeft(state.questionEndsAt, now);
+  const remaining = secondsLeft(state.questionEndsAt, now, state.questionPausedAt);
   const untimed = isUntimed(question.timeLimitSeconds);
   const ranked = rankTeams(state.teams);
   const own = ranked.find((team) => team.id === seat.teamId);
@@ -56,6 +58,7 @@ export function QuestionScreen({
     return (
       <PlayerShell joinCode={state.joinCode} phase="locked" testId="player-locked">
         <LockedView state={state} question={question} answer={submitted} remaining={remaining} />
+        <RoomProgress state={state} />
         {own && <StandingPill team={own} leader={ranked[0]} />}
       </PlayerShell>
     );
@@ -94,6 +97,7 @@ export function QuestionScreen({
           : remaining !== null && <TimerRing seconds={remaining} total={question.timeLimitSeconds} />}
       </section>
 
+      <RoomProgress state={state} />
       <QuestionCard state={state} question={question} />
 
       {remaining === 0 ? (
@@ -111,6 +115,34 @@ export function QuestionScreen({
 
       {own && <StandingPill team={own} leader={ranked[0]} />}
     </PlayerShell>
+  );
+}
+
+/** The timer is paused by the host, and how many teams have answered so far. */
+function RoomProgress({ state }: { state: QuizSessionStateDto }) {
+  const { t } = useI18n();
+  const teams = state.teams.filter((team) => team.isActive).length;
+  if (!state.questionPausedAt && state.answeredCount === null) return null;
+  return (
+    <section className="flex w-full flex-wrap items-center justify-between gap-2 px-1 text-label-sm" aria-live="polite">
+      {state.questionPausedAt ? (
+        <span
+          className="flex items-center gap-1 rounded-full bg-secondary-container/30 px-2.5 py-0.5 font-bold uppercase text-secondary"
+          data-testid="player-paused"
+        >
+          <Pause className="h-3.5 w-3.5" />
+          {t('play.question.paused')}
+        </span>
+      ) : (
+        <span />
+      )}
+      {state.answeredCount !== null && (
+        <span className="flex items-center gap-1 text-on-surface-variant" data-testid="player-answered">
+          <Users className="h-3.5 w-3.5 text-tertiary" />
+          {state.answeredCount} / {teams} {t('play.question.answered')}
+        </span>
+      )}
+    </section>
   );
 }
 

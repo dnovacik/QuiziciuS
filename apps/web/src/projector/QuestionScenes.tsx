@@ -1,4 +1,4 @@
-import { BadgeCheck, Check, Flag, Hash, Infinity as InfinityIcon, Lock, PencilLine, Pointer, Trophy } from 'lucide-react';
+import { BadgeCheck, Check, Flag, Hash, Infinity as InfinityIcon, Lock, Pause, PencilLine, Pointer, Trophy, Users } from 'lucide-react';
 import type { QuestionPublicDto, QuizSessionStateDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../lib/i18n';
 import { correctAnswerText, isUntimed, optionLetter, secondsLeft, useNow } from '../lib/quiz';
@@ -97,9 +97,17 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
             </h2>
           </div>
           {!revealed && (
-            <div className="mt-space-md flex items-center gap-space-xs text-label-md text-on-surface-variant">
-              <Pointer className="h-[18px] w-[18px] text-primary" />
-              {t('projector.question.answerOnPhones')}
+            <div className="mt-space-md flex flex-wrap items-center gap-x-space-md gap-y-space-xs text-label-md text-on-surface-variant">
+              <span className="flex items-center gap-space-xs">
+                <Pointer className="h-[18px] w-[18px] text-primary" />
+                {t('projector.question.answerOnPhones')}
+              </span>
+              {state.answeredCount !== null && (
+                <span className="flex items-center gap-space-xs text-headline-sm font-bold text-tertiary" data-testid="projector-answered">
+                  <Users className="h-6 w-6" />
+                  {state.answeredCount} / {state.teams.filter((team) => team.isActive).length} {t('projector.question.answered')}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -116,7 +124,7 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
         )}
         {!revealed && !isUntimed(question.timeLimitSeconds) && state.questionEndsAt && (
           <div className="flex min-h-[180px] flex-col items-center justify-center rounded-xl bg-surface-container/90 p-space-lg shadow-2xl backdrop-blur-2xl lg:col-span-3">
-            <BigTimer endsAt={state.questionEndsAt} total={question.timeLimitSeconds} />
+            <BigTimer endsAt={state.questionEndsAt} pausedAt={state.questionPausedAt} total={question.timeLimitSeconds} />
           </div>
         )}
       </div>
@@ -200,13 +208,13 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
   );
 }
 
-function BigTimer({ endsAt, total }: { endsAt: string; total: number }) {
+function BigTimer({ endsAt, pausedAt, total }: { endsAt: string; pausedAt: string | null; total: number }) {
   const { t, plural } = useI18n();
   const now = useNow(250);
-  const seconds = secondsLeft(endsAt, now) ?? 0;
+  const seconds = secondsLeft(endsAt, now, pausedAt) ?? 0;
   const circumference = 2 * Math.PI * 42;
   const fraction = total > 0 ? Math.min(1, seconds / total) : 0;
-  const urgent = seconds <= 5;
+  const urgent = seconds <= 5 && !pausedAt;
   return (
     <div
       className="relative flex h-36 w-36 items-center justify-center"
@@ -233,7 +241,17 @@ function BigTimer({ endsAt, total }: { endsAt: string; total: number }) {
         <span className={`text-display-lg font-extrabold ${urgent ? 'text-red-300' : 'text-on-surface'}`}>
           {String(seconds).padStart(2, '0')}
         </span>
-        <span className="text-label-sm uppercase tracking-wider text-outline">{plural('count.seconds', seconds)}</span>
+        {pausedAt ? (
+          <span
+            className="flex items-center gap-1 text-label-sm font-bold uppercase tracking-wider text-secondary"
+            data-testid="projector-paused"
+          >
+            <Pause className="h-3.5 w-3.5" />
+            {t('projector.question.paused')}
+          </span>
+        ) : (
+          <span className="text-label-sm uppercase tracking-wider text-outline">{plural('count.seconds', seconds)}</span>
+        )}
       </div>
     </div>
   );

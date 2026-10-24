@@ -8,6 +8,7 @@ import { SessionsRepository } from '../data/sessions.repository';
 import { PubsService } from '../pubs/pubs.service';
 import { QuizEngineService } from '../quiz-engine/quiz-engine.service';
 import { AddPaperScoreDto } from './dto/add-paper-score.dto';
+import { ControlTimerDto } from './dto/control-timer.dto';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
 import { TransitionSessionDto } from './dto/transition-session.dto';
@@ -86,7 +87,17 @@ export class SessionsController {
   @Post('sessions/:sessionId/transition')
   @RequireRole('HOST')
   transition(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: TransitionSessionDto) {
-    return this.quizEngine.transitionState(sessionId, host.id, dto.status, { questionId: dto.questionId });
+    return this.quizEngine.transitionState(sessionId, host.id, dto.status, {
+      questionId: dto.questionId,
+      breakMinutes: dto.breakMinutes,
+      breakMessage: dto.breakMessage,
+    });
+  }
+
+  @Post('sessions/:sessionId/timer')
+  @RequireRole('HOST')
+  controlTimer(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: ControlTimerDto) {
+    return this.quizEngine.controlTimer(sessionId, host.id, dto.action, dto.seconds);
   }
 
   @Post('sessions/:sessionId/close-answers')

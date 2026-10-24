@@ -49,7 +49,15 @@ built web app on port 5199, opens the ngrok tunnel and prints the links:
   question; in the lobby it asks first), back plays or pauses the clip, the blank button calls a
   break, and the slideshow button puts the projector into fullscreen. It works with either window
   focused; ending the quiz stays a click in the control room. Check the clicker's keys once on
-  keyboard-tester.com — Page Up/Down, arrows, media keys, B and "." are understood.
+  keyboard-tester.com — Page Up/Down, arrows, media keys, B and "." are understood. A press that
+  does nothing (after the last question, no clip to play) or fails shows a short notice on the
+  projector; "the control room is not open" means the control room is not open in the same browser.
+- **Timer:** pause, resume and +10 s next to the countdown (pause also in the bottom bar). Teams can
+  keep answering while it is paused.
+- **Break:** at the reveal, pick a length (or open-ended) and type a message for the room; the
+  projector and phones show the countdown and the message.
+- **Disputes:** a team can dispute a wrong answer once from its phone. The Review tab shows a
+  counter and the team's note; approving gives the points.
 
 ## If something goes wrong
 

@@ -14,5 +14,7 @@ export function toAnswerSummary(answer: AnswerRecord, includeGrade = true): Answ
     needsReview: includeGrade ? answer.needs_review : false,
     gradedBy: includeGrade ? answer.graded_by : null,
     scoreAwarded: includeGrade ? answer.score_awarded : 0,
+    disputed: Boolean(answer.disputed_at),
+    disputeNote: answer.dispute_note,
   };
 }

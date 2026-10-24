@@ -39,9 +39,11 @@ export function useNow(intervalMs = 1000): number {
   return now;
 }
 
-export function secondsLeft(endsAt: string | null, now: number): number | null {
+/** Whole seconds until the deadline; a paused timer stands still at the moment it was paused. */
+export function secondsLeft(endsAt: string | null, now: number, pausedAt: string | null = null): number | null {
   if (!endsAt) return null;
-  return Math.max(0, Math.ceil((Date.parse(endsAt) - now) / 1000));
+  const at = pausedAt ? Date.parse(pausedAt) : now;
+  return Math.max(0, Math.ceil((Date.parse(endsAt) - at) / 1000));
 }
 
 /** Questions with a 0 s limit have no timer: answering stays open until the host closes it. */
@@ -51,4 +53,10 @@ export function isUntimed(timeLimitSeconds: number): boolean {
 
 export function formatClock(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+/** "m:ss" left until a break ends, or null without a planned end; it stays at 0:00 once over. */
+export function breakClock(endsAt: string | null, now: number): string | null {
+  if (!endsAt) return null;
+  return formatClock(Math.max(0, Math.ceil((Date.parse(endsAt) - now) / 1000)));
 }

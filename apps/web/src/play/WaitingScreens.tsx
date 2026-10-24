@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Brain, CheckCircle2, Coffee, Lightbulb, Radio, Trophy, Users, Zap } from 'lucide-react';
 import type { QuizSessionStateDto } from '@quizicius/shared-types';
 import { useI18n } from '../lib/i18n';
-import { rankTeams } from '../lib/quiz';
+import { breakClock, rankTeams, useNow } from '../lib/quiz';
 import { savePendingClaim, type TeamSeat } from '../lib/team-seat';
 import { PlayerShell } from './PlayerShell';
 import { StandingPill, StatusCard } from './parts';
@@ -204,10 +204,18 @@ export function PauseScreen({ state, teamId }: { state: QuizSessionStateDto; tea
   const { t } = useI18n();
   const ranked = rankTeams(state.teams);
   const own = ranked.find((team) => team.id === teamId);
+  const clock = breakClock(state.breakEndsAt, useNow());
   return (
     <PlayerShell joinCode={state.joinCode} phase="reveal" testId="player-pause">
       <StatusCard icon={Coffee} badge={t('play.pause.badge')} title={t('play.pause.title')}>
-        <p className="mt-space-xs max-w-[310px] text-body-sm text-on-surface-variant">{t('play.pause.subtitle')}</p>
+        {clock && (
+          <span className="mt-space-xs text-display-lg font-extrabold tabular-nums text-secondary" data-testid="player-break-clock">
+            {clock}
+          </span>
+        )}
+        <p className="mt-space-xs max-w-[310px] text-body-sm text-on-surface-variant" data-testid="player-break-message">
+          {state.breakMessage ?? t('play.pause.subtitle')}
+        </p>
       </StatusCard>
       {own && <StandingPill team={own} leader={ranked[0]} />}
     </PlayerShell>

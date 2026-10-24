@@ -14,6 +14,8 @@ import {
   Users,
 } from 'lucide-react';
 import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto } from '@quizicius/shared-types';
+import { apiPost } from '../lib/api-client';
+import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { correctAnswerText, optionLetter, rankTeams, type RankedTeam } from '../lib/quiz';
 import { useCurrentQuestionMedia } from '../lib/use-current-question-media';
@@ -46,12 +48,15 @@ export function RevealScreen({
   state,
   question,
   teamId,
+  token,
   sent,
   graded,
 }: {
   state: QuizSessionStateDto;
   question: QuestionPublicDto;
   teamId: string;
+  /** The team's seat token, for disputing the grade. */
+  token: string;
   sent: SubmittedAnswer | undefined;
   graded: AnswerSummaryDto | undefined;
 }) {
@@ -162,21 +167,9 @@ export function RevealScreen({
         </ol>
       </section>
 
-      <Pending feature="answer-dispute">
-        <section className="flex flex-col gap-2 rounded-xl bg-surface-container-low p-space-md">
-          <h3 className="text-label-md font-bold text-on-surface">{t('play.reveal.disputeTitle')}</h3>
-          <p className="text-body-sm leading-relaxed text-on-surface-variant">{t('play.reveal.disputeText')}</p>
-          <div className="flex justify-end">
-            <button
-              type="button"
-              className="flex min-h-[44px] items-center gap-1.5 rounded-lg bg-surface-container-high px-3.5 text-label-md font-bold text-on-surface"
-            >
-              <Flag className="h-4 w-4 text-secondary" />
-              {t('play.reveal.disputeButton')}
-            </button>
-          </div>
-        </section>
-      </Pending>
+      {graded && graded.isCorrect === false && (!graded.needsReview || graded.disputed) && (
+        <DisputeCard key={graded.id} sessionId={state.id} token={token} answer={graded} />
+      )}
 
       <section className="flex items-center gap-space-sm rounded-xl bg-surface-container-lowest p-space-md shadow-md">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
@@ -185,6 +178,76 @@ export function RevealScreen({
         <p className="text-body-md font-bold text-on-surface">{t('play.reveal.nextComing')}</p>
       </section>
     </PlayerShell>
+  );
+}
+
+/** A wrong answer can be sent back to the host once, with a short reason. */
+function DisputeCard({ sessionId, token, answer }: { sessionId: string; token: string; answer: AnswerSummaryDto }) {
+  const { t } = useI18n();
+  const [sent, setSent] = useState(answer.disputed);
+  const [writing, setWriting] = useState(false);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function send() {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPost(`/sessions/${sessionId}/answers/${answer.id}/dispute`, note.trim() ? { note: note.trim() } : {}, token);
+      setSent(true);
+    } catch (err) {
+      setError(describeError(err, t, 'errors.generic'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (sent) {
+    return (
+      <section
+        className="flex items-center gap-2 rounded-xl bg-secondary-container/15 p-space-md"
+        data-testid="player-dispute-sent"
+        role="status"
+      >
+        <Hourglass className="h-5 w-5 shrink-0 text-secondary" />
+        <p className="text-body-sm font-semibold text-on-surface">{t('play.reveal.disputeSent')}</p>
+      </section>
+    );
+  }
+  return (
+    <section className="flex flex-col gap-2 rounded-xl bg-surface-container-low p-space-md" data-testid="player-dispute">
+      <h3 className="text-label-md font-bold text-on-surface">{t('play.reveal.disputeTitle')}</h3>
+      <p className="text-body-sm leading-relaxed text-on-surface-variant">{t('play.reveal.disputeText')}</p>
+      {writing && (
+        <textarea
+          rows={2}
+          maxLength={200}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          placeholder={t('play.reveal.disputeNotePlaceholder')}
+          className="w-full resize-none rounded-lg bg-surface-container-lowest p-2.5 text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary"
+          data-testid="player-dispute-note"
+        />
+      )}
+      {error && (
+        <p role="alert" className="text-body-sm text-error">
+          {error}
+        </p>
+      )}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => (writing ? void send() : setWriting(true))}
+          className="flex min-h-[44px] items-center gap-1.5 rounded-lg bg-surface-container-high px-3.5 text-label-md font-bold text-on-surface disabled:opacity-50"
+          data-testid="player-dispute-button"
+        >
+          <Flag className="h-4 w-4 text-secondary" />
+          {t(writing ? 'play.reveal.disputeSend' : 'play.reveal.disputeButton')}
+        </button>
+      </div>
+    </section>
   );
 }
 

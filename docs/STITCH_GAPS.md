@@ -13,7 +13,7 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 | `remember-me` | Landing – host card | Supabase always persists the session; needs a session-storage auth client when unchecked | |
 | `table-number` | Landing – team dialog, player join | `teams.table_number` column + join endpoint field; show it to the host | |
 | `qr-scanner` | Player join | In-app camera QR scanner (phones can already scan the projector QR with the camera app) | |
-| `answer-dispute` | Player reveal | Endpoint for a team to dispute its graded answer + host review queue entry | |
+| `answer-dispute` | Player reveal | Endpoint for a team to dispute its graded answer + host review queue entry | Built (2026-10-24): `POST /sessions/:id/answers/:answerId/dispute`, once per wrong answer, note shown in the review queue |
 | `result-certificate` | Player final results | Generated certificate (PDF/image) for a team's result | |
 | `leagues` | Host sidebar | Leagues section (pub leagues, seasons, super leagues — see PUBS_AND_LEAGUES.md) | Built (2026-10-23): `/host/leagues`, see `docs/superpowers/specs/2026-10-23-leagues-design.md` |
 | `host-settings` | Host sidebar | Host account / venue settings page | |
@@ -22,7 +22,7 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 | `scheduled-sessions` | Host dashboard | Sessions planned ahead (date, venue, table capacity, reservations) | |
 | `quiz-default-timer` | Quiz settings | Default answer time stored per quiz | |
 | `numeric-unit` | Quiz editor | `unit` column on numeric questions, shown to players and on the projector | |
-| `timer-controls` | Control room | Pause / +10 s / host pause — needs a pausable timer in the quiz engine (stopping answers early is built: `POST /sessions/:id/close-answers`) | |
+| `timer-controls` | Control room | Pause / +10 s / host pause — needs a pausable timer in the quiz engine (stopping answers early is built: `POST /sessions/:id/close-answers`) | Built (2026-10-24): `POST /sessions/:id/timer` (pause, resume, extend), migration `0017_live_night_controls.sql` |
 | `session-archive` | Control room results | Archiving into league tables, deactivating the code | |
 
 ## Data the designs show but the API does not provide
@@ -35,15 +35,15 @@ These are omitted from the screens (no fake values); adding them needs API work 
 | Rounds ("Kolo 2/5") and question total ("Otázka 4 z 10") | player question, reveal | rounds model + question count in session state |
 | Question category / ID badge | player question | category per question |
 | Team roster, captain role, captain-only submit | player lobby, question, locked | session teams are now linked to registered teams (`teams.registered_team_id`); still needs the roster in session state |
-| Who submitted + teams-answered progress ("13 / 14") | player locked | per-question answered flags in session state |
+| Who submitted + teams-answered progress ("13 / 14") | player locked | The count is built (`answeredCount` in session state); who submitted is still missing |
 | Speed bonus, streaks, jokers, accuracy %, max score | player question, reveal, results | scoring features |
 | Host trivia comment after reveal | player reveal | comment field on questions |
 | Connection latency / "Supabase Live" health | player question, locked, projector header | realtime connection status from the subscription |
 | Venue Wi-Fi name, players at tables ("56 hráčov") | projector lobby | venue settings, player counts per team |
-| Teams answered ("12 zo 14 tímov") | projector question | per-question answered count in session state |
+| Teams answered ("12 zo 14 tímov") | projector question | Built (2026-10-24): `answeredCount` in session state |
 | Room success rate, fastest team | projector reveal | per-question answer stats after reveal |
 | Points gained this round per team | projector leaderboard | score history per question |
-| Break countdown, bar promo text | projector pause | break duration + host message |
+| Break countdown, bar promo text | projector pause | Built (2026-10-24): `breakEndsAt` / `breakMessage`, set by the host before the break |
 | Host name ("Michal Kováč") | host dashboard, editor header | display name on the host profile (the email is shown) |
 | Rounds, quiz description, AI question generator | host dashboard, editor | rounds model, description field |
 | Projector connected ("HDMI #1 • 4K"), average ping | control room lobby | projector presence in realtime |

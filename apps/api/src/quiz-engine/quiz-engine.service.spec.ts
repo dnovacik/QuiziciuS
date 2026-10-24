@@ -19,6 +19,9 @@ const BASE_SESSION: SessionRecord = {
   status: 'LOBBY',
   current_question_id: null,
   question_ends_at: null,
+  question_paused_at: null,
+  break_ends_at: null,
+  break_message: null,
   created_at: '2026-09-16T00:00:00.000Z',
   started_at: null,
   finished_at: null,
@@ -72,6 +75,7 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
     listByQuestion: jest.fn().mockResolvedValue([] as AnswerRecord[]),
     listNeedsReview: jest.fn(),
     listBySession: jest.fn().mockResolvedValue([] as AnswerRecord[]),
+    markDisputed: jest.fn(),
     updateGrade: jest.fn().mockImplementation(async (id: string, patch) => ({
       id,
       session_id: 's1',
@@ -230,6 +234,113 @@ describe('QuizEngineService.transitionState', () => {
   });
 });
 
+describe('QuizEngineService.controlTimer', () => {
+  const running = (secondsLeft: number) => ({
+    status: 'QUESTION_ACTIVE' as const,
+    current_question_id: 'q1',
+    question_ends_at: new Date(Date.now() + secondsLeft * 1000).toISOString(),
+  });
+
+  it('pauses the countdown and tells every screen', async () => {
+    const { service, broadcast } = buildHarness({ session: running(20) });
+
+    const result = await service.controlTimer('s1', 'host1', 'pause');
+
+    expect(result.question_paused_at).not.toBeNull();
+    expect(broadcast.publish).toHaveBeenCalledWith(
+      's1',
+      'STATE_CHANGE',
+      expect.objectContaining({ questionPausedAt: result.question_paused_at }),
+    );
+  });
+
+  it('moves the deadline on by the paused time when resuming', async () => {
+    const endsAt = Date.now() + 5_000;
+    const { service } = buildHarness({
+      session: {
+        ...running(5),
+        question_ends_at: new Date(endsAt).toISOString(),
+        question_paused_at: new Date(Date.now() - 30_000).toISOString(),
+      },
+    });
+
+    const result = await service.controlTimer('s1', 'host1', 'resume');
+
+    expect(result.question_paused_at).toBeNull();
+    expect(Date.parse(result.question_ends_at!) - endsAt).toBeGreaterThanOrEqual(30_000);
+  });
+
+  it('adds ten seconds by default, or as many as asked', async () => {
+    const { service } = buildHarness({ session: running(20) });
+    const before = Date.parse((await service.controlTimer('s1', 'host1', 'extend')).question_ends_at!);
+    expect(before - Date.now()).toBeGreaterThan(29_000);
+
+    const { service: other } = buildHarness({ session: running(20) });
+    const later = Date.parse((await other.controlTimer('s1', 'host1', 'extend', 60)).question_ends_at!);
+    expect(later - Date.now()).toBeGreaterThan(79_000);
+  });
+
+  it('keeps a paused question open even past its deadline', async () => {
+    const { service } = buildHarness({
+      session: { ...running(-30), question_paused_at: new Date(Date.now() - 60_000).toISOString() },
+    });
+
+    await expect(service.controlTimer('s1', 'host1', 'extend')).resolves.toBeDefined();
+  });
+
+  it('refuses once time has run out, and for untimed questions', async () => {
+    const { service } = buildHarness({ session: running(-1) });
+    await expect(service.controlTimer('s1', 'host1', 'extend')).rejects.toMatchObject({ response: { code: 'ANSWERS_CLOSED' } });
+
+    const { service: untimed } = buildHarness({ session: { ...running(10), question_ends_at: null } });
+    await expect(untimed.controlTimer('s1', 'host1', 'pause')).rejects.toMatchObject({ response: { code: 'NO_RUNNING_TIMER' } });
+  });
+
+  it('closing answers ends a paused question too', async () => {
+    const { service } = buildHarness({ session: { ...running(10), question_paused_at: new Date().toISOString() } });
+
+    const result = await service.closeAnswers('s1', 'host1');
+
+    expect(result.question_paused_at).toBeNull();
+    expect(Date.parse(result.question_ends_at!)).toBeLessThanOrEqual(Date.now());
+  });
+});
+
+describe('QuizEngineService breaks', () => {
+  it('stores the break length and message, and clears them when the quiz moves on', async () => {
+    const { service, sessions } = buildHarness({ session: { status: 'QUESTION_REVEAL', current_question_id: 'q1' } });
+
+    const result = await service.transitionState('s1', 'host1', 'PAUSE_BREAK', { breakMinutes: 10, breakMessage: '  Bar is open!  ' });
+
+    expect(Date.parse(result.break_ends_at!) - Date.now()).toBeGreaterThan(9 * 60_000);
+    expect(result.break_message).toBe('Bar is open!');
+
+    (sessions.findById as jest.Mock).mockResolvedValue(result);
+    const next = await service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'q1' });
+    expect(next.break_ends_at).toBeNull();
+    expect(next.break_message).toBeNull();
+  });
+});
+
+describe('QuizEngineService.getState', () => {
+  it('counts the teams that answered the current question, not who or what', async () => {
+    const answer = (team: string, question: string) => ({ team_id: team, question_id: question }) as AnswerRecord;
+    const { service, answers } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q1', question_ends_at: new Date(Date.now() + 10_000).toISOString() },
+    });
+    (answers.listBySession as jest.Mock).mockResolvedValue([answer('t1', 'q1'), answer('t2', 'q1'), answer('t1', 'q0')]);
+
+    const state = await service.getState('s1');
+
+    expect(state.answeredCount).toBe(2);
+  });
+
+  it('has no answered count outside a question', async () => {
+    const { service } = buildHarness({ session: { status: 'LOBBY' } });
+    expect((await service.getState('s1')).answeredCount).toBeNull();
+  });
+});
+
 describe('QuizEngineService.closeAnswers', () => {
   it('ends answering now for an untimed question and tells every screen', async () => {
     const { service, sessions, broadcast } = buildHarness({
@@ -240,7 +351,7 @@ describe('QuizEngineService.closeAnswers', () => {
     const result = await service.closeAnswers('s1', 'host1');
 
     expect(Date.parse(result.question_ends_at!)).toBeGreaterThanOrEqual(before);
-    expect(sessions.updateStatus).toHaveBeenCalledWith('s1', { question_ends_at: expect.any(String) });
+    expect(sessions.updateStatus).toHaveBeenCalledWith('s1', { question_ends_at: expect.any(String), question_paused_at: null });
     expect(broadcast.publish).toHaveBeenCalledWith('s1', 'STATE_CHANGE', expect.objectContaining({ status: 'QUESTION_ACTIVE' }));
   });
 

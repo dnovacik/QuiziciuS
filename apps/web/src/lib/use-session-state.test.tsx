@@ -17,7 +17,18 @@ vi.mock('./supabase-client', () => ({
 }));
 
 function state(status: QuizSessionStateDto['status']): QuizSessionStateDto {
-  return { id: 's1', joinCode: 'A7F3', status, currentQuestion: null, questionEndsAt: null, teams: [] };
+  return {
+    id: 's1',
+    joinCode: 'A7F3',
+    status,
+    currentQuestion: null,
+    questionEndsAt: null,
+    questionPausedAt: null,
+    answeredCount: null,
+    breakEndsAt: null,
+    breakMessage: null,
+    teams: [],
+  };
 }
 
 beforeEach(() => {

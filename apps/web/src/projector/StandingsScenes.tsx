@@ -1,10 +1,11 @@
 import { Crown, Beer, HeartHandshake, Trophy } from 'lucide-react';
 import type { TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../lib/i18n';
-import { rankTeams } from '../lib/quiz';
+import { breakClock, rankTeams, useNow } from '../lib/quiz';
 
-export function PauseScene() {
+export function PauseScene({ endsAt = null, message = null }: { endsAt?: string | null; message?: string | null }) {
   const { t } = useI18n();
+  const clock = breakClock(endsAt, useNow());
   return (
     <section className="flex w-full flex-col items-center justify-center" data-testid="projector-pause">
       <div className="relative flex w-full max-w-4xl flex-col items-center overflow-hidden rounded-xl bg-surface-container/90 p-space-xl text-center shadow-2xl backdrop-blur-2xl">
@@ -15,7 +16,21 @@ export function PauseScene() {
         <h2 className="mt-space-xs text-display-lg font-extrabold uppercase tracking-tight text-on-surface">
           {t('projector.pause.title')}
         </h2>
-        <p className="mt-space-sm max-w-xl text-headline-sm text-on-surface-variant">{t('projector.pause.subtitle')}</p>
+        {clock && (
+          <span
+            className="mt-space-md text-[96px] font-extrabold leading-none tabular-nums text-secondary"
+            data-testid="projector-break-clock"
+          >
+            {clock}
+          </span>
+        )}
+        {message ? (
+          <p className="mt-space-md max-w-3xl text-headline-lg font-bold text-on-surface" data-testid="projector-break-message">
+            {message}
+          </p>
+        ) : (
+          <p className="mt-space-sm max-w-xl text-headline-sm text-on-surface-variant">{t('projector.pause.subtitle')}</p>
+        )}
       </div>
     </section>
   );
