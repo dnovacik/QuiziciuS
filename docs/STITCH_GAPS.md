@@ -12,7 +12,7 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 | `social-login` | Landing – host card | Google / Microsoft OAuth providers in Supabase + redirect handling | |
 | `remember-me` | Landing – host card | Supabase always persists the session; needs a session-storage auth client when unchecked | |
 | `table-number` | Landing – team dialog, player join | `teams.table_number` column + join endpoint field; show it to the host | Built (2026-10-24): optional `tableNumber` on join, shown on the host lobby cards (migration `0018`) |
-| `qr-scanner` | Player join | In-app camera QR scanner (phones can already scan the projector QR with the camera app) | |
+| `qr-scanner` | Player join | In-app camera QR scanner (phones can already scan the projector QR with the camera app) | Built (2026-10-24): on `/play` and the team page's join bar; the browser's `BarcodeDetector` where available, else `jsqr` (loaded on first use) |
 | `answer-dispute` | Player reveal | Endpoint for a team to dispute its graded answer + host review queue entry | Built (2026-10-24): `POST /sessions/:id/answers/:answerId/dispute`, once per wrong answer, note shown in the review queue |
 | `result-certificate` | Player final results | Generated certificate (PDF/image) for a team's result | |
 | `leagues` | Host sidebar | Leagues section (pub leagues, seasons, super leagues — see PUBS_AND_LEAGUES.md) | Built (2026-10-23): `/host/leagues`, see `docs/superpowers/specs/2026-10-23-leagues-design.md` |

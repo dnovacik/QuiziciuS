@@ -1,5 +1,9 @@
 {
   "common.close": "Close",
+  "scanner.title": "Scan the QR code",
+  "scanner.hint": "Point the camera at the QR code on the projector or the host's screen.",
+  "scanner.noCamera": "The camera is not available here. Use the phone's camera app on the QR code, or type the 4-character code.",
+  "scanner.notQuiz": "That is not a QuiziciuS quiz code — try the one on the projector.",
   "common.language": "Language",
   "common.optional": "optional",
   "common.soon": "Soon",

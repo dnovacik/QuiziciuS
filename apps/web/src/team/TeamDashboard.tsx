@@ -24,9 +24,9 @@ import { ApiError } from '../lib/api-client';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { pubLabel } from '../lib/pubs';
-import { findSessionByCode, normalizeJoinCode } from '../lib/team-seat';
+import { findSessionByCode, normalizeJoinCode, parseJoinTarget } from '../lib/team-seat';
 import { Modal } from '../ui/Modal';
-import { Pending } from '../ui/Pending';
+import { QrScanner } from '../ui/QrScanner';
 import { TeamLeagues } from './TeamLeagues';
 import { NightRow, useTeamSchedule } from './TeamSchedule';
 import { inviteUrl, MAX_PLAYERS, profileOf, teamApi, type Player, type RegisteredTeam, type TeamAccess, type TeamProfile } from './api';
@@ -293,13 +293,30 @@ function JoinQuizBar({ token, team }: { token: string; team: RegisteredTeam }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [scanning, setScanning] = useState(false);
+
+  /** A scanned join link joins that quiz night as the team; a scanned code fills the code box. */
+  function onScanned(text: string): boolean {
+    const target = parseJoinTarget(text);
+    if (!target) return false;
+    setScanning(false);
+    if ('code' in target) setCode(target.code);
+    else void enter(target.sessionId);
+    return true;
+  }
+
   async function join(event: FormEvent) {
     event.preventDefault();
     if (busy || code.length !== 4) return;
+    await enter(null);
+  }
+
+  /** Joins the quiz night (found by the typed code unless the id is known) and opens it. */
+  async function enter(knownSessionId: string | null) {
     setBusy(true);
     setError(null);
     try {
-      const sessionId = await findSessionByCode(code);
+      const sessionId = knownSessionId ?? (await findSessionByCode(code));
       await teamApi.joinSession(token, team.id, sessionId);
       navigate(`/play/${sessionId}`);
     } catch (err) {
@@ -360,13 +377,18 @@ function JoinQuizBar({ token, team }: { token: string; team: RegisteredTeam }) {
             {busy ? t('common.working') : t('team.join.submit')}
             <ArrowRight className="h-5 w-5" />
           </button>
-          <Pending feature="qr-scanner" badge="inline">
-            <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-surface-container text-primary shadow-md">
-              <QrCode className="h-6 w-6" />
-            </span>
-          </Pending>
+          <button
+            type="button"
+            onClick={() => setScanning(true)}
+            aria-label={t('play.join.scanQr')}
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-surface-container text-primary shadow-md transition-colors hover:bg-surface-container-high"
+            data-testid="team-scan"
+          >
+            <QrCode className="h-6 w-6" />
+          </button>
         </form>
       </div>
+      {scanning && <QrScanner onResult={onScanned} onClose={() => setScanning(false)} rejectedText={t('scanner.notQuiz')} />}
       {error && (
         <p role="alert" className="mt-space-sm text-body-sm text-error" data-testid="team-join-error">
           {error}
