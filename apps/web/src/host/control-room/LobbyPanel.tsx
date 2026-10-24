@@ -32,13 +32,17 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
 
   const start = () => {
     setConfirmStart(false);
-    void room.transition('LOCK_IN_ROUND');
+    return room.transition('LOCK_IN_ROUND');
   };
   // The clicker starts like the button does: the first press asks, the second confirms.
-  useClicker(sessionId, (command) => {
-    if (command !== 'next' || !inLobby || !room.questions.length || room.busy) return;
-    if (confirmStart) start();
-    else setConfirmStart(true);
+  useClicker(sessionId, async (command) => {
+    if (command !== 'next' || !inLobby || room.busy) return null;
+    if (!room.questions.length) return 'nothing';
+    if (!confirmStart) {
+      setConfirmStart(true);
+      return 'done';
+    }
+    return (await start()) ? 'done' : 'error';
   });
 
   return (
@@ -238,7 +242,7 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
           confirmLabel={t('host.room.startConfirm')}
           cancelLabel={t('host.room.startWait')}
           busy={room.busy}
-          onConfirm={start}
+          onConfirm={() => void start()}
           onClose={() => setConfirmStart(false)}
           testId="room-start-dialog"
         />

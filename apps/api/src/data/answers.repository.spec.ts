@@ -14,6 +14,8 @@ const RECORD: AnswerRecord = {
   graded_at: null,
   submitted_at: '2026-09-16T00:00:00.000Z',
   score_awarded: 0,
+  disputed_at: null,
+  dispute_note: null,
 };
 
 describe('SupabaseAnswersRepository', () => {

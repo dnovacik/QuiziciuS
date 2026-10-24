@@ -40,6 +40,13 @@ export interface QuizSessionStateDto {
   status: QuizState;
   currentQuestion: QuestionPublicDto | null;
   questionEndsAt: string | null;
+  /** Set while the host has paused the timer: the countdown stands still at `questionEndsAt - questionPausedAt`. */
+  questionPausedAt: string | null;
+  /** Teams that have answered the current question; null outside a question. */
+  answeredCount: number | null;
+  /** During a break: when it is planned to end and the host's message, if any. */
+  breakEndsAt: string | null;
+  breakMessage: string | null;
   teams: TeamSummaryDto[];
 }
 
@@ -54,6 +61,9 @@ export interface AnswerSummaryDto {
   needsReview: boolean;
   gradedBy: GradedBy | null;
   scoreAwarded: number;
+  /** The team disputed this grade (it can only once); the note is its reason for the host. */
+  disputed: boolean;
+  disputeNote: string | null;
 }
 
 /** The signed-in account as the web app sees it (GET /me). */

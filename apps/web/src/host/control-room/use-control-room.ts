@@ -5,7 +5,7 @@ import { describeError } from '../../lib/errors';
 import { useI18n } from '../../lib/i18n';
 import { subscribeToMediaStatus } from '../../lib/media-channel';
 import { useSessionState } from '../../lib/use-session-state';
-import { hostApi, type HostSession, type Question, type Quiz } from '../api';
+import { hostApi, type BreakOptions, type HostSession, type Question, type Quiz } from '../api';
 
 /** Questions already played, kept per browser so a reload does not forget them. */
 function usePlayedQuestions(sessionId: string) {
@@ -34,6 +34,31 @@ function usePlayedQuestions(sessionId: string) {
   return { played, markPlayed };
 }
 
+const BREAK_KEY = 'quizicius:break-options';
+
+/** The last break setup, kept per browser so the same message carries over to the next night. */
+function useBreakOptions() {
+  const [options, setOptions] = useState<BreakOptions>(() => {
+    try {
+      return { minutes: 0, message: '', ...(JSON.parse(localStorage.getItem(BREAK_KEY) ?? '{}') as Partial<BreakOptions>) };
+    } catch {
+      return { minutes: 0, message: '' };
+    }
+  });
+  const update = useCallback((patch: Partial<BreakOptions>) => {
+    setOptions((current) => {
+      const next = { ...current, ...patch };
+      try {
+        localStorage.setItem(BREAK_KEY, JSON.stringify(next));
+      } catch {
+        // Best effort only.
+      }
+      return next;
+    });
+  }, []);
+  return [options, update] as const;
+}
+
 /** Everything the live control room needs: session, quiz, questions, answers and transitions. */
 export function useControlRoom(token: string, sessionId: string) {
   const { t } = useI18n();
@@ -46,6 +71,7 @@ export function useControlRoom(token: string, sessionId: string) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { played, markPlayed } = usePlayedQuestions(sessionId);
+  const [breakOptions, setBreakOptions] = useBreakOptions();
 
   useEffect(() => {
     let active = true;
@@ -92,6 +118,22 @@ export function useControlRoom(token: string, sessionId: string) {
       });
   }, [token, sessionId, currentId]);
   useEffect(refreshAnswers, [refreshAnswers, state]);
+
+  // Answers waiting for the host (unsure grading or a team's dispute), counted on every state change.
+  const [pendingReviews, setPendingReviews] = useState(0);
+  useEffect(() => {
+    if (!state) return;
+    let active = true;
+    hostApi
+      .listDisputes(token, sessionId)
+      .then((rows) => active && setPendingReviews(rows.length))
+      .catch(() => {
+        // Keep the last count.
+      });
+    return () => {
+      active = false;
+    };
+  }, [token, sessionId, state]);
   useEffect(() => {
     if (status !== 'QUESTION_ACTIVE') return;
     const timer = setInterval(refreshAnswers, 3000);
@@ -119,39 +161,49 @@ export function useControlRoom(token: string, sessionId: string) {
     }
   }, [status, currentId, questions, nextUnplayed, selectedId]);
 
-  const transition = useCallback(
-    async (next: QuizState) => {
-      if (busy) return;
-      if (next === 'LOCK_IN_ROUND' && !selectedId) return;
+  /** Runs one host action at a time; true when it went through, false when busy or refused. */
+  const run = useCallback(
+    async (action: () => Promise<unknown>): Promise<boolean> => {
+      if (busy) return false;
       setBusy(true);
       setError(null);
       try {
-        await hostApi.transition(token, sessionId, next, next === 'LOCK_IN_ROUND' ? (selectedId ?? undefined) : undefined);
+        await action();
         refetch();
+        return true;
       } catch (err) {
         if (err instanceof ApiError && err.status === 409) refetch();
         setError(describeError(err, t, 'errors.generic'));
+        return false;
       } finally {
         setBusy(false);
       }
     },
-    [busy, selectedId, token, sessionId, refetch, t],
+    [busy, refetch, t],
   );
 
-  const closeAnswers = useCallback(async () => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await hostApi.closeAnswers(token, sessionId);
-      refetch();
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) refetch();
-      setError(describeError(err, t, 'errors.generic'));
-    } finally {
-      setBusy(false);
-    }
-  }, [busy, token, sessionId, refetch, t]);
+  const transition = useCallback(
+    async (next: QuizState): Promise<boolean> => {
+      if (next === 'LOCK_IN_ROUND' && !selectedId) return false;
+      return run(() =>
+        hostApi.transition(
+          token,
+          sessionId,
+          next,
+          next === 'LOCK_IN_ROUND' ? (selectedId ?? undefined) : undefined,
+          next === 'PAUSE_BREAK' ? breakOptions : undefined,
+        ),
+      );
+    },
+    [run, selectedId, breakOptions, token, sessionId],
+  );
+
+  const controlTimer = useCallback(
+    (action: 'pause' | 'resume' | 'extend') => run(() => hostApi.timer(token, sessionId, action)),
+    [run, token, sessionId],
+  );
+
+  const closeAnswers = useCallback(() => run(() => hostApi.closeAnswers(token, sessionId)), [run, token, sessionId]);
 
   const currentQuestion = questions.find((question) => question.id === currentId) ?? null;
   /** A displayable URL for an image: links as they are, uploads through a signed link. */
@@ -171,13 +223,15 @@ export function useControlRoom(token: string, sessionId: string) {
     [sessionId],
   );
   const mediaControl = useCallback(
-    async (slot: MediaSlot, action: MediaAction) => {
+    async (slot: MediaSlot, action: MediaAction): Promise<boolean> => {
       setError(null);
       try {
         await hostApi.mediaControl(token, sessionId, slot, action);
+        return true;
       } catch (err) {
         if (err instanceof ApiError && err.status === 409) refetch();
         setError(describeError(err, t, 'errors.generic'));
+        return false;
       }
     },
     [token, sessionId, refetch, t],
@@ -202,6 +256,10 @@ export function useControlRoom(token: string, sessionId: string) {
     nextUnplayed,
     transition,
     closeAnswers,
+    controlTimer,
+    pendingReviews,
+    breakOptions,
+    setBreakOptions,
     busy,
     error,
     setError,

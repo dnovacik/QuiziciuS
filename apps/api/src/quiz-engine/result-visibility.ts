@@ -12,18 +12,19 @@ const REVEALED_STATES: readonly QuizState[] = ['QUESTION_REVEAL', 'PAUSE_BREAK',
  * never while teams can still submit, so an early answer cannot tell anyone what is correct.
  */
 export function currentQuestionResultsVisible(
-  session: Pick<SessionRecord, 'status' | 'question_ends_at'>,
+  session: Pick<SessionRecord, 'status' | 'question_ends_at'> & Partial<Pick<SessionRecord, 'question_paused_at'>>,
   now: number = Date.now(),
 ): boolean {
   if (REVEALED_STATES.includes(session.status)) return true;
-  if (session.status !== 'QUESTION_ACTIVE' || !session.question_ends_at) return false;
+  // A paused timer has not run out, however late it is.
+  if (session.status !== 'QUESTION_ACTIVE' || !session.question_ends_at || session.question_paused_at) return false;
   return now > Date.parse(session.question_ends_at) + RESULT_GRACE_MS;
 }
 
 /** Answers to the current question are hidden until its results are visible; earlier questions always count. */
 export function isAnswerResultVisible(
   answer: { question_id: string },
-  session: Pick<SessionRecord, 'status' | 'question_ends_at' | 'current_question_id'>,
+  session: Pick<SessionRecord, 'status' | 'question_ends_at' | 'current_question_id'> & Partial<Pick<SessionRecord, 'question_paused_at'>>,
   now: number = Date.now(),
 ): boolean {
   return answer.question_id !== session.current_question_id || currentQuestionResultsVisible(session, now);

@@ -1,12 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, ClipboardCheck, DoorOpen, HelpCircle, LogOut, MonitorPlay, PauseCircle, Timer, Trophy, Tv, Users } from 'lucide-react';
+import {
+  ArrowLeft,
+  ClipboardCheck,
+  DoorOpen,
+  HelpCircle,
+  LogOut,
+  MonitorPlay,
+  PauseCircle,
+  PlayCircle,
+  Timer,
+  Trophy,
+  Tv,
+  Users,
+} from 'lucide-react';
 import type { QuizState } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
 import { secondsLeft, useNow } from '../../lib/quiz';
 import { LanguageSwitcher } from '../../ui/LanguageSwitcher';
 import { LogoMark } from '../../ui/Logo';
-import { Pending } from '../../ui/Pending';
 import { btn, ConfirmDialog, ErrorBanner } from '../ui';
 import { LobbyPanel } from './LobbyPanel';
 import { QuestionPanel } from './QuestionPanel';
@@ -50,7 +62,8 @@ export function ControlRoomPage({ token }: { token: string }) {
   }, [state?.status]);
 
   const finished = state?.status === 'FINISHED';
-  const remaining = state?.status === 'QUESTION_ACTIVE' ? secondsLeft(state.questionEndsAt, now) : null;
+  const remaining = state?.status === 'QUESTION_ACTIVE' ? secondsLeft(state.questionEndsAt, now, state.questionPausedAt) : null;
+  const paused = state?.status === 'QUESTION_ACTIVE' && Boolean(state.questionPausedAt);
   const online = state?.teams.filter((team) => team.isActive).length ?? 0;
   const projectorUrl = `/projector/${sessionId}`;
 
@@ -137,6 +150,14 @@ export function ControlRoomPage({ token }: { token: string }) {
                 >
                   <Icon className="h-[18px] w-[18px]" />
                   {index + 1}. {t(`host.room.tab.${value}`)}
+                  {value === 'review' && room.pendingReviews > 0 && (
+                    <span
+                      className="ml-0.5 rounded-full bg-secondary px-1.5 text-label-sm font-bold text-on-secondary"
+                      data-testid="room-review-badge"
+                    >
+                      {room.pendingReviews}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -188,12 +209,20 @@ export function ControlRoomPage({ token }: { token: string }) {
               <Users className="h-4 w-4 text-tertiary" />
               {online} {plural('count.teamsOnline', online)}
             </span>
-            <Pending feature="timer-controls" badge="inline">
-              <span className="flex items-center gap-1 rounded-lg bg-error-container/20 px-space-sm py-1 text-error">
-                <PauseCircle className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('host.room.hostPause')}</span>
-              </span>
-            </Pending>
+            {remaining !== null && (remaining > 0 || paused) && (
+              <button
+                type="button"
+                disabled={room.busy}
+                onClick={() => void room.controlTimer(paused ? 'resume' : 'pause')}
+                className={`flex items-center gap-1 rounded-lg px-space-sm py-1 transition-colors ${
+                  paused ? 'bg-tertiary-container/30 text-tertiary' : 'bg-error-container/20 text-error hover:bg-error-container/40'
+                }`}
+                data-testid="room-host-pause"
+              >
+                {paused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
+                <span className="hidden sm:inline">{t(paused ? 'host.room.resumeTimer' : 'host.room.hostPause')}</span>
+              </button>
+            )}
           </div>
         </div>
       </aside>

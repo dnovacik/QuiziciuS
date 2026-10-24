@@ -15,6 +15,9 @@ const ACTIVE_SESSION: SessionRecord = {
   status: 'QUESTION_ACTIVE',
   current_question_id: 'q1',
   question_ends_at: new Date(Date.now() + 10_000).toISOString(),
+  question_paused_at: null,
+  break_ends_at: null,
+  break_message: null,
   created_at: '2026-09-16T00:00:00.000Z',
   started_at: '2026-09-16T00:00:00.000Z',
   finished_at: null,
@@ -50,6 +53,8 @@ function buildAnswerRecord(overrides?: Partial<AnswerRecord>): AnswerRecord {
     graded_at: null,
     submitted_at: '2026-09-16T00:00:00.000Z',
     score_awarded: 0,
+    disputed_at: null,
+    dispute_note: null,
     ...overrides,
   };
 }
@@ -66,6 +71,7 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord>; question?:
     listByQuestion: jest.fn(),
     listNeedsReview: jest.fn(),
     listBySession: jest.fn(),
+    markDisputed: jest.fn(),
     updateGrade: jest.fn().mockImplementation(async (id: string, patch) => buildAnswerRecord({ id, ...patch })),
   };
   const broadcast = { publish: jest.fn().mockResolvedValue(undefined) } as unknown as RealtimeBroadcastService;
@@ -193,5 +199,54 @@ describe('AnswersService.listForTeam', () => {
     const [answer] = await service.listForTeam('s1', 't1');
 
     expect(answer).toMatchObject({ isCorrect: true, scoreAwarded: 3 });
+  });
+});
+
+describe('AnswersService.submit while paused', () => {
+  it('accepts answers past the deadline while the host has paused the timer', async () => {
+    const { service } = buildHarness({
+      session: {
+        question_ends_at: new Date(Date.now() - 30_000).toISOString(),
+        question_paused_at: new Date(Date.now() - 40_000).toISOString(),
+      },
+    });
+
+    await expect(service.submit('s1', 't1', 'q1', { optionId: 'a' })).resolves.toBeDefined();
+  });
+});
+
+describe('AnswersService.dispute', () => {
+  const revealed = { session: { status: 'QUESTION_REVEAL' as const } };
+
+  it('sends a wrong answer back to the host with the team note', async () => {
+    const { service, answers, broadcast } = buildHarness(revealed);
+    (answers.findById as jest.Mock).mockResolvedValue(buildAnswerRecord({ is_correct: false }));
+    (answers.markDisputed as jest.Mock).mockImplementation(async (id: string, note: string | null) =>
+      buildAnswerRecord({ id, is_correct: false, needs_review: true, disputed_at: 'now', dispute_note: note }),
+    );
+
+    const result = await service.dispute('s1', 't1', 'ans1', '  Pluto counts!  ');
+
+    expect(answers.markDisputed).toHaveBeenCalledWith('ans1', 'Pluto counts!');
+    expect(result).toMatchObject({ disputed: true, disputeNote: 'Pluto counts!', needsReview: true });
+    expect(broadcast.publish).toHaveBeenCalledWith('s1', 'SCORE_UPDATE', expect.anything());
+  });
+
+  it('refuses before the result is out, twice, for a correct answer, or for another team', async () => {
+    const { service, answers } = buildHarness();
+    (answers.findById as jest.Mock).mockResolvedValue(buildAnswerRecord({ is_correct: false }));
+    await expect(service.dispute('s1', 't1', 'ans1', null)).rejects.toMatchObject({ response: { code: 'RESULT_NOT_PUBLIC' } });
+
+    const revealedHarness = buildHarness(revealed);
+    (revealedHarness.answers.findById as jest.Mock).mockResolvedValue(buildAnswerRecord({ is_correct: false, disputed_at: 'earlier' }));
+    await expect(revealedHarness.service.dispute('s1', 't1', 'ans1', null)).rejects.toMatchObject({
+      response: { code: 'ALREADY_DISPUTED' },
+    });
+
+    (revealedHarness.answers.findById as jest.Mock).mockResolvedValue(buildAnswerRecord({ is_correct: true }));
+    await expect(revealedHarness.service.dispute('s1', 't1', 'ans1', null)).rejects.toMatchObject({ response: { code: 'ANSWER_CORRECT' } });
+
+    (revealedHarness.answers.findById as jest.Mock).mockResolvedValue(buildAnswerRecord({ team_id: 't2', is_correct: false }));
+    await expect(revealedHarness.service.dispute('s1', 't1', 'ans1', null)).rejects.toBeInstanceOf(NotFoundException);
   });
 });

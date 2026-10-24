@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { clickerCommand, forwardClickerCommands } from './clicker';
+import { CLICKER_ACK_MS, clickerCommand, forwardClickerCommands } from './clicker';
 
 const key = (init: KeyboardEventInit, target: EventTarget = document.body) => {
   const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
@@ -58,5 +58,40 @@ describe('forwardClickerCommands', () => {
     expect(event.defaultPrevented).toBe(true);
     expect(requestFullscreen).toHaveBeenCalled();
     stop();
+  });
+});
+
+describe('clicker feedback', () => {
+  const tick = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  it('tells the projector when no control room answers', async () => {
+    const feedback: string[] = [];
+    const stop = forwardClickerCommands('s2', (value) => feedback.push(value));
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true }));
+    await tick(CLICKER_ACK_MS + 100);
+
+    expect(feedback).toEqual(['noResponse']);
+    stop();
+  });
+
+  it('passes on what came of a press, but stays quiet when it worked', async () => {
+    const feedback: string[] = [];
+    const room = new BroadcastChannel('quizicius:clicker:s3');
+    room.addEventListener('message', (event) => {
+      if (typeof (event as MessageEvent).data !== 'string') return;
+      room.postMessage({ received: true });
+      room.postMessage({ outcome: feedback.length ? 'done' : 'finish' });
+    });
+    const stop = forwardClickerCommands('s3', (value) => feedback.push(value));
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true }));
+    await tick(50);
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true }));
+    await tick(CLICKER_ACK_MS + 100);
+
+    expect(feedback).toEqual(['finish']);
+    stop();
+    room.close();
   });
 });

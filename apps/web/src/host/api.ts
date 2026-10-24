@@ -3,6 +3,12 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
 import { uploadMimeType } from '../lib/media-ref';
 import { supabase } from '../lib/supabase-client';
 
+/** What the host sets up for a break: its length in minutes (0 = open-ended) and a message for the room. */
+export interface BreakOptions {
+  minutes: number;
+  message: string;
+}
+
 export interface Quiz {
   id: string;
   title: string;
@@ -102,8 +108,23 @@ export const hostApi = {
   /** `pubId` null launches without a pub; the API falls back to the quiz's pub only when it is omitted. */
   createSession: (token: string, quizId: string, pubId: string | null, leagueId: string | null = null) =>
     apiPost<HostSession>(`/quizzes/${quizId}/sessions`, leagueId ? { pubId, leagueId } : { pubId }, token),
-  transition: (token: string, sessionId: string, status: QuizState, questionId?: string) =>
-    apiPost(`/sessions/${sessionId}/transition`, status === 'LOCK_IN_ROUND' ? { status, questionId } : { status }, token),
+  transition: (token: string, sessionId: string, status: QuizState, questionId?: string, breakOptions?: BreakOptions) =>
+    apiPost(
+      `/sessions/${sessionId}/transition`,
+      status === 'LOCK_IN_ROUND'
+        ? { status, questionId }
+        : status === 'PAUSE_BREAK' && breakOptions
+          ? {
+              status,
+              ...(breakOptions.minutes ? { breakMinutes: breakOptions.minutes } : {}),
+              ...(breakOptions.message.trim() ? { breakMessage: breakOptions.message.trim() } : {}),
+            }
+          : { status },
+      token,
+    ),
+  /** Pauses or resumes the open question's countdown, or adds time to it. */
+  timer: (token: string, sessionId: string, action: 'pause' | 'resume' | 'extend', seconds?: number) =>
+    apiPost(`/sessions/${sessionId}/timer`, seconds ? { action, seconds } : { action }, token),
   /** Plays, pauses or replays a media slot of the current question on the projector. */
   mediaControl: (token: string, sessionId: string, slot: MediaSlot, action: MediaAction) =>
     apiPost(`/sessions/${sessionId}/media/control`, { slot, action }, token),

@@ -52,6 +52,10 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
     status,
     currentQuestion: null,
     questionEndsAt: null,
+    questionPausedAt: null,
+    answeredCount: null,
+    breakEndsAt: null,
+    breakMessage: null,
     teams: [
       {
         id: 'team-1',
@@ -114,6 +118,8 @@ function graded(overrides: Partial<AnswerSummaryDto> = {}): AnswerSummaryDto {
     needsReview: false,
     gradedBy: 'AUTO',
     scoreAwarded: 2,
+    disputed: false,
+    disputeNote: null,
     ...overrides,
   };
 }
@@ -296,6 +302,20 @@ describe('answering', () => {
     expect(apiPost).toHaveBeenLastCalledWith('/sessions/s1/answers', { questionId: 'q9', response: { value: 6 } }, 'team-token');
   });
 
+  it('shows how many teams answered, and that the host paused the timer', () => {
+    setState('QUESTION_ACTIVE', {
+      currentQuestion: question(),
+      questionEndsAt: new Date(Date.now() - 5_000).toISOString(),
+      questionPausedAt: new Date(Date.now() - 20_000).toISOString(),
+      answeredCount: 1,
+    });
+    renderPlay();
+    expect(screen.getByTestId('player-paused')).toBeInTheDocument();
+    expect(screen.getByTestId('player-answered')).toHaveTextContent(/^1 \/ \d+ /);
+    // Paused with time left: still answerable although the deadline has passed.
+    expect(screen.getByTestId('player-answer-form')).toBeInTheDocument();
+  });
+
   it('stops accepting answers when the time is up', () => {
     setState('QUESTION_ACTIVE', { currentQuestion: question(), questionEndsAt: new Date(Date.now() - 1000).toISOString() });
     renderPlay();
@@ -417,6 +437,33 @@ describe('reveal and results', () => {
     await act(async () => {});
     expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'none');
     expect(screen.queryByTestId('player-awarded')).not.toBeInTheDocument();
+  });
+
+  it('lets a team dispute a wrong answer once, with a note for the host', async () => {
+    session.mine = [graded({ isCorrect: false, scoreAwarded: 0 })];
+    vi.mocked(apiPost).mockResolvedValue({});
+    setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'b' }) });
+    renderPlay();
+
+    fireEvent.click(await screen.findByTestId('player-dispute-button'));
+    fireEvent.change(screen.getByTestId('player-dispute-note'), { target: { value: 'Both won' } });
+    fireEvent.click(screen.getByTestId('player-dispute-button'));
+
+    expect(await screen.findByTestId('player-dispute-sent')).toBeInTheDocument();
+    expect(apiPost).toHaveBeenCalledWith('/sessions/s1/answers/answer-1/dispute', { note: 'Both won' }, 'team-token');
+  });
+
+  it('offers no dispute for a correct answer, and says when one is already sent', async () => {
+    session.mine = [graded()];
+    setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'b' }) });
+    const { unmount } = renderPlay();
+    await screen.findByTestId('player-awarded');
+    expect(screen.queryByTestId('player-dispute')).not.toBeInTheDocument();
+    unmount();
+
+    session.mine = [graded({ isCorrect: false, scoreAwarded: 0, needsReview: true, disputed: true })];
+    renderPlay();
+    expect(await screen.findByTestId('player-dispute-sent')).toBeInTheDocument();
   });
 
   it('flags free-text answers waiting for host review', async () => {

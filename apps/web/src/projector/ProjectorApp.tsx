@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CloudOff, RefreshCw, Volume2 } from 'lucide-react';
-import { forwardClickerCommands } from '../lib/clicker';
+import { CloudOff, MousePointerClick, RefreshCw, Volume2 } from 'lucide-react';
+import { forwardClickerCommands, type ClickerFeedback } from '../lib/clicker';
 import { useI18n } from '../lib/i18n';
 import { useSessionDisplay } from '../lib/use-quiz-title';
 import { usePreloadQuestionMedia } from '../lib/use-current-question-media';
@@ -12,6 +12,9 @@ import { FinishedScene, LeaderboardScene, PauseScene } from './StandingsScenes';
 import { LobbyScene } from './LobbyScene';
 import { ProjectorSound } from './MediaPlayer';
 import { LockInScene, QuestionScene } from './QuestionScenes';
+
+/** How long a clicker notice stays on the big screen. */
+const CLICKER_NOTICE_MS = 3500;
 
 /** Big-screen view for the room — Stitch "Projector View (Veľkoplošná projekcia v sále)". */
 export default function ProjectorApp() {
@@ -38,7 +41,17 @@ export default function ProjectorApp() {
   }, [sound]);
 
   // A clicker plugged into this machine drives the control room open in the same browser.
-  useEffect(() => (sessionId ? forwardClickerCommands(sessionId) : undefined), [sessionId]);
+  // Presses that did nothing come back as a short notice, so the host knows without the laptop.
+  const [clickerNotice, setClickerNotice] = useState<{ feedback: ClickerFeedback; at: number } | null>(null);
+  useEffect(
+    () => (sessionId ? forwardClickerCommands(sessionId, (feedback) => setClickerNotice({ feedback, at: Date.now() })) : undefined),
+    [sessionId],
+  );
+  useEffect(() => {
+    if (!clickerNotice) return;
+    const timer = window.setTimeout(() => setClickerNotice(null), CLICKER_NOTICE_MS);
+    return () => window.clearTimeout(timer);
+  }, [clickerNotice]);
 
   // Realtime events drive the screen; a slow poll covers a dropped websocket on the venue Wi-Fi.
   useEffect(() => {
@@ -116,6 +129,21 @@ export default function ProjectorApp() {
             </div>
           )}
 
+          {clickerNotice && (
+            <div
+              key={clickerNotice.at}
+              role="status"
+              className="fixed bottom-space-lg left-1/2 z-[55] flex -translate-x-1/2 items-center gap-space-sm rounded-full bg-surface-container-highest/95 px-space-lg py-space-sm text-headline-sm text-on-surface shadow-2xl"
+              data-testid="projector-clicker-notice"
+              data-feedback={clickerNotice.feedback}
+            >
+              <MousePointerClick
+                className={`h-6 w-6 ${clickerNotice.feedback === 'error' || clickerNotice.feedback === 'noResponse' ? 'text-error' : 'text-secondary'}`}
+              />
+              {t(`projector.clicker.${clickerNotice.feedback}`)}
+            </div>
+          )}
+
           {!sound && (
             <button
               type="button"
@@ -158,7 +186,7 @@ function Scene({
     case 'PAUSE_BREAK':
       return (
         <div className="flex flex-col gap-space-lg">
-          <PauseScene />
+          <PauseScene endsAt={state.breakEndsAt} message={state.breakMessage} />
           <LeaderboardScene teams={state.teams} />
         </div>
       );

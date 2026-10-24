@@ -15,6 +15,9 @@ export interface AnswerRecord {
   graded_at: string | null;
   submitted_at: string;
   score_awarded: number;
+  /** When the team disputed its grade (at most once), and its note for the host. */
+  disputed_at: string | null;
+  dispute_note: string | null;
 }
 
 export type AnswerGradePatch = Partial<
@@ -28,6 +31,8 @@ export abstract class AnswersRepository {
   abstract listNeedsReview(sessionId: string): Promise<AnswerRecord[]>;
   abstract listBySession(sessionId: string): Promise<AnswerRecord[]>;
   abstract updateGrade(id: string, patch: AnswerGradePatch): Promise<AnswerRecord>;
+  /** A team disputes its grade: the answer goes back to the host's review queue. */
+  abstract markDisputed(id: string, note: string | null): Promise<AnswerRecord>;
 }
 
 @Injectable()
@@ -90,6 +95,18 @@ export class SupabaseAnswersRepository extends AnswersRepository {
       .getClient()
       .from('answers')
       .update({ ...patch, graded_at: patch.graded_at ?? new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw new InternalServerErrorException(error.message);
+    return data as AnswerRecord;
+  }
+
+  async markDisputed(id: string, note: string | null): Promise<AnswerRecord> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('answers')
+      .update({ needs_review: true, disputed_at: new Date().toISOString(), dispute_note: note })
       .eq('id', id)
       .select()
       .single();

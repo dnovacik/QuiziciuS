@@ -1,5 +1,5 @@
 import type { MediaRefDto, MediaSlot } from '@quizicius/shared-types';
-import { useClicker, type ClickerCommand } from '../../lib/clicker';
+import { useClicker, type ClickerCommand, type ClickerOutcome } from '../../lib/clicker';
 import { secondsLeft } from '../../lib/quiz';
 import type { ControlRoom } from './use-control-room';
 
@@ -14,33 +14,40 @@ const isClip = (media: MediaRefDto | null | undefined) => !!media && media.kind 
 export function useRoomClicker(room: ControlRoom, sessionId: string, enabled: boolean) {
   useClicker(
     sessionId,
-    (command: ClickerCommand) => {
+    async (command: ClickerCommand): Promise<ClickerOutcome | null> => {
       const { state, currentQuestion } = room;
-      if (!state || room.busy) return;
+      // Busy: the previous press is still on its way, this one is simply dropped.
+      if (!state || room.busy) return null;
       const status = state.status;
+      const outcome = (ok: boolean): ClickerOutcome => (ok ? 'done' : 'error');
 
       if (command === 'next') {
-        if (status === 'LOCK_IN_ROUND') void room.transition('QUESTION_ACTIVE');
-        else if (status === 'QUESTION_ACTIVE') {
+        if (status === 'LOBBY') return null; // the lobby panel asks for confirmation
+        if (status === 'LOCK_IN_ROUND') return outcome(await room.transition('QUESTION_ACTIVE'));
+        if (status === 'QUESTION_ACTIVE') {
           // Two presses: the first stops answering, only the second reveals.
-          if (secondsLeft(state.questionEndsAt, Date.now()) === 0) void room.transition('QUESTION_REVEAL');
-          else void room.closeAnswers();
-        } else if ((status === 'QUESTION_REVEAL' || status === 'PAUSE_BREAK') && room.selectedId) void room.transition('LOCK_IN_ROUND');
-        return;
+          if (secondsLeft(state.questionEndsAt, Date.now(), state.questionPausedAt) === 0)
+            return outcome(await room.transition('QUESTION_REVEAL'));
+          return outcome(await room.closeAnswers());
+        }
+        if (status === 'QUESTION_REVEAL' || status === 'PAUSE_BREAK') {
+          return room.selectedId ? outcome(await room.transition('LOCK_IN_ROUND')) : 'finish';
+        }
+        return 'nothing';
       }
 
       if (command === 'blank') {
-        if (status === 'QUESTION_REVEAL') void room.transition('PAUSE_BREAK');
-        return;
+        return status === 'QUESTION_REVEAL' ? outcome(await room.transition('PAUSE_BREAK')) : status === 'LOBBY' ? null : 'noBreak';
       }
 
-      if (!currentQuestion) return;
+      if (status === 'LOBBY') return null;
       let slot: MediaSlot | null = null;
-      if (status === 'QUESTION_REVEAL' && isClip(currentQuestion.reveal_media)) slot = 'reveal';
-      else if ((status === 'QUESTION_ACTIVE' || status === 'QUESTION_REVEAL') && isClip(currentQuestion.media)) slot = 'question';
-      if (!slot) return;
+      if (currentQuestion && status === 'QUESTION_REVEAL' && isClip(currentQuestion.reveal_media)) slot = 'reveal';
+      else if (currentQuestion && (status === 'QUESTION_ACTIVE' || status === 'QUESTION_REVEAL') && isClip(currentQuestion.media))
+        slot = 'question';
+      if (!currentQuestion || !slot) return 'noClip';
       const playback = room.mediaStatus[`${currentQuestion.id}:${slot}`]?.state;
-      void room.mediaControl(slot, playback === 'playing' ? 'pause' : playback === 'ended' ? 'replay' : 'play');
+      return outcome(await room.mediaControl(slot, playback === 'playing' ? 'pause' : playback === 'ended' ? 'replay' : 'play'));
     },
     enabled,
   );

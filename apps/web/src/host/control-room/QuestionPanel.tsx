@@ -18,7 +18,6 @@ import {
 import type { AnswerSummaryDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
 import { isUntimed, optionLetter, rankTeams, secondsLeft, useNow } from '../../lib/quiz';
-import { Pending } from '../../ui/Pending';
 import type { Question } from '../api';
 import { btn } from '../ui';
 import { MediaControls } from './MediaControls';
@@ -51,7 +50,8 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
   const showingCurrent = status === 'LOCK_IN_ROUND' || status === 'QUESTION_ACTIVE' || status === 'QUESTION_REVEAL';
   const focus = showingCurrent ? room.currentQuestion : (room.questions.find((question) => question.id === room.selectedId) ?? null);
   const focusIndex = focus ? room.questions.findIndex((question) => question.id === focus.id) : -1;
-  const remaining = status === 'QUESTION_ACTIVE' ? secondsLeft(state.questionEndsAt, now) : null;
+  const remaining = status === 'QUESTION_ACTIVE' ? secondsLeft(state.questionEndsAt, now, state.questionPausedAt) : null;
+  const paused = status === 'QUESTION_ACTIVE' && Boolean(state.questionPausedAt);
   const canPick = status === 'LOBBY' || status === 'QUESTION_REVEAL' || status === 'PAUSE_BREAK';
   const answers = showingCurrent ? room.answers : [];
   const answeredTeams = new Set(answers.map((answer) => answer.teamId));
@@ -205,18 +205,28 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
                   >
                     <div className="flex items-center justify-center gap-space-md">
                       <Ring seconds={remaining} total={focus.time_limit_seconds} />
-                      <Pending feature="timer-controls">
-                        <div className="flex flex-col gap-1.5">
-                          <span className={`${btn.secondary} px-space-sm py-1 text-label-sm`}>
-                            <Pause className="h-4 w-4" />
-                            {t('host.room.pauseTimer')}
-                          </span>
-                          <span className={`${btn.secondary} px-space-sm py-1 text-label-sm text-secondary`}>
-                            <AlarmClockPlus className="h-4 w-4" />
-                            +10 s
-                          </span>
-                        </div>
-                      </Pending>
+                      <div className="flex flex-col gap-1.5">
+                        <button
+                          type="button"
+                          className={`${btn.secondary} px-space-sm py-1 text-label-sm`}
+                          disabled={room.busy || (remaining === 0 && !paused)}
+                          onClick={() => void room.controlTimer(paused ? 'resume' : 'pause')}
+                          data-testid="room-timer-pause"
+                        >
+                          {paused ? <Play className="h-4 w-4 text-tertiary" /> : <Pause className="h-4 w-4" />}
+                          {t(paused ? 'host.room.resumeTimer' : 'host.room.pauseTimer')}
+                        </button>
+                        <button
+                          type="button"
+                          className={`${btn.secondary} px-space-sm py-1 text-label-sm text-secondary`}
+                          disabled={room.busy || (remaining === 0 && !paused)}
+                          onClick={() => void room.controlTimer('extend')}
+                          data-testid="room-timer-extend"
+                        >
+                          <AlarmClockPlus className="h-4 w-4" />
+                          +10 s
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -276,6 +286,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
         )}
 
         {status === 'LOCK_IN_ROUND' && <ReadyTeams teams={state.teams} />}
+        {status === 'QUESTION_REVEAL' && <BreakSetup room={room} />}
 
         <div className="flex flex-wrap items-center gap-space-sm pt-space-sm" data-testid="room-actions">
           {status === 'LOBBY' && (
@@ -499,6 +510,48 @@ function Ring({ seconds, total }: { seconds: number; total: number }) {
 }
 
 /** Lock-in: which connected teams tapped "we're ready". The host can still show the question at any time. */
+const BREAK_MINUTES = [0, 5, 10, 15];
+
+/** Break length and a message for the room, set up before calling the break (the clicker uses them too). */
+function BreakSetup({ room }: { room: ControlRoom }) {
+  const { t } = useI18n();
+  const { minutes, message } = room.breakOptions;
+  return (
+    <div className="flex flex-col gap-space-xs rounded-xl bg-surface-container p-space-sm" data-testid="room-break-setup">
+      <div className="flex flex-wrap items-center gap-space-xs">
+        <span className="flex items-center gap-1 text-label-md text-on-surface">
+          <Coffee className="h-4 w-4 text-secondary" />
+          {t('host.room.breakLength')}
+        </span>
+        {BREAK_MINUTES.map((value) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={minutes === value}
+            onClick={() => room.setBreakOptions({ minutes: value })}
+            className={`rounded-lg px-space-sm py-1 text-label-sm transition-colors ${
+              minutes === value
+                ? 'bg-secondary-container text-on-secondary-container'
+                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'
+            }`}
+            data-testid={`room-break-minutes-${value}`}
+          >
+            {value ? `${value} min` : t('host.room.breakOpen')}
+          </button>
+        ))}
+      </div>
+      <input
+        value={message}
+        maxLength={200}
+        onChange={(event) => room.setBreakOptions({ message: event.target.value })}
+        placeholder={t('host.room.breakMessagePlaceholder')}
+        className="w-full rounded-lg bg-surface-container-lowest px-space-sm py-1.5 text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary"
+        data-testid="room-break-message"
+      />
+    </div>
+  );
+}
+
 function ReadyTeams({ teams }: { teams: TeamSummaryDto[] }) {
   const { t } = useI18n();
   const active = teams.filter((team) => team.isActive);

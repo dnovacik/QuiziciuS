@@ -104,6 +104,10 @@ function liveState(status: QuizState, currentId: string | null = null): QuizSess
       acceptedAnswers: null,
     },
     questionEndsAt: status === 'QUESTION_ACTIVE' ? new Date(Date.now() + 20_000).toISOString() : null,
+    questionPausedAt: null,
+    answeredCount: null,
+    breakEndsAt: null,
+    breakMessage: null,
     teams: [
       {
         id: 't1',
@@ -602,6 +606,8 @@ describe('control room', () => {
         needsReview: false,
         gradedBy: 'AUTO',
         scoreAwarded: 10,
+        disputed: false,
+        disputeNote: null,
       },
     ];
     renderRoom();
@@ -639,6 +645,66 @@ describe('control room', () => {
     await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'FINISHED' }, 'jwt'));
   });
 
+  describe('timer and break', () => {
+    it('pauses, resumes and extends the timer', async () => {
+      live.state = liveState('QUESTION_ACTIVE', 'q1');
+      const view = renderRoom();
+
+      fireEvent.click(await screen.findByTestId('room-timer-pause'));
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/timer', { action: 'pause' }, 'jwt'));
+      fireEvent.click(screen.getByTestId('room-timer-extend'));
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/timer', { action: 'extend' }, 'jwt'));
+
+      live.state = { ...liveState('QUESTION_ACTIVE', 'q1'), questionPausedAt: new Date().toISOString() };
+      view.refresh();
+      await waitFor(() => expect(screen.getByTestId('room-timer-pause')).toHaveTextContent('Pokračovať'));
+      fireEvent.click(screen.getByTestId('room-host-pause'));
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/timer', { action: 'resume' }, 'jwt'));
+    });
+
+    it('starts a break with the length and message set up at the reveal', async () => {
+      live.state = liveState('QUESTION_REVEAL', 'q1');
+      renderRoom();
+
+      fireEvent.click(await screen.findByTestId('room-break-minutes-10'));
+      fireEvent.change(screen.getByTestId('room-break-message'), { target: { value: 'Bar is open' } });
+      fireEvent.click(screen.getByTestId('room-action-pause'));
+
+      await waitFor(() =>
+        expect(apiPost).toHaveBeenCalledWith(
+          '/sessions/s1/transition',
+          { status: 'PAUSE_BREAK', breakMinutes: 10, breakMessage: 'Bar is open' },
+          'jwt',
+        ),
+      );
+    });
+  });
+
+  it("counts answers waiting for review on the tab, and shows a team's dispute note", async () => {
+    db.disputes = [
+      {
+        id: 'd2',
+        sessionId: 's1',
+        questionId: 'q1',
+        teamId: 't1',
+        response: { optionId: 'a' },
+        isCorrect: false,
+        confidence: null,
+        needsReview: true,
+        gradedBy: 'AUTO',
+        scoreAwarded: 0,
+        disputed: true,
+        disputeNote: 'Both films won that night',
+      },
+    ];
+    live.state = liveState('QUESTION_REVEAL', 'q1');
+    renderRoom();
+
+    expect(await screen.findByTestId('room-review-badge')).toHaveTextContent('1');
+    fireEvent.click(screen.getByTestId('room-tab-review'));
+    expect(await screen.findByTestId('dispute-note-d2')).toHaveTextContent('Both films won that night');
+  });
+
   it('lets the host accept a disputed free-text answer', async () => {
     db.questions.quiz1[0] = question('q1', 0, { type: 'FREE_TEXT', options: null, accepted_answers: ['Forrest Gump'] });
     db.disputes = [
@@ -653,6 +719,8 @@ describe('control room', () => {
         needsReview: true,
         gradedBy: null,
         scoreAwarded: 0,
+        disputed: false,
+        disputeNote: null,
       },
     ];
     live.state = liveState('QUESTION_REVEAL', 'q1');
@@ -764,6 +832,23 @@ describe('control room', () => {
       await act(async () => {});
       expect(apiPost).not.toHaveBeenCalled();
       input.remove();
+    });
+
+    it('tells the projector when the last question is done instead of ending the quiz', async () => {
+      localStorage.setItem('quizicius:played:s1', JSON.stringify(['q1', 'q2', 'q3']));
+      live.state = liveState('QUESTION_REVEAL', 'q3');
+      renderRoom();
+      await screen.findByTestId('room-action-finish');
+
+      const projector = new BroadcastChannel('quizicius:clicker:s1');
+      const replies: unknown[] = [];
+      projector.addEventListener('message', (event) => replies.push((event as MessageEvent).data));
+      projector.postMessage('next');
+
+      await waitFor(() => expect(replies).toContainEqual({ outcome: 'finish' }));
+      expect(replies).toContainEqual({ received: true });
+      expect(apiPost).not.toHaveBeenCalled();
+      projector.close();
     });
 
     it('follows presses forwarded by the projector', async () => {

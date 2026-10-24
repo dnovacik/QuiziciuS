@@ -39,7 +39,7 @@ function Game({ seat }: { seat: TeamSeat }) {
 
   // Scores of the open question become public once its timer runs out; nothing is broadcast
   // at that moment, so fetch the state once ourselves.
-  const endsAt = state?.status === 'QUESTION_ACTIVE' ? state.questionEndsAt : null;
+  const endsAt = state?.status === 'QUESTION_ACTIVE' && !state.questionPausedAt ? state.questionEndsAt : null;
   useEffect(() => {
     if (!endsAt) return;
     const timer = setTimeout(refetch, Math.max(0, Date.parse(endsAt) + RESULTS_GRACE_MS - Date.now()));
@@ -79,7 +79,14 @@ function Game({ seat }: { seat: TeamSeat }) {
       return <ResultsScreen state={state} teamId={seat.teamId} title={title} onExit={() => navigate('/')} />;
     case 'QUESTION_REVEAL':
       return question ? (
-        <RevealScreen state={state} question={question} teamId={seat.teamId} sent={answers[question.id]} graded={graded[question.id]} />
+        <RevealScreen
+          state={state}
+          question={question}
+          teamId={seat.teamId}
+          token={seat.token}
+          sent={answers[question.id]}
+          graded={graded[question.id]}
+        />
       ) : (
         <LobbyScreen state={state} teamId={seat.teamId} title={title} />
       );

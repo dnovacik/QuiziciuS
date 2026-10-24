@@ -37,6 +37,10 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
     status,
     currentQuestion: null,
     questionEndsAt: null,
+    questionPausedAt: null,
+    answeredCount: null,
+    breakEndsAt: null,
+    breakMessage: null,
     teams: [
       {
         id: 't1',
@@ -155,6 +159,27 @@ describe('ProjectorApp', () => {
     expect(screen.getByTestId('projector-prompt')).toHaveTextContent('Which film won in 1994?');
     expect(within(screen.getByTestId('projector-options')).getByText('Forrest Gump')).toBeInTheDocument();
     expect(screen.getByTestId('projector-timer')).toHaveAccessibleName(/^(19|20) /);
+  });
+
+  it('shows how many teams have answered, and a paused timer standing still', () => {
+    const now = Date.now();
+    setState('QUESTION_ACTIVE', {
+      currentQuestion: QUESTION,
+      questionEndsAt: new Date(now + 20_000).toISOString(),
+      questionPausedAt: new Date(now - 60_000).toISOString(),
+      answeredCount: 2,
+    });
+    renderProjector();
+    expect(screen.getByTestId('projector-answered')).toHaveTextContent(/^2 \/ \d+ /);
+    expect(screen.getByTestId('projector-paused')).toBeInTheDocument();
+    expect(screen.getByTestId('projector-timer')).toHaveAccessibleName(/^80 /);
+  });
+
+  it('shows the break countdown and the host message', () => {
+    setState('PAUSE_BREAK', { breakEndsAt: new Date(Date.now() + 5 * 60_000).toISOString(), breakMessage: 'Bar is open' });
+    renderProjector();
+    expect(screen.getByTestId('projector-break-clock')).toHaveTextContent(/^(5:00|4:59)$/);
+    expect(screen.getByTestId('projector-break-message')).toHaveTextContent('Bar is open');
   });
 
   it('highlights the correct option on reveal', () => {

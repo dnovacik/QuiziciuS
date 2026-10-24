@@ -13,13 +13,28 @@ export interface SessionRecord {
   league_id: string | null;
   current_question_id: string | null;
   question_ends_at: string | null;
+  /** Set while the host has paused the question's timer; the deadline moves on at resume. */
+  question_paused_at: string | null;
+  /** The break's planned end and the host's message for the room; only during PAUSE_BREAK. */
+  break_ends_at: string | null;
+  break_message: string | null;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
 }
 
 export type SessionStatusPatch = Partial<
-  Pick<SessionRecord, 'status' | 'current_question_id' | 'question_ends_at' | 'started_at' | 'finished_at'>
+  Pick<
+    SessionRecord,
+    | 'status'
+    | 'current_question_id'
+    | 'question_ends_at'
+    | 'question_paused_at'
+    | 'break_ends_at'
+    | 'break_message'
+    | 'started_at'
+    | 'finished_at'
+  >
 >;
 
 export abstract class SessionsRepository {

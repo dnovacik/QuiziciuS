@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { AnswerSummaryDto } from '@quizicius/shared-types';
 import { AnswerRecord, AnswersRepository } from '../data/answers.repository';
 import { QuestionRecord, QuestionsRepository } from '../data/questions.repository';
@@ -32,7 +32,8 @@ export class AnswersService {
     if (session.status !== 'QUESTION_ACTIVE' || session.current_question_id !== questionId) {
       throw new BadRequestException('This question is not currently active');
     }
-    if (session.question_ends_at) {
+    // While the host has paused the timer, answering stays open.
+    if (session.question_ends_at && !session.question_paused_at) {
       const deadline = new Date(session.question_ends_at).getTime() + LATE_SUBMISSION_GRACE_MS;
       if (Date.now() > deadline) {
         throw new UnprocessableEntityException('Submission window has closed');
@@ -49,6 +50,28 @@ export class AnswersService {
     // The grade stays hidden until the question closes: answers can be resubmitted while the
     // question is open, so returning it here would let a team probe for the correct option.
     return toAnswerSummary(graded, false);
+  }
+
+  /**
+   * A team disputes its grade once its result is public. Only answers that did not score can be
+   * disputed, once each; the answer goes to the host's review queue with the team's note.
+   */
+  async dispute(sessionId: string, teamId: string, answerId: string, rawNote: string | null): Promise<AnswerSummaryDto> {
+    const session = await this.sessions.findById(sessionId);
+    if (!session) throw new NotFoundException('Session not found');
+    const answer = await this.answers.findById(answerId);
+    if (!answer || answer.session_id !== sessionId || answer.team_id !== teamId) throw new NotFoundException('Answer not found');
+    if (!isAnswerResultVisible(answer, session)) {
+      throw new ConflictException({ code: 'RESULT_NOT_PUBLIC', message: 'The result is not out yet' });
+    }
+    if (answer.disputed_at || answer.needs_review) {
+      throw new ConflictException({ code: 'ALREADY_DISPUTED', message: 'This answer is already waiting for the host' });
+    }
+    if (answer.is_correct) throw new ConflictException({ code: 'ANSWER_CORRECT', message: 'This answer already scored' });
+
+    const updated = await this.answers.markDisputed(answerId, rawNote?.trim() || null);
+    await this.broadcast.publish(sessionId, 'SCORE_UPDATE', { teamId, disputed: answerId });
+    return toAnswerSummary(updated);
   }
 
   /** The team's own answers in this session; grading is included only where results are public. */

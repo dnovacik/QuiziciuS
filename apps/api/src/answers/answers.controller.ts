@@ -4,6 +4,7 @@ import { CurrentTeam } from '../teams/current-team.decorator';
 import { TeamTokenGuard } from '../teams/team-token.guard';
 import { TeamTokenPayload } from '../teams/team-token.service';
 import { AnswersService } from './answers.service';
+import { DisputeAnswerDto } from './dto/dispute-answer.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
 
 @Controller('sessions/:sessionId/answers')
@@ -21,6 +22,20 @@ export class AnswersController {
       throw new ForbiddenException('Token does not match this session');
     }
     return this.answers.submit(sessionId, team.teamId, dto.questionId, dto.response);
+  }
+
+  /** The team disputes its own graded answer; the host decides in the review queue. */
+  @Post(':answerId/dispute')
+  dispute(
+    @Param('sessionId') sessionId: string,
+    @Param('answerId') answerId: string,
+    @CurrentTeam() team: TeamTokenPayload,
+    @Body() dto: DisputeAnswerDto,
+  ): Promise<AnswerSummaryDto> {
+    if (team.sessionId !== sessionId) {
+      throw new ForbiddenException('Token does not match this session');
+    }
+    return this.answers.dispute(sessionId, team.teamId, answerId, dto.note ?? null);
   }
 
   @Get('mine')
