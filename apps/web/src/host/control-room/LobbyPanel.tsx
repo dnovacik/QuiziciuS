@@ -2,6 +2,7 @@ import { useSessionDisplay } from '../../lib/use-quiz-title';
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { BadgeCheck, CirclePlay, Copy, Link2, MonitorPlay, XCircle, Trophy } from 'lucide-react';
+import { useClicker } from '../../lib/clicker';
 import { useI18n } from '../../lib/i18n';
 import { btn, ConfirmDialog, useCopy } from '../ui';
 import { joinUrl } from '../sessions';
@@ -28,6 +29,17 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
   const totalPoints = room.questions.reduce((sum, question) => sum + question.points, 0);
   const inLobby = state.status === 'LOBBY';
   const firstQuestion = room.questions.find((question) => question.id === room.selectedId);
+
+  const start = () => {
+    setConfirmStart(false);
+    void room.transition('LOCK_IN_ROUND');
+  };
+  // The clicker starts like the button does: the first press asks, the second confirms.
+  useClicker(sessionId, (command) => {
+    if (command !== 'next' || !inLobby || !room.questions.length || room.busy) return;
+    if (confirmStart) start();
+    else setConfirmStart(true);
+  });
 
   return (
     <section className="flex flex-col gap-space-lg" data-testid="room-lobby">
@@ -226,10 +238,7 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
           confirmLabel={t('host.room.startConfirm')}
           cancelLabel={t('host.room.startWait')}
           busy={room.busy}
-          onConfirm={() => {
-            setConfirmStart(false);
-            void room.transition('LOCK_IN_ROUND');
-          }}
+          onConfirm={start}
           onClose={() => setConfirmStart(false)}
           testId="room-start-dialog"
         />

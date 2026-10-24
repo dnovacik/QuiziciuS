@@ -451,6 +451,7 @@
   "host.room.pause": "Break",
   "host.room.next": "Next question",
   "host.room.finishQuiz": "End the quiz and announce results",
+  "host.room.clickerHint": "Clicker: → / PgDn next step · B or . break · ← / PgUp play/pause clip",
   "host.room.submitted": "Answers submitted",
   "host.room.thinking": "Thinking…",
   "host.room.top3": "Top 3",
