@@ -1,5 +1,9 @@
 {
   "common.close": "Zatvoriť",
+  "scanner.title": "Naskenuj QR kód",
+  "scanner.hint": "Namier kameru na QR kód na projektore alebo obrazovke moderátora.",
+  "scanner.noCamera": "Kamera tu nie je dostupná. Použi fotoaparát v mobile na QR kód alebo napíš 4-znakový kód.",
+  "scanner.notQuiz": "Toto nie je kód kvízu QuiziciuS — skús ten na projektore.",
   "common.language": "Jazyk",
   "common.optional": "voliteľné",
   "common.soon": "Čoskoro",

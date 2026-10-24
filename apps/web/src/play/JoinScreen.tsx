@@ -1,14 +1,15 @@
 import { useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { AlertCircle, BadgeCheck, Camera, Hash, History, KeyRound, LogIn, QrCode, Table2, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../lib/api-client';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
-import { findSessionByCode, joinSession, normalizeJoinCode, recentTeamNames, type TeamSeat } from '../lib/team-seat';
+import { findSessionByCode, joinSession, normalizeJoinCode, parseJoinTarget, recentTeamNames, type TeamSeat } from '../lib/team-seat';
 import { useSessionDisplay } from '../lib/use-quiz-title';
 import { useSessionState } from '../lib/use-session-state';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { Logo } from '../ui/Logo';
-import { Pending } from '../ui/Pending';
+import { QrScanner } from '../ui/QrScanner';
 
 type Method = 'pin' | 'link';
 
@@ -19,6 +20,21 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
   const { state } = useSessionState(sessionId);
   const [method, setMethod] = useState<Method>('pin');
   const [pin, setPin] = useState(['', '', '', '']);
+  const [scanning, setScanning] = useState(false);
+  const navigate = useNavigate();
+
+  /** A scanned join link opens that quiz night; a scanned code fills the code boxes. */
+  function onScanned(text: string): boolean {
+    const target = parseJoinTarget(text);
+    if (!target) return false;
+    setScanning(false);
+    if ('sessionId' in target) navigate(`/play/${target.sessionId}`);
+    else {
+      setPin(target.code.split(''));
+      setMethod('pin');
+    }
+    return true;
+  }
   const [teamName, setTeamName] = useState('');
   const [tableNumber, setTableNumber] = useState('');
   const [teamPin, setTeamPin] = useState('');
@@ -80,6 +96,7 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
 
   return (
     <div className="min-h-[100dvh] bg-surface-container-lowest text-on-surface" data-testid="player-join">
+      {scanning && <QrScanner onResult={onScanned} onClose={() => setScanning(false)} rejectedText={t('scanner.notQuiz')} />}
       <main className="relative mx-auto flex w-full max-w-xl flex-col px-margin pb-10">
         <div className="pointer-events-none relative mb-space-sm w-full overflow-hidden">
           <div className="absolute -top-24 left-1/2 h-36 w-72 -translate-x-1/2 rounded-full bg-primary-container/20 blur-3xl" />
@@ -157,15 +174,15 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
             <div className="flex flex-col gap-space-md text-center">
               <QrCode className="mx-auto h-12 w-12 text-secondary" />
               <p className="text-body-md text-on-surface-variant">{t('play.join.linkHint')}</p>
-              <Pending feature="qr-scanner">
-                <button
-                  type="button"
-                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-surface-container-high text-label-md text-on-surface"
-                >
-                  <Camera className="h-5 w-5 text-secondary" />
-                  {t('play.join.scanQr')}
-                </button>
-              </Pending>
+              <button
+                type="button"
+                onClick={() => setScanning(true)}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-surface-container-high text-label-md text-on-surface"
+                data-testid="player-scan"
+              >
+                <Camera className="h-5 w-5 text-secondary" />
+                {t('play.join.scanQr')}
+              </button>
               <button type="button" className="text-label-md text-primary underline" onClick={() => setMethod('pin')}>
                 {t('play.join.usePinInstead')}
               </button>

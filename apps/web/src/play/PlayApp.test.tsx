@@ -219,6 +219,39 @@ describe('joining', () => {
     await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/team-access/sessions/s1/join', { name: 'Wise Ducks', pin: '482915' }));
   });
 
+  it('scans the projector QR code with the camera and opens that quiz night', async () => {
+    const stop = vi.fn();
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn().mockResolvedValue({ getTracks: () => [{ stop }] }) },
+    });
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    const detected = ['https://example.com/menu', 'https://quiz.example.sk/play/s9'];
+    (window as unknown as { BarcodeDetector: unknown }).BarcodeDetector = class {
+      detect = async () => [{ rawValue: detected.shift() ?? '' }];
+    };
+    setState('LOBBY');
+    renderPlay('/play');
+
+    fireEvent.click(screen.getAllByRole('tab')[1]);
+    fireEvent.click(await screen.findByTestId('player-scan'));
+
+    await waitFor(() => expect(screen.queryByTestId('qr-scanner')).not.toBeInTheDocument(), { timeout: 2000 });
+    expect(screen.queryByTestId('player-pin-0')).not.toBeInTheDocument();
+    expect(stop).toHaveBeenCalled();
+    delete (window as unknown as { BarcodeDetector?: unknown }).BarcodeDetector;
+  });
+
+  it('explains when the camera is not available for scanning', async () => {
+    Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+    setState('LOBBY');
+    renderPlay('/play');
+
+    fireEvent.click(screen.getAllByRole('tab')[1]);
+    fireEvent.click(await screen.findByTestId('player-scan'));
+    expect(await screen.findByTestId('qr-scanner-failed')).toBeInTheDocument();
+  });
+
   it('skips the code when arriving through a /play/:id link', async () => {
     vi.mocked(apiPost).mockResolvedValue({ teamId: 'team-1', token: 'team-token' });
     setState('LOBBY');

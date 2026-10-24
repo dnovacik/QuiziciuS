@@ -16,6 +16,22 @@ export function normalizeJoinCode(value: string): string {
     .slice(0, 4);
 }
 
+/**
+ * What a scanned QR code points to: a quiz night's join link (`…/play/<id>`) or a bare 4-character
+ * join code; null for anything else.
+ */
+export function parseJoinTarget(text: string): { sessionId: string } | { code: string } | null {
+  const trimmed = text.trim();
+  try {
+    const url = new URL(trimmed);
+    const match = url.pathname.match(/^\/play\/([^/]+)\/?$/);
+    return match ? { sessionId: decodeURIComponent(match[1]) } : null;
+  } catch {
+    const code = normalizeJoinCode(trimmed);
+    return /^[A-Z0-9]{4}$/.test(code) && trimmed.replace(/[\s-]/g, '').length === 4 ? { code } : null;
+  }
+}
+
 export async function findSessionByCode(code: string): Promise<string> {
   const session = await apiGet<{ id: string }>(`/sessions/by-code/${encodeURIComponent(normalizeJoinCode(code))}`);
   return session.id;
