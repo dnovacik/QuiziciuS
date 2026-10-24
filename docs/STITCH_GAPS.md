@@ -9,7 +9,7 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 
 | Feature id | Screen | What is missing | Decision |
 |---|---|---|---|
-| `social-login` | Landing – host card | Google / Microsoft OAuth providers in Supabase + redirect handling | |
+| `social-login` | Landing – host card | Google / Microsoft OAuth providers in Supabase + redirect handling | Built (2026-10-24), Google only (Microsoft dropped): host card and the team sign-in tab; hidden until set up — see `GOOGLE_SIGN_IN.md` |
 | `remember-me` | Landing – host card | Supabase always persists the session; needs a session-storage auth client when unchecked | |
 | `table-number` | Landing – team dialog, player join | `teams.table_number` column + join endpoint field; show it to the host | Built (2026-10-24): optional `tableNumber` on join, shown on the host lobby cards (migration `0018`) |
 | `qr-scanner` | Player join | In-app camera QR scanner (phones can already scan the projector QR with the camera app) | Built (2026-10-24): on `/play` and the team page's join bar; the browser's `BarcodeDetector` where available, else `jsqr` (loaded on first use) |

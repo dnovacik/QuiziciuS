@@ -7,7 +7,6 @@ import { useI18n } from '../lib/i18n';
  * Set VITE_HIDE_PENDING_FEATURES=true to remove all of them from the UI at once.
  */
 export const PENDING_FEATURES = {
-  'social-login': 'Google / Microsoft sign-in — Supabase OAuth providers are not configured.',
   'remember-me': 'Opt-out of session persistence — Supabase always persists the session.',
   leagues: 'Leagues section of the host app (pub leagues, seasons, super leagues).',
   'team-ratings': 'Team satisfaction ratings after a quiz night.',
