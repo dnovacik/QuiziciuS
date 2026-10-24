@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
-import type { AccountDto, PubLeaderboardDto, TeamLeagueDto } from '@quizicius/shared-types';
+import type { AccountDto, PubLeaderboardDto, TeamLeagueDto, TeamScheduledNightDto } from '@quizicius/shared-types';
 import type { Pub } from '../lib/pubs';
 import { saveSeat, type TeamSeat } from '../lib/team-seat';
 
@@ -78,6 +78,8 @@ export const teamApi = {
     apiPatch<Player>(`/registered-teams/${teamId}/players/${playerId}`, { name: name.trim() }, token),
   removePlayer: (token: string, teamId: string, playerId: string) => apiDelete(`/registered-teams/${teamId}/players/${playerId}`, token),
   leagues: (token: string, teamId: string) => apiGet<TeamLeagueDto[]>(`/registered-teams/${teamId}/leagues`, token),
+  /** Quiz nights planned at the team's pubs, soonest first. */
+  schedule: (token: string, teamId: string) => apiGet<TeamScheduledNightDto[]>(`/registered-teams/${teamId}/schedule`, token),
   /** A pub's table over its finished quiz nights: this year, or all of them. */
   pubLeaderboard: (token: string, pubId: string, period: 'year' | 'all') =>
     apiGet<PubLeaderboardDto>(`/registered-teams/pubs/${pubId}/leaderboard?period=${period}`, token),

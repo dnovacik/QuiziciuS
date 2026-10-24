@@ -9,10 +9,10 @@ import { useAccount } from '../lib/use-account';
 import { useHostSession } from '../lib/use-host-session';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { Logo } from '../ui/Logo';
-import { Pending } from '../ui/Pending';
 import { teamApi, type RegisteredTeam } from './api';
 import { OnboardingPage } from './OnboardingPage';
 import { PubLeaderboard } from './PubLeaderboard';
+import { TeamSchedule } from './TeamSchedule';
 import { TeamDashboard } from './TeamDashboard';
 
 /** /team — the captain's area: onboarding until a team exists, then the team dashboard. */
@@ -97,6 +97,8 @@ export default function TeamApp() {
       )}
       {team && view === 'leaderboard' ? (
         <PubLeaderboard token={token} team={team} />
+      ) : team && view === 'schedule' ? (
+        <TeamSchedule token={token} teamId={team.id} />
       ) : team ? (
         <TeamDashboard
           token={token}
@@ -122,7 +124,7 @@ export default function TeamApp() {
 }
 
 /** Header from the Stitch captain screens: logo, team-area navigation, language and the captain chip. */
-type TeamView = 'team' | 'leaderboard';
+type TeamView = 'team' | 'leaderboard' | 'schedule';
 
 function TeamShell({
   captain,
@@ -177,9 +179,7 @@ function TeamShell({
                 {t('team.nav.myTeam')}
               </span>
             )}
-            <Pending feature="scheduled-sessions" badge="inline">
-              <span className="rounded-xl px-space-md py-space-sm text-label-lg text-on-surface-variant">{t('team.nav.schedule')}</span>
-            </Pending>
+            {view && tab('schedule', t('team.nav.schedule'), 'team-nav-schedule')}
           </nav>
           <div className="flex items-center gap-space-sm sm:gap-space-md">
             {teamName && (
@@ -231,6 +231,7 @@ function TeamShell({
           >
             {tab('team', t('team.nav.myTeam'), 'team-tab-team')}
             {tab('leaderboard', t('team.nav.leaderboard'), 'team-tab-leaderboard')}
+            {tab('schedule', t('team.nav.schedule'), 'team-tab-schedule')}
           </nav>
         )}
         {children}

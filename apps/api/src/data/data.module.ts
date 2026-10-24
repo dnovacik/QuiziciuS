@@ -10,6 +10,7 @@ import { QuestionsRepository, SupabaseQuestionsRepository } from './questions.re
 import { QuizzesRepository, SupabaseQuizzesRepository } from './quizzes.repository';
 import { ScoreAdjustmentsRepository, SupabaseScoreAdjustmentsRepository } from './score-adjustments.repository';
 import { SessionsRepository, SupabaseSessionsRepository } from './sessions.repository';
+import { ScheduledNightsRepository, SupabaseScheduledNightsRepository } from './scheduled-nights.repository';
 import { SupabaseTeamsRepository, TeamsRepository } from './teams.repository';
 
 @Global()
@@ -27,6 +28,7 @@ import { SupabaseTeamsRepository, TeamsRepository } from './teams.repository';
     { provide: ProfilesRepository, useClass: SupabaseProfilesRepository },
     { provide: RegisteredTeamsRepository, useClass: SupabaseRegisteredTeamsRepository },
     { provide: LeaguesRepository, useClass: SupabaseLeaguesRepository },
+    { provide: ScheduledNightsRepository, useClass: SupabaseScheduledNightsRepository },
   ],
   exports: [
     SessionsRepository,
@@ -41,6 +43,7 @@ import { SupabaseTeamsRepository, TeamsRepository } from './teams.repository';
     ProfilesRepository,
     RegisteredTeamsRepository,
     LeaguesRepository,
+    ScheduledNightsRepository,
   ],
 })
 export class DataModule {}

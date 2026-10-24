@@ -105,6 +105,25 @@ beforeEach(() => {
           ],
         };
       }
+      if (path === '/registered-teams/rt1/schedule')
+        return [
+          {
+            id: 'n1',
+            startsAt: '2026-10-31T19:00:00Z',
+            pub: { id: 'pub1', name: 'The Golden Lion', city: 'Žilina' },
+            quizTitle: null,
+            note: 'Halloween',
+            hostName: 'Michal',
+          },
+          {
+            id: 'n2',
+            startsAt: '2026-11-07T19:00:00Z',
+            pub: { id: 'pub1', name: 'The Golden Lion', city: 'Žilina' },
+            quizTitle: 'Music',
+            note: null,
+            hostName: 'Michal',
+          },
+        ];
       if (path === '/registered-teams/rt1/access') return { pin: '482915', inviteToken: 'invite-token-1234567' };
       if (path === '/team-access/invite/invite-token-1234567')
         return { name: 'Wise Ducks', badge: 'brain', badgeColor: 'amber', rosterSize: 2 };
@@ -276,6 +295,17 @@ describe('team dashboard', () => {
     fireEvent.click(screen.getByTestId('leaderboard-period-all'));
     await waitFor(() => expect(screen.getByTestId('leaderboard-nights')).toHaveTextContent('· 9'));
     expect(apiGet).toHaveBeenCalledWith('/registered-teams/pubs/pub1/leaderboard?period=all', 'captain-jwt');
+  });
+
+  it('shows the next planned quiz night, and all of them in the schedule', async () => {
+    renderTeam();
+    const upcoming = await screen.findByTestId('team-upcoming');
+    await waitFor(() => expect(within(upcoming).getByTestId('team-night-n1')).toHaveTextContent('Halloween'));
+    expect(within(upcoming).queryByTestId('team-night-n2')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('team-tab-schedule'));
+    expect(await screen.findByTestId('team-night-n2')).toHaveTextContent('Music');
+    expect(screen.getByTestId('team-night-n1')).toHaveTextContent('Michal');
   });
 
   it('adds, renames and removes players', async () => {

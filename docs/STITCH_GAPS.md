@@ -19,7 +19,7 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 | `host-settings` | Host sidebar | Host account / venue settings page | Built (2026-10-24): `/host/settings` — the host name (`PATCH /me`), e-mail and subscription |
 | `notifications` | Host top bar | Notification feed (new teams, disputes) | |
 | `team-ratings` | Host dashboard stat | Teams rate the night after it ends | |
-| `scheduled-sessions` | Host dashboard | Sessions planned ahead (date, venue, table capacity, reservations) | |
+| `scheduled-sessions` | Host dashboard | Sessions planned ahead (date, venue, table capacity, reservations) | Built (2026-10-24), basic data only (date, pub, quiz, note; no capacity or reservations): `/host/schedule`, captains see upcoming nights at their pubs (migration `0022`) |
 | `quiz-default-timer` | Quiz settings | Default answer time stored per quiz | Built (2026-10-24): `quizzes.default_time_limit_seconds`, used for new questions (migration `0018`) |
 | `numeric-unit` | Quiz editor | `unit` column on numeric questions, shown to players and on the projector | Built (2026-10-24): `questions.unit`, shown next to the phone input, on the projector and with the answer (migration `0018`) |
 | `timer-controls` | Control room | Pause / +10 s / host pause — needs a pausable timer in the quiz engine (stopping answers early is built: `POST /sessions/:id/close-answers`) | Built (2026-10-24): `POST /sessions/:id/timer` (pause, resume, extend), migration `0017_live_night_controls.sql` |

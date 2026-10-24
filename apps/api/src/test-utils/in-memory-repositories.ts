@@ -30,6 +30,7 @@ import {
 } from '../data/leagues.repository';
 import { LeagueHostStatus, LeagueTeamStatus } from '@quizicius/shared-types';
 import { NewPub, PubRecord, PubsRepository, pubKey, TeamPubRecord } from '../data/pubs.repository';
+import { ScheduledNightInput, ScheduledNightRecord, ScheduledNightsRepository } from '../data/scheduled-nights.repository';
 
 export class InMemorySessionsRepository extends SessionsRepository {
   private rows = new Map<string, SessionRecord>();
@@ -645,5 +646,41 @@ export class InMemoryLeaguesRepository extends LeaguesRepository {
     for (const [teamId, entry] of this.teamPubs) if (entry.pubIds.some((id) => pubIds.includes(id))) ids.add(teamId);
     for (const [teamId, pubs] of this.playedAt) if (pubs.some((id) => pubIds.includes(id))) ids.add(teamId);
     return [...ids].map((id) => ({ registeredTeamId: id, primaryPubId: this.teamPubs.get(id)?.primary ?? null }));
+  }
+}
+
+export class InMemoryScheduledNightsRepository extends ScheduledNightsRepository {
+  readonly rows = new Map<string, ScheduledNightRecord>();
+
+  async findById(id: string): Promise<ScheduledNightRecord | null> {
+    return this.rows.get(id) ?? null;
+  }
+
+  async listByHost(hostId: string, from: string): Promise<ScheduledNightRecord[]> {
+    return this.sorted([...this.rows.values()].filter((row) => row.host_id === hostId && row.starts_at >= from));
+  }
+
+  async listByPubs(pubIds: string[], from: string): Promise<ScheduledNightRecord[]> {
+    return this.sorted([...this.rows.values()].filter((row) => pubIds.includes(row.pub_id) && row.starts_at >= from));
+  }
+
+  async create(hostId: string, input: ScheduledNightInput): Promise<ScheduledNightRecord> {
+    const record: ScheduledNightRecord = { id: randomUUID(), host_id: hostId, ...input, created_at: new Date().toISOString() };
+    this.rows.set(record.id, record);
+    return record;
+  }
+
+  async update(id: string, input: ScheduledNightInput): Promise<ScheduledNightRecord> {
+    const updated = { ...this.rows.get(id)!, ...input };
+    this.rows.set(id, updated);
+    return updated;
+  }
+
+  async remove(id: string): Promise<void> {
+    this.rows.delete(id);
+  }
+
+  private sorted(rows: ScheduledNightRecord[]): ScheduledNightRecord[] {
+    return rows.sort((a, b) => a.starts_at.localeCompare(b.starts_at));
   }
 }

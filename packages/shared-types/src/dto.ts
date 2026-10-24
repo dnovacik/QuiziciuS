@@ -128,6 +128,27 @@ export interface LeagueStandingDto {
   placements: number[];
 }
 
+/** A quiz night the host planned ahead (basic data, no reservations). */
+export interface ScheduledNightDto {
+  id: string;
+  /** ISO date-time. */
+  startsAt: string;
+  pub: { id: string; name: string; city: string } | null;
+  quizId: string | null;
+  quizTitle: string | null;
+  note: string | null;
+}
+
+/** A planned night as captains see it, at one of their team's pubs. */
+export interface TeamScheduledNightDto {
+  id: string;
+  startsAt: string;
+  pub: { id: string; name: string; city: string } | null;
+  quizTitle: string | null;
+  note: string | null;
+  hostName: string | null;
+}
+
 /** A pub's table over its finished quiz nights, with league place points (10, 8, 6 …). */
 export interface PubLeaderboardDto {
   pub: { id: string; name: string; city: string };

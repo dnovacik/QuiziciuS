@@ -28,6 +28,7 @@ import { findSessionByCode, normalizeJoinCode } from '../lib/team-seat';
 import { Modal } from '../ui/Modal';
 import { Pending } from '../ui/Pending';
 import { TeamLeagues } from './TeamLeagues';
+import { NightRow, useTeamSchedule } from './TeamSchedule';
 import { inviteUrl, MAX_PLAYERS, profileOf, teamApi, type Player, type RegisteredTeam, type TeamAccess, type TeamProfile } from './api';
 import { NameField } from './OnboardingPage';
 import { BadgePicker, CapacityPicker, ColorPicker, PubsPicker, useNameAvailability, usePubList } from './profile-fields';
@@ -61,6 +62,7 @@ export function TeamDashboard({
   const [adding, setAdding] = useState(false);
   const [sharing, setSharing] = useState(false);
   const access = useTeamAccess(token, team.id);
+  const schedule = useTeamSchedule(token, team.id);
 
   const loadPlayers = useCallback(() => {
     teamApi
@@ -198,15 +200,19 @@ export function TeamDashboard({
 
         <div className="flex flex-col gap-space-lg lg:col-span-7">
           <TeamLeagues token={token} teamId={team.id} card={card} />
-          <Pending feature="scheduled-sessions">
-            <section className={card}>
-              <span className="flex items-center gap-1 text-label-sm uppercase tracking-wider text-secondary">
-                <CalendarCheck className="h-4 w-4" />
-                {t('team.dashboard.upcoming')}
-              </span>
-              <p className="mt-space-xs text-body-sm text-on-surface-variant">{t('team.dashboard.upcomingText')}</p>
-            </section>
-          </Pending>
+          <section className={card} data-testid="team-upcoming">
+            <span className="flex items-center gap-1 text-label-sm uppercase tracking-wider text-secondary">
+              <CalendarCheck className="h-4 w-4" />
+              {t('team.dashboard.upcoming')}
+            </span>
+            {schedule.nights?.length ? (
+              <ul className="mt-space-sm flex flex-col gap-space-xs">
+                <NightRow night={schedule.nights[0]} />
+              </ul>
+            ) : (
+              <p className="mt-space-xs text-body-sm text-on-surface-variant">{schedule.nights ? t('team.schedule.empty') : '…'}</p>
+            )}
+          </section>
           <section
             className={`${card} flex min-h-[320px] flex-col items-center justify-center text-center`}
             data-testid="team-history-empty"

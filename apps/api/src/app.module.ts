@@ -17,6 +17,7 @@ import { SessionsModule } from './sessions/sessions.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { TeamsModule } from './teams/teams.module';
 
+import { ScheduleModule } from './schedule/schedule.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
@@ -35,6 +36,7 @@ import { TeamsModule } from './teams/teams.module';
     RegisteredTeamsModule,
     AccountsModule,
     LeaguesModule,
+    ScheduleModule,
   ],
 })
 export class AppModule {}

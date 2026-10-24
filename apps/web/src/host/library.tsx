@@ -304,12 +304,15 @@ export function StartSessionDialog({
   token,
   quiz,
   choices = [],
+  pubId: plannedPub,
   onClose,
 }: {
   token: string;
   /** The quiz to launch; without it the host picks one of `choices`. */
   quiz?: Quiz;
   choices?: Quiz[];
+  /** The pub to preselect, e.g. the one a scheduled night is planned at. */
+  pubId?: string;
   onClose: () => void;
 }) {
   const { t } = useI18n();
@@ -318,7 +321,7 @@ export function StartSessionDialog({
   const { pubs } = useHostPubs(token);
   const quizPub = (quiz ?? choices.find((choice) => choice.id === picked))?.pub_id ?? '';
   // Follows the picked quiz's default pub until the host chooses one explicitly.
-  const [pubChoice, setPubChoice] = useState<string | null>(null);
+  const [pubChoice, setPubChoice] = useState<string | null>(plannedPub ?? null);
   const pubId = pubChoice ?? quizPub;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

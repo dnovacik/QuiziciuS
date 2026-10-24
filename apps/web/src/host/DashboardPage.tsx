@@ -1,10 +1,11 @@
 import { useState, type ComponentType, type ReactNode } from 'react';
-import { BookOpen, CalendarClock, CirclePlay, CirclePlus, FolderHeart, Radio, Star, Trophy, Zap, type LucideProps } from 'lucide-react';
+import { BookOpen, CirclePlay, CirclePlus, FolderHeart, Radio, Star, Trophy, Zap, type LucideProps } from 'lucide-react';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { Pending } from '../ui/Pending';
 import { CreateQuizDialog } from './HostShell';
 import { QuizLibrary, StartSessionDialog, useHostLibrary } from './library';
+import { ScheduleCard } from './schedule';
 import { LiveSessionCard } from './sessions';
 import { btn, ErrorBanner } from './ui';
 
@@ -134,15 +135,7 @@ export function DashboardPage({ token }: { token: string }) {
               ))
             )}
           </div>
-          <Pending feature="scheduled-sessions">
-            <div className="flex h-full flex-col rounded-2xl bg-surface-container-low/70 p-space-lg shadow-md">
-              <span className="mb-space-sm flex w-fit items-center gap-1 rounded-full bg-secondary-container/20 px-2.5 py-1 text-label-sm uppercase tracking-wide text-secondary">
-                <CalendarClock className="h-3.5 w-3.5" />
-                {t('host.dashboard.scheduled')}
-              </span>
-              <p className="text-body-sm text-on-surface-variant">{t('host.dashboard.scheduledText')}</p>
-            </div>
-          </Pending>
+          <ScheduleCard token={token} quizzes={library.quizzes} />
         </div>
       </section>
 
