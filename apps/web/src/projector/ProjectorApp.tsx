@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CloudOff, RefreshCw, Volume2 } from 'lucide-react';
+import { forwardClickerCommands } from '../lib/clicker';
 import { useI18n } from '../lib/i18n';
 import { useSessionDisplay } from '../lib/use-quiz-title';
 import { usePreloadQuestionMedia } from '../lib/use-current-question-media';
@@ -35,6 +36,9 @@ export default function ProjectorApp() {
       document.removeEventListener('keydown', enable);
     };
   }, [sound]);
+
+  // A clicker plugged into this machine drives the control room open in the same browser.
+  useEffect(() => (sessionId ? forwardClickerCommands(sessionId) : undefined), [sessionId]);
 
   // Realtime events drive the screen; a slow poll covers a dropped websocket on the venue Wi-Fi.
   useEffect(() => {

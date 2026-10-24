@@ -368,6 +368,11 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
               </button>
             ))}
         </div>
+        {status !== 'FINISHED' && (
+          <p className="hidden text-label-sm text-on-surface-variant md:block" data-testid="room-clicker-hint">
+            {t('host.room.clickerHint')}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-space-md rounded-2xl bg-surface-container-low p-space-md shadow-xl lg:col-span-3">

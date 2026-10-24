@@ -654,6 +654,110 @@ describe('control room', () => {
     expect(screen.getByTestId('results-podium-2')).toHaveTextContent('Pub Mozarts');
     expect(screen.queryByTestId('room-end')).not.toBeInTheDocument();
   });
+
+  describe('clicker', () => {
+    const press = (key: string) => fireEvent.keyDown(document.body, { key });
+
+    it('starts from the lobby on the second press, the first one asks', async () => {
+      live.state = liveState('LOBBY');
+      renderRoom();
+      await waitFor(() => expect(screen.getByTestId('room-start')).toBeEnabled());
+
+      press('PageDown');
+      expect(await screen.findByTestId('room-start-dialog')).toBeInTheDocument();
+      expect(apiPost).not.toHaveBeenCalled();
+      press('PageDown');
+      await waitFor(() =>
+        expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'LOCK_IN_ROUND', questionId: 'q1' }, 'jwt'),
+      );
+    });
+
+    it('shows the prepared question', async () => {
+      live.state = liveState('LOCK_IN_ROUND', 'q1');
+      renderRoom();
+      await screen.findByTestId('room-action-show');
+
+      press('ArrowRight');
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'QUESTION_ACTIVE' }, 'jwt'));
+    });
+
+    it('stops answers first and reveals only once they are closed', async () => {
+      live.state = liveState('QUESTION_ACTIVE', 'q1');
+      const view = renderRoom();
+      await screen.findByTestId('room-action-reveal');
+
+      press('PageDown');
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/close-answers', {}, 'jwt'));
+      expect(apiPost).not.toHaveBeenCalledWith('/sessions/s1/transition', { status: 'QUESTION_REVEAL' }, 'jwt');
+
+      live.state = { ...liveState('QUESTION_ACTIVE', 'q1'), questionEndsAt: new Date(Date.now() - 1000).toISOString() };
+      view.refresh();
+      await waitFor(() => expect(screen.getByTestId('room-action-close-answers')).toBeDisabled());
+      press('PageDown');
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'QUESTION_REVEAL' }, 'jwt'));
+    });
+
+    it('calls a break with the blank button and moves on to the next question', async () => {
+      live.state = liveState('QUESTION_REVEAL', 'q1');
+      renderRoom();
+      await waitFor(() => expect(screen.getByTestId('room-question-q2')).toHaveAttribute('data-state', 'next'));
+
+      press('b');
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'PAUSE_BREAK' }, 'jwt'));
+      press('PageDown');
+      await waitFor(() =>
+        expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'LOCK_IN_ROUND', questionId: 'q2' }, 'jwt'),
+      );
+    });
+
+    it('does not end the quiz after the last question', async () => {
+      localStorage.setItem('quizicius:played:s1', JSON.stringify(['q1', 'q2', 'q3']));
+      live.state = liveState('QUESTION_REVEAL', 'q3');
+      renderRoom();
+      await screen.findByTestId('room-action-finish');
+
+      press('PageDown');
+      await act(async () => {});
+      expect(apiPost).not.toHaveBeenCalled();
+    });
+
+    it('plays and pauses the clip with the back button', async () => {
+      db.questions.quiz1[0].media = { kind: 'audio', source: 'link', url: 'https://cdn.example/song.mp3' };
+      live.state = liveState('QUESTION_ACTIVE', 'q1');
+      renderRoom();
+      await screen.findByTestId('room-media-question');
+
+      press('PageUp');
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/media/control', { slot: 'question', action: 'play' }, 'jwt'));
+      act(() => mediaStatus.send!({ questionId: 'q1', slot: 'question', state: 'playing' }));
+      press('PageUp');
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/media/control', { slot: 'question', action: 'pause' }, 'jwt'));
+    });
+
+    it('ignores keys typed into a field', async () => {
+      live.state = liveState('LOCK_IN_ROUND', 'q1');
+      renderRoom();
+      await screen.findByTestId('room-action-show');
+      const input = document.createElement('input');
+      document.body.appendChild(input);
+
+      fireEvent.keyDown(input, { key: 'ArrowRight' });
+      await act(async () => {});
+      expect(apiPost).not.toHaveBeenCalled();
+      input.remove();
+    });
+
+    it('follows presses forwarded by the projector', async () => {
+      live.state = liveState('LOCK_IN_ROUND', 'q1');
+      renderRoom();
+      await screen.findByTestId('room-action-show');
+
+      const projector = new BroadcastChannel('quizicius:clicker:s1');
+      projector.postMessage('next');
+      await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'QUESTION_ACTIVE' }, 'jwt'));
+      projector.close();
+    });
+  });
 });
 
 describe('pubs page', () => {

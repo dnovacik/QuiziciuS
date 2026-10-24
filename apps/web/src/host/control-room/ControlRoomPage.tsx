@@ -13,6 +13,7 @@ import { QuestionPanel } from './QuestionPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { ReviewPanel } from './ReviewPanel';
 import { useControlRoom } from './use-control-room';
+import { useRoomClicker } from './use-room-clicker';
 
 type Tab = 'lobby' | 'question' | 'review' | 'results';
 
@@ -41,6 +42,7 @@ export function ControlRoomPage({ token }: { token: string }) {
   const [tab, setTab] = useState<Tab>('lobby');
   const [ending, setEnding] = useState(false);
   const now = useNow();
+  useRoomClicker(room, sessionId, !ending);
 
   // Follow the game: every state change brings the matching tab to the front.
   useEffect(() => {

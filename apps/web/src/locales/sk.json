@@ -451,6 +451,7 @@
   "host.room.pause": "Prestávka",
   "host.room.next": "Ďalšia otázka",
   "host.room.finishQuiz": "Ukončiť kvíz a vyhlásiť výsledky",
+  "host.room.clickerHint": "Klikátko: → / PgDn ďalší krok · B alebo . prestávka · ← / PgUp prehrať/pozastaviť klip",
   "host.room.submitted": "Odovzdané odpovede",
   "host.room.thinking": "Rozmýšľa…",
   "host.room.top3": "Top 3",

@@ -44,6 +44,12 @@ built web app on port 5199, opens the ngrok tunnel and prints the links:
 - Keep the laptop on power and stop it from sleeping; a sleeping laptop ends the night for everyone.
 - Question pictures and videos load during the lock-in, so they appear without a gap; sound plays
   from the projector.
+- **Presentation clicker:** plug it into the laptop and open the projector from the control room, in
+  the same browser. Forward steps the night (prepare → show → stop answers → reveal → next
+  question; in the lobby it asks first), back plays or pauses the clip, the blank button calls a
+  break, and the slideshow button puts the projector into fullscreen. It works with either window
+  focused; ending the quiz stays a click in the control room. Check the clicker's keys once on
+  keyboard-tester.com — Page Up/Down, arrows, media keys, B and "." are understood.
 
 ## If something goes wrong
 
