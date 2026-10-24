@@ -15,11 +15,11 @@ import {
 } from 'lucide-react';
 import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto } from '@quizicius/shared-types';
 import { apiPost } from '../lib/api-client';
+import { downloadCertificate } from '../lib/certificate';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { correctAnswerText, optionLetter, rankTeams, type RankedTeam } from '../lib/quiz';
 import { useCurrentQuestionMedia } from '../lib/use-current-question-media';
-import { Pending } from '../ui/Pending';
 import { ProjectorMediaCard } from '../ui/ProjectorMediaCard';
 import { PlayerShell } from './PlayerShell';
 import { StandingRow } from './parts';
@@ -256,19 +256,49 @@ export function ResultsScreen({
   state,
   teamId,
   title,
+  pub = null,
   onExit,
 }: {
   state: QuizSessionStateDto;
   teamId: string;
   title: string | null;
+  /** The pub the night was played at, for the certificate. */
+  pub?: string | null;
   onExit: () => void;
 }) {
-  const { t, plural } = useI18n();
+  const { t, plural, locale } = useI18n();
+  const [making, setMaking] = useState(false);
   const ranked = rankTeams(state.teams);
   const own = ranked.find((team) => team.id === teamId);
   const [showAll, setShowAll] = useState(false);
   const [shared, setShared] = useState(false);
   const visible = showAll ? ranked : ranked.slice(0, 3);
+
+  /** The team's result as an A4 PDF certificate. */
+  async function certificate() {
+    if (!own || making) return;
+    setMaking(true);
+    try {
+      const teams = ranked.length;
+      const today = new Date().toLocaleDateString(locale === 'sk' ? 'sk-SK' : 'en-GB', { dateStyle: 'long' });
+      await downloadCertificate({
+        heading: t('play.results.certificateHeading'),
+        teamName: own.name,
+        // "2. miesto z 14": no noun after the count, which would need its own grammar case.
+        placeLine: `${own.rank}. ${t('play.results.place')} ${t('play.results.of')} ${teams}`,
+        scoreLine: `${own.score} ${plural('count.points', own.score)}`,
+        details: [title, pub, today].filter((line): line is string => Boolean(line)),
+        fileName: `quizicius-${
+          own.name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '') || 'team'
+        }.pdf`,
+      });
+    } finally {
+      setMaking(false);
+    }
+  }
 
   async function share() {
     if (!own) return;
@@ -368,15 +398,18 @@ export function ResultsScreen({
             <Home className="h-[18px] w-[18px] text-secondary" />
             {t('play.results.home')}
           </button>
-          <Pending feature="result-certificate">
+          {own && (
             <button
               type="button"
-              className="flex h-12 w-full items-center justify-center gap-1.5 rounded-lg bg-surface-container-high px-2 text-label-md text-on-surface"
+              disabled={making}
+              onClick={() => void certificate()}
+              className="flex h-12 w-full items-center justify-center gap-1.5 rounded-lg bg-surface-container-high px-2 text-label-md text-on-surface disabled:opacity-50"
+              data-testid="player-certificate"
             >
               <Download className="h-[18px] w-[18px] text-tertiary" />
-              {t('play.results.certificate')}
+              {making ? t('common.working') : t('play.results.certificate')}
             </button>
-          </Pending>
+          )}
         </div>
       </section>
     </PlayerShell>

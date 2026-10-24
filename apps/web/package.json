@@ -10,6 +10,7 @@
   "dependencies": {
     "@quizicius/shared-types": "workspace:*",
     "@supabase/supabase-js": "^2.43.0",
+    "jspdf": "4.2.1",
     "jsqr": "1.4.0",
     "lucide-react": "^0.372.0",
     "qrcode.react": "4.2.0",

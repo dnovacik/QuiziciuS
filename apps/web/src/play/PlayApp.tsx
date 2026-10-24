@@ -76,7 +76,7 @@ function Game({ seat }: { seat: TeamSeat }) {
     case 'PAUSE_BREAK':
       return <PauseScreen state={state} teamId={seat.teamId} />;
     case 'FINISHED':
-      return <ResultsScreen state={state} teamId={seat.teamId} title={title} onExit={() => navigate('/')} />;
+      return <ResultsScreen state={state} teamId={seat.teamId} title={title} pub={display.pub} onExit={() => navigate('/')} />;
     case 'QUESTION_REVEAL':
       return question ? (
         <RevealScreen

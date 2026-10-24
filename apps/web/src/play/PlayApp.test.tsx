@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiGet, apiPost } from '../lib/api-client';
+import { downloadCertificate } from '../lib/certificate';
 import { I18nProvider } from '../lib/i18n';
 import { clearQuestionMediaCache } from '../lib/use-current-question-media';
 import PlayApp from './PlayApp';
@@ -13,6 +14,7 @@ vi.mock('../lib/api-client', async (importOriginal) => ({
   apiPost: vi.fn(),
 }));
 vi.mock('../lib/supabase-client', () => ({ subscribeToSession: vi.fn(() => vi.fn()) }));
+vi.mock('../lib/certificate', () => ({ downloadCertificate: vi.fn().mockResolvedValue(undefined) }));
 
 const session = vi.hoisted(() => ({
   state: null as QuizSessionStateDto | null,
@@ -565,6 +567,22 @@ describe('reveal and results', () => {
 
     await act(async () => fireEvent.click(screen.getByTestId('player-exit')));
     expect(screen.getByText('home page')).toBeInTheDocument();
+  });
+
+  it("downloads the team's certificate with its place, score and the night", async () => {
+    setState('FINISHED');
+    renderPlay();
+
+    await act(async () => fireEvent.click(screen.getByTestId('player-certificate')));
+
+    expect(downloadCertificate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        teamName: 'Wise Ducks',
+        placeLine: '2. miesto z 4',
+        scoreLine: '6 bodov',
+        fileName: 'quizicius-wise-ducks.pdf',
+      }),
+    );
   });
 });
 
