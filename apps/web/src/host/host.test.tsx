@@ -10,6 +10,7 @@ import { ControlRoomPage } from './control-room/ControlRoomPage';
 import { DashboardPage } from './DashboardPage';
 import { QuizEditorPage } from './editor/QuizEditorPage';
 import { PubsPage } from './pubs';
+import { SessionsPage } from './SessionsPage';
 import { SettingsPage } from './SettingsPage';
 import { RemotePage } from './control-room/RemotePage';
 import { ToastProvider } from './ui';
@@ -224,6 +225,7 @@ function renderAt(path: string, element: React.ReactNode, routePath: string) {
             <Route path={routePath} element={element} />
             <Route path="/host/sessions/:sessionId" element={<p>control room for session</p>} />
             <Route path="/host/quizzes/:quizId" element={<p>editor opened</p>} />
+            <Route path="/host/sessions" element={<p>sessions list</p>} />
           </Routes>
         </MemoryRouter>
       </ToastProvider>
@@ -793,6 +795,16 @@ describe('control room', () => {
     expect(apiPost).toHaveBeenCalledWith('/answers/d1/resolve-dispute', { decision: 'APPROVE' }, 'jwt');
   });
 
+  it('archives the finished night and goes back to the sessions list', async () => {
+    live.state = liveState('FINISHED', 'q3');
+    vi.mocked(apiPost).mockResolvedValue({});
+    renderRoom();
+
+    fireEvent.click(await screen.findByTestId('results-archive'));
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/archive', { archived: true }, 'jwt'));
+    expect(await screen.findByText('sessions list')).toBeInTheDocument();
+  });
+
   it('shows the final podium when the quiz is finished', async () => {
     live.state = liveState('FINISHED', 'q3');
     renderRoom();
@@ -976,6 +988,24 @@ describe('phone remote', () => {
 
     fireEvent.click(await screen.findByTestId('room-remote'));
     expect(screen.getByTestId('room-remote-url')).toHaveTextContent('/host/remote/s1');
+  });
+});
+
+describe('sessions page', () => {
+  it('hides archived nights until asked, and brings one back', async () => {
+    db.sessions = [
+      { ...session('s1', 'FINISHED'), finished_at: '2026-10-20T22:00:00Z' },
+      { ...session('s2', 'FINISHED'), finished_at: '2026-10-13T22:00:00Z', archived_at: '2026-10-14T09:00:00Z' },
+    ];
+    vi.mocked(apiPost).mockResolvedValue({});
+    renderAt('/host/sessions', <SessionsPage token="jwt" />, '/host/sessions');
+
+    expect(await screen.findByTestId('history-s1')).toBeInTheDocument();
+    expect(screen.queryByTestId('history-s2')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('sessions-show-archived'));
+    fireEvent.click(await screen.findByTestId('history-archive-s2'));
+
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s2/archive', { archived: false }, 'jwt'));
   });
 });
 

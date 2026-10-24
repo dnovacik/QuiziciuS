@@ -46,6 +46,7 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
   const sessions: SessionsRepository = {
     listByHost: jest.fn(),
     listByLeague: jest.fn(),
+    listFinishedByPub: jest.fn(),
     create: jest.fn(),
     findById: jest.fn().mockResolvedValue(session),
     findByJoinCode: jest.fn().mockResolvedValue(session),
@@ -321,6 +322,20 @@ describe('QuizEngineService played questions', () => {
 
     (sessions.findById as jest.Mock).mockResolvedValue(shown);
     expect((await service.getState('s1')).playedQuestionIds).toEqual(['q1', 'q2']);
+  });
+});
+
+describe('QuizEngineService.setArchived', () => {
+  it('files a finished night away and brings it back', async () => {
+    const { service } = buildHarness({ session: { status: 'FINISHED' } });
+    expect((await service.setArchived('s1', 'host1', true)).archived_at).not.toBeNull();
+    expect((await service.setArchived('s1', 'host1', false)).archived_at).toBeNull();
+  });
+
+  it("refuses a night that is still running, or someone else's", async () => {
+    const { service } = buildHarness({ session: { status: 'QUESTION_ACTIVE' } });
+    await expect(service.setArchived('s1', 'host1', true)).rejects.toMatchObject({ response: { code: 'NOT_FINISHED' } });
+    await expect(service.setArchived('s1', 'other', true)).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
 

@@ -33,6 +33,8 @@ export interface HostSession {
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
+  /** A finished night the host filed away. */
+  archived_at?: string | null;
 }
 
 export interface QuestionOption {
@@ -137,6 +139,9 @@ export const hostApi = {
   mediaControl: (token: string, sessionId: string, slot: MediaSlot, action: MediaAction) =>
     apiPost(`/sessions/${sessionId}/media/control`, { slot, action }, token),
   /** Ends answering for the open question now (untimed, or a timed one early). */
+  /** Files a finished night away from the sessions list, or brings it back. */
+  archiveSession: (token: string, sessionId: string, archived: boolean) =>
+    apiPost<HostSession>(`/sessions/${sessionId}/archive`, { archived }, token),
   closeAnswers: (token: string, sessionId: string) => apiPost(`/sessions/${sessionId}/close-answers`, {}, token),
   listAnswers: (token: string, sessionId: string, questionId?: string) =>
     apiGet<AnswerSummaryDto[]>(`/host/sessions/${sessionId}/answers${questionId ? `?questionId=${questionId}` : ''}`, token),

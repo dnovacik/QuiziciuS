@@ -364,3 +364,35 @@ describe('LeaguesService', () => {
     });
   });
 });
+
+describe('LeaguesService.pubLeaderboard', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('ranks every registered team that played at the pub with the league place points, this year or all time', async () => {
+    jest.useFakeTimers({ now: new Date('2027-03-01T12:00:00Z'), doNotFake: ['nextTick', 'setImmediate'] });
+    const { service, sessions, hoffman, mamut, team, night } = await build();
+    const ducks = await team('Wise Ducks', hoffman);
+    const owls = await team('Night Owls', hoffman);
+    await night('', hoffman, { [ducks]: 30, [owls]: 20 }, [40]);
+    await night('', hoffman, { [ducks]: 10, [owls]: 25 });
+    await night('', mamut, { [owls]: 50 });
+    const last = await night('', hoffman, { [owls]: 99 });
+    await sessions.updateStatus(last, { finished_at: '2026-12-01T22:00:00Z' });
+
+    const year = await service.pubLeaderboard(hoffman, 'year');
+    expect(year.nights).toBe(2);
+    expect(year.standings.map((row) => [row.teamName, row.points, row.nights])).toEqual([
+      ['Night Owls', 18, 2],
+      ['Wise Ducks', 18, 2],
+    ]);
+
+    const all = await service.pubLeaderboard(hoffman, 'all');
+    expect(all.nights).toBe(3);
+    expect(all.standings[0]).toMatchObject({ teamName: 'Night Owls', points: 28, rank: 1 });
+  });
+
+  it('refuses an unknown pub', async () => {
+    const { service } = await build();
+    await expect(service.pubLeaderboard('nope', 'all')).rejects.toMatchObject({ response: { code: 'PUB_NOT_FOUND' } });
+  });
+});

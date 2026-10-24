@@ -128,6 +128,15 @@ export interface LeagueStandingDto {
   placements: number[];
 }
 
+/** A pub's table over its finished quiz nights, with league place points (10, 8, 6 …). */
+export interface PubLeaderboardDto {
+  pub: { id: string; name: string; city: string };
+  /** `year`: this calendar year; `all`: every night at the pub. */
+  period: 'year' | 'all';
+  nights: number;
+  standings: LeagueStandingDto[];
+}
+
 export interface LeagueSummaryDto {
   id: string;
   name: string;

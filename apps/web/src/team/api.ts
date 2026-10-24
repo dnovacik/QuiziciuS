@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
-import type { AccountDto, TeamLeagueDto } from '@quizicius/shared-types';
+import type { AccountDto, PubLeaderboardDto, TeamLeagueDto } from '@quizicius/shared-types';
 import type { Pub } from '../lib/pubs';
 import { saveSeat, type TeamSeat } from '../lib/team-seat';
 
@@ -78,6 +78,9 @@ export const teamApi = {
     apiPatch<Player>(`/registered-teams/${teamId}/players/${playerId}`, { name: name.trim() }, token),
   removePlayer: (token: string, teamId: string, playerId: string) => apiDelete(`/registered-teams/${teamId}/players/${playerId}`, token),
   leagues: (token: string, teamId: string) => apiGet<TeamLeagueDto[]>(`/registered-teams/${teamId}/leagues`, token),
+  /** A pub's table over its finished quiz nights: this year, or all of them. */
+  pubLeaderboard: (token: string, pubId: string, period: 'year' | 'all') =>
+    apiGet<PubLeaderboardDto>(`/registered-teams/pubs/${pubId}/leaderboard?period=${period}`, token),
   respondToLeague: (token: string, teamId: string, leagueId: string, join: boolean) =>
     apiPost<TeamLeagueDto>(`/registered-teams/${teamId}/leagues/${leagueId}/${join ? 'join' : 'decline'}`, {}, token),
   /** Links the phone's one-off team (its seat) to this registered team; the seat keeps its token. */

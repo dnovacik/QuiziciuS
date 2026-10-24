@@ -20,6 +20,8 @@ export interface SessionRecord {
   break_message: string | null;
   /** Questions shown so far, in order; every device running the night picks the next from this. */
   played_question_ids?: string[];
+  /** A finished night the host filed away; hidden from the sessions list by default. */
+  archived_at?: string | null;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -35,6 +37,7 @@ export type SessionStatusPatch = Partial<
     | 'break_ends_at'
     | 'break_message'
     | 'played_question_ids'
+    | 'archived_at'
     | 'started_at'
     | 'finished_at'
   >
@@ -50,6 +53,8 @@ export abstract class SessionsRepository {
   ): Promise<SessionRecord>;
   /** Every quiz night ticked for the league, oldest first. */
   abstract listByLeague(leagueId: string): Promise<SessionRecord[]>;
+  /** Finished quiz nights played at the pub, oldest first. */
+  abstract listFinishedByPub(pubId: string): Promise<SessionRecord[]>;
   abstract findById(id: string): Promise<SessionRecord | null>;
   abstract listByHost(hostId: string): Promise<SessionRecord[]>;
   /**
@@ -102,6 +107,18 @@ export class SupabaseSessionsRepository extends SessionsRepository {
       .select()
       .eq('league_id', leagueId)
       .order('created_at', { ascending: true });
+    if (error) throw new InternalServerErrorException(error.message);
+    return (data ?? []) as SessionRecord[];
+  }
+
+  async listFinishedByPub(pubId: string): Promise<SessionRecord[]> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('quiz_sessions')
+      .select()
+      .eq('pub_id', pubId)
+      .eq('status', 'FINISHED')
+      .order('finished_at', { ascending: true });
     if (error) throw new InternalServerErrorException(error.message);
     return (data ?? []) as SessionRecord[];
   }

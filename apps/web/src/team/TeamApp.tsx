@@ -12,6 +12,7 @@ import { Logo } from '../ui/Logo';
 import { Pending } from '../ui/Pending';
 import { teamApi, type RegisteredTeam } from './api';
 import { OnboardingPage } from './OnboardingPage';
+import { PubLeaderboard } from './PubLeaderboard';
 import { TeamDashboard } from './TeamDashboard';
 
 /** /team — the captain's area: onboarding until a team exists, then the team dashboard. */
@@ -24,6 +25,7 @@ export default function TeamApp() {
   const navigate = useNavigate();
   // A one-off team that chose to register on a league night: link its seat once a team exists.
   const [claim] = useState(pendingClaim);
+  const [view, setView] = useState<TeamView>('team');
   const [claimError, setClaimError] = useState<{ message: string; sessionId: string } | null>(null);
   const team0 = teams?.[0] ?? null;
   useEffect(() => {
@@ -75,7 +77,7 @@ export default function TeamApp() {
   const metadata = session.user.user_metadata as { team_name?: string; expected_members?: number };
 
   return (
-    <TeamShell captain={ownName ?? email} teamName={team?.name ?? null}>
+    <TeamShell captain={ownName ?? email} teamName={team?.name ?? null} view={team ? view : null} onView={setView}>
       {error && (
         <p role="alert" className="mx-auto mb-space-md max-w-7xl rounded-xl bg-error-container/30 p-space-md text-on-error-container">
           {error}
@@ -93,7 +95,9 @@ export default function TeamApp() {
           </Link>
         </p>
       )}
-      {team ? (
+      {team && view === 'leaderboard' ? (
+        <PubLeaderboard token={token} team={team} />
+      ) : team ? (
         <TeamDashboard
           token={token}
           team={team}
@@ -118,8 +122,36 @@ export default function TeamApp() {
 }
 
 /** Header from the Stitch captain screens: logo, team-area navigation, language and the captain chip. */
-function TeamShell({ captain, teamName, children }: { captain: string | null; teamName: string | null; children: ReactNode }) {
+type TeamView = 'team' | 'leaderboard';
+
+function TeamShell({
+  captain,
+  teamName,
+  view = null,
+  onView = () => {},
+  children,
+}: {
+  captain: string | null;
+  teamName: string | null;
+  /** The page shown; null hides the team navigation (signed out, or no team yet). */
+  view?: TeamView | null;
+  onView?: (view: TeamView) => void;
+  children: ReactNode;
+}) {
   const { t } = useI18n();
+  const tab = (value: TeamView, label: string, testId: string) => (
+    <button
+      type="button"
+      aria-current={view === value ? 'page' : undefined}
+      onClick={() => onView(value)}
+      data-testid={testId}
+      className={`rounded-xl px-space-md py-space-sm text-label-lg transition-colors ${
+        view === value ? 'bg-primary-container text-on-primary-container' : 'text-on-surface-variant hover:text-on-surface'
+      }`}
+    >
+      {label}
+    </button>
+  );
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-surface-container-lowest text-on-surface" data-testid="team-app">
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -134,15 +166,17 @@ function TeamShell({ captain, teamName, children }: { captain: string | null; te
             className="hidden items-center gap-space-xs rounded-2xl bg-surface-container-low/70 p-1.5 lg:flex"
             aria-label={t('team.nav.label')}
           >
-            <Pending feature="pub-leaderboard" badge="inline">
-              <span className="rounded-xl px-space-md py-space-sm text-label-lg text-on-surface-variant">{t('team.nav.leaderboard')}</span>
-            </Pending>
-            <span
-              aria-current="page"
-              className="rounded-xl bg-primary-container px-space-md py-space-sm text-label-lg text-on-primary-container"
-            >
-              {t('team.nav.myTeam')}
-            </span>
+            {view && tab('leaderboard', t('team.nav.leaderboard'), 'team-nav-leaderboard')}
+            {view ? (
+              tab('team', t('team.nav.myTeam'), 'team-nav-team')
+            ) : (
+              <span
+                aria-current="page"
+                className="rounded-xl bg-primary-container px-space-md py-space-sm text-label-lg text-on-primary-container"
+              >
+                {t('team.nav.myTeam')}
+              </span>
+            )}
             <Pending feature="scheduled-sessions" badge="inline">
               <span className="rounded-xl px-space-md py-space-sm text-label-lg text-on-surface-variant">{t('team.nav.schedule')}</span>
             </Pending>
@@ -188,7 +222,19 @@ function TeamShell({ captain, teamName, children }: { captain: string | null; te
           </div>
         </div>
       </header>
-      <main className="relative z-10 w-full px-space-md pb-space-xl pt-28 sm:px-space-lg">{children}</main>
+      <main className="relative z-10 w-full px-space-md pb-space-xl pt-28 sm:px-space-lg">
+        {view && (
+          // Phones have no room for the header navigation: the same tabs sit above the page.
+          <nav
+            className="mx-auto mb-space-md flex w-fit gap-space-xs rounded-2xl bg-surface-container-low/70 p-1.5 lg:hidden"
+            aria-label={t('team.nav.label')}
+          >
+            {tab('team', t('team.nav.myTeam'), 'team-tab-team')}
+            {tab('leaderboard', t('team.nav.leaderboard'), 'team-tab-leaderboard')}
+          </nav>
+        )}
+        {children}
+      </main>
     </div>
   );
 }
