@@ -472,6 +472,15 @@ export class InMemoryRegisteredTeamsRepository extends RegisteredTeamsRepository
     return [...this.rows.values()].some((row) => row.normalized_name === normalized);
   }
 
+  async findByName(name: string): Promise<RegisteredTeamRecord | null> {
+    const normalized = name.trim().toLowerCase();
+    return [...this.rows.values()].find((row) => row.normalized_name === normalized) ?? null;
+  }
+
+  async findByInviteToken(token: string): Promise<RegisteredTeamRecord | null> {
+    return [...this.rows.values()].find((row) => row.invite_token === token) ?? null;
+  }
+
   async create(team: NewRegisteredTeam): Promise<RegisteredTeamRecord> {
     this.assertNameFree(team.name);
     const record: RegisteredTeamRecord = {

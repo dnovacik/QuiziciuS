@@ -344,4 +344,67 @@ describe('RegisteredTeamsService', () => {
       await expect(service.claimSeat(CAPTAIN, team.id, session.id, foreign.token)).rejects.toMatchObject({ status: 403 });
     });
   });
+
+  describe('team access', () => {
+    it('creates a PIN and invite link once, and replaces either on request', async () => {
+      const { service } = build();
+      const team = await service.create(CAPTAIN, dto());
+
+      const first = await service.access(CAPTAIN, team.id);
+      expect(first.pin).toMatch(/^\d{6}$/);
+      expect(first.inviteToken.length).toBeGreaterThanOrEqual(16);
+      expect(await service.access(CAPTAIN, team.id)).toEqual(first);
+
+      const rotated = await service.rotateAccess(CAPTAIN, team.id, 'invite');
+      expect(rotated.pin).toBe(first.pin);
+      expect(rotated.inviteToken).not.toBe(first.inviteToken);
+      await expect(service.access(OTHER_CAPTAIN, team.id)).rejects.toMatchObject({ status: 404 });
+    });
+
+    it('lets a teammate join the roster through the invite link, until it is replaced', async () => {
+      const { service } = build();
+      const team = await service.create(CAPTAIN, dto());
+      const { inviteToken } = await service.access(CAPTAIN, team.id);
+
+      expect(await service.invitePreview(inviteToken)).toMatchObject({ name: 'Wise Ducks', rosterSize: 0 });
+      await service.joinRosterByInvite(inviteToken, 'Jana');
+      expect((await service.players(CAPTAIN, team.id)).map((player) => player.name)).toEqual(['Jana']);
+
+      await service.rotateAccess(CAPTAIN, team.id, 'invite');
+      await expect(service.joinRosterByInvite(inviteToken, 'Peter')).rejects.toMatchObject({ response: { code: 'INVITE_NOT_FOUND' } });
+    });
+
+    it('lets a phone with the PIN play a quiz night as the registered team', async () => {
+      const { service, sessions } = build();
+      const team = await service.create(CAPTAIN, dto());
+      const { pin } = await service.access(CAPTAIN, team.id);
+      const session = await sessions.create('quiz-1', HOST, 'AB12');
+
+      const joined = await service.joinSessionWithPin(session.id, ' wise ducks ', pin, '4');
+
+      expect(joined.name).toBe('Wise Ducks');
+      await expect(service.joinSessionWithPin(session.id, 'Wise Ducks', '000000', null)).rejects.toMatchObject({
+        response: { code: 'WRONG_PIN' },
+      });
+      await expect(service.joinSessionWithPin(session.id, 'Nobody', pin, null)).rejects.toMatchObject({
+        response: { code: 'TEAM_NOT_REGISTERED' },
+      });
+    });
+
+    it('locks the PIN after too many wrong tries', async () => {
+      const { service, sessions } = build();
+      const team = await service.create(CAPTAIN, dto());
+      const { pin } = await service.access(CAPTAIN, team.id);
+      const session = await sessions.create('quiz-1', HOST, 'AB12');
+      const wrong = pin === '111111' ? '222222' : '111111';
+
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await expect(service.joinSessionWithPin(session.id, 'Wise Ducks', wrong, null)).rejects.toMatchObject({ status: 403 });
+      }
+      await expect(service.joinSessionWithPin(session.id, 'Wise Ducks', pin, null)).rejects.toMatchObject({
+        status: 429,
+        response: { code: 'TOO_MANY_ATTEMPTS' },
+      });
+    });
+  });
 });

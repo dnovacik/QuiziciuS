@@ -24,6 +24,8 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 | `numeric-unit` | Quiz editor | `unit` column on numeric questions, shown to players and on the projector | Built (2026-10-24): `questions.unit`, shown next to the phone input, on the projector and with the answer (migration `0018`) |
 | `timer-controls` | Control room | Pause / +10 s / host pause — needs a pausable timer in the quiz engine (stopping answers early is built: `POST /sessions/:id/close-answers`) | Built (2026-10-24): `POST /sessions/:id/timer` (pause, resume, extend), migration `0017_live_night_controls.sql` |
 | `session-archive` | Control room results | Archiving into league tables, deactivating the code | |
+| `team-invite-link` | Team dashboard, add player | Invite link or e-mail for teammates to join a registered team | Built (2026-10-24): invite link (`/join-team/:token`), teammates add their name to the roster without an account; no e-mail sending (migration `0020`) |
+| `team-access-pin` | Team dashboard roster | Team PIN so teammates can play as the registered team | Built (2026-10-24): 6-digit PIN, `POST /team-access/sessions/:id/join`; 10 wrong tries per 15 min lock it (migration `0020`) |
 
 ## Data the designs show but the API does not provide
 

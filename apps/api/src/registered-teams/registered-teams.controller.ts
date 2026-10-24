@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { RequireRole } from '../auth/require-role';
-import { ClaimSeatDto, EditTeamDto, PlayerDto, RegisterTeamDto } from './dto/registered-team.dto';
+import { ClaimSeatDto, EditTeamDto, PinJoinDto, PlayerDto, RegisterTeamDto, RotateAccessDto } from './dto/registered-team.dto';
 import { RegisteredTeamsService } from './registered-teams.service';
 
 @Controller('registered-teams')
@@ -27,6 +27,17 @@ export class RegisteredTeamsController {
   @Patch(':id')
   update(@CurrentHost() user: CurrentHostPayload, @Param('id') id: string, @Body() dto: EditTeamDto) {
     return this.teams.update(user.id, id, dto);
+  }
+
+  /** The team PIN and invite link secret (created on first use). */
+  @Get(':id/access')
+  access(@CurrentHost() user: CurrentHostPayload, @Param('id') id: string) {
+    return this.teams.access(user.id, id);
+  }
+
+  @Post(':id/access/rotate')
+  rotateAccess(@CurrentHost() user: CurrentHostPayload, @Param('id') id: string, @Body() dto: RotateAccessDto) {
+    return this.teams.rotateAccess(user.id, id, dto.what);
   }
 
   @Post(':id/sessions/:sessionId/join')
@@ -82,5 +93,29 @@ export class RegisteredTeamsController {
   @Delete(':id/players/:playerId')
   removePlayer(@CurrentHost() user: CurrentHostPayload, @Param('id') id: string, @Param('playerId') playerId: string) {
     return this.teams.removePlayer(user.id, id, playerId);
+  }
+}
+
+/**
+ * Public: teammates without accounts reach their registered team through the captain's invite
+ * link (to get on the roster) or the team PIN (to play a quiz night as the team).
+ */
+@Controller('team-access')
+export class TeamAccessController {
+  constructor(private readonly teams: RegisteredTeamsService) {}
+
+  @Get('invite/:token')
+  invite(@Param('token') token: string) {
+    return this.teams.invitePreview(token);
+  }
+
+  @Post('invite/:token/players')
+  joinRoster(@Param('token') token: string, @Body() dto: PlayerDto) {
+    return this.teams.joinRosterByInvite(token, dto.name);
+  }
+
+  @Post('sessions/:sessionId/join')
+  joinWithPin(@Param('sessionId') sessionId: string, @Body() dto: PinJoinDto) {
+    return this.teams.joinSessionWithPin(sessionId, dto.name, dto.pin, dto.tableNumber?.trim() || null);
   }
 }
