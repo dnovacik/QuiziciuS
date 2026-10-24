@@ -70,7 +70,10 @@ export function useControlRoom(token: string, sessionId: string) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { played, markPlayed } = usePlayedQuestions(sessionId);
+  const { played: playedHere, markPlayed } = usePlayedQuestions(sessionId);
+  // The session's own list wins; the local one covers a server that does not send it yet.
+  const serverPlayed = state?.playedQuestionIds;
+  const played = useMemo(() => [...new Set([...(serverPlayed ?? []), ...playedHere])], [serverPlayed, playedHere]);
   const [breakOptions, setBreakOptions] = useBreakOptions();
 
   useEffect(() => {

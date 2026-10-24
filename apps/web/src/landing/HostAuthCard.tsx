@@ -1,5 +1,5 @@
 import { forwardRef, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Crown, Eye, EyeOff, Info, Lock, Mail, Users } from 'lucide-react';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
@@ -22,6 +22,7 @@ export const HostAuthCard = forwardRef<HTMLDivElement, { highlighted: boolean; o
 ) {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,7 +45,8 @@ export const HostAuthCard = forwardRef<HTMLDivElement, { highlighted: boolean; o
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate('/host');
+        // A deep link into the host app (e.g. the phone remote) stays where it was opened.
+        navigate(location.pathname.startsWith('/host/') ? location.pathname : '/host');
       } else {
         // The link signs the user in on /host, where the set-password screen takes over.
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/host` });

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   ArrowLeft,
   ClipboardCheck,
@@ -9,6 +10,7 @@ import {
   MonitorPlay,
   PauseCircle,
   PlayCircle,
+  Smartphone,
   Timer,
   Trophy,
   Tv,
@@ -19,6 +21,7 @@ import { useI18n } from '../../lib/i18n';
 import { secondsLeft, useNow } from '../../lib/quiz';
 import { LanguageSwitcher } from '../../ui/LanguageSwitcher';
 import { LogoMark } from '../../ui/Logo';
+import { Modal } from '../../ui/Modal';
 import { btn, ConfirmDialog, ErrorBanner } from '../ui';
 import { LobbyPanel } from './LobbyPanel';
 import { QuestionPanel } from './QuestionPanel';
@@ -53,6 +56,7 @@ export function ControlRoomPage({ token }: { token: string }) {
   const { state } = room;
   const [tab, setTab] = useState<Tab>('lobby');
   const [ending, setEnding] = useState(false);
+  const [remoteOpen, setRemoteOpen] = useState(false);
   const now = useNow();
   useRoomClicker(room, sessionId, !ending);
 
@@ -105,6 +109,16 @@ export function ControlRoomPage({ token }: { token: string }) {
               <MonitorPlay className="h-[18px] w-[18px] text-secondary" />
               {t('host.session.projector')}
             </a>
+            <button
+              type="button"
+              className={`${btn.secondary} px-space-sm py-1.5`}
+              onClick={() => setRemoteOpen(true)}
+              data-testid="room-remote"
+              aria-label={t('host.remote.open')}
+            >
+              <Smartphone className="h-[18px] w-[18px] text-secondary" />
+              <span className="hidden lg:inline">{t('host.remote.open')}</span>
+            </button>
             <LanguageSwitcher />
             {!finished && (
               <button
@@ -227,6 +241,7 @@ export function ControlRoomPage({ token }: { token: string }) {
         </div>
       </aside>
 
+      {remoteOpen && <RemoteDialog sessionId={sessionId} onClose={() => setRemoteOpen(false)} />}
       {ending && (
         <ConfirmDialog
           icon={LogOut}
@@ -244,5 +259,30 @@ export function ControlRoomPage({ token }: { token: string }) {
         />
       )}
     </div>
+  );
+}
+
+/** A QR code that opens the phone remote for this night; the phone signs in as the same host. */
+function RemoteDialog({ sessionId, onClose }: { sessionId: string; onClose: () => void }) {
+  const { t } = useI18n();
+  const url = `${window.location.origin}/host/remote/${sessionId}`;
+  return (
+    <Modal tone="surface" labelledBy="remote-dialog-title" onClose={onClose} className="max-w-sm" testId="room-remote-dialog">
+      <div className="flex flex-col items-center gap-space-md text-center">
+        <span id="remote-dialog-title" className="text-label-sm font-bold uppercase tracking-widest text-secondary">
+          {t('host.remote.open')}
+        </span>
+        <div className="rounded-2xl bg-white p-4 shadow-xl">
+          <QRCodeSVG value={url} size={192} level="M" marginSize={0} />
+        </div>
+        <p className="text-body-sm text-on-surface-variant">{t('host.remote.hint')}</p>
+        <span className="break-all text-body-sm text-on-surface-variant" data-testid="room-remote-url">
+          {url}
+        </span>
+        <button type="button" className={`${btn.secondary} w-full`} onClick={onClose}>
+          {t('common.close')}
+        </button>
+      </div>
+    </Modal>
   );
 }

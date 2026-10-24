@@ -18,6 +18,8 @@ export interface SessionRecord {
   /** The break's planned end and the host's message for the room; only during PAUSE_BREAK. */
   break_ends_at: string | null;
   break_message: string | null;
+  /** Questions shown so far, in order; every device running the night picks the next from this. */
+  played_question_ids?: string[];
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -32,6 +34,7 @@ export type SessionStatusPatch = Partial<
     | 'question_paused_at'
     | 'break_ends_at'
     | 'break_message'
+    | 'played_question_ids'
     | 'started_at'
     | 'finished_at'
   >

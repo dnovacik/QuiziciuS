@@ -7,6 +7,7 @@ import { useI18n } from '../lib/i18n';
 import { pendingPasswordLink } from '../lib/supabase-client';
 import { useAccount } from '../lib/use-account';
 import { SettingsPage } from './SettingsPage';
+import { RemotePage } from './control-room/RemotePage';
 import { useHostSession } from '../lib/use-host-session';
 import { NotHostPage, SetPasswordPage } from '../ui/AccountPages';
 import { AdminPage } from './admin/AdminPage';
@@ -66,6 +67,8 @@ export default function HostApp() {
         <Routes>
           {/* The control room is full-screen, like the Stitch design — no sidebar. */}
           <Route path="sessions/:sessionId" element={<ControlRoomPage token={token} />} />
+          {/* The host's phone as the remote for a running night. */}
+          <Route path="remote/:sessionId" element={<RemotePage token={token} />} />
           <Route
             path="*"
             element={

@@ -25,6 +25,7 @@ function state(status: QuizSessionStateDto['status']): QuizSessionStateDto {
     questionEndsAt: null,
     questionPausedAt: null,
     answeredCount: null,
+    playedQuestionIds: [],
     breakEndsAt: null,
     breakMessage: null,
     teams: [],

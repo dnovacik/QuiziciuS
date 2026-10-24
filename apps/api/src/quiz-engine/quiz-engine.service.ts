@@ -96,6 +96,7 @@ export class QuizEngineService {
       questionEndsAt: session.question_ends_at,
       questionPausedAt: session.question_paused_at ?? null,
       answeredCount,
+      playedQuestionIds: session.played_question_ids ?? [],
       breakEndsAt: session.status === 'PAUSE_BREAK' ? (session.break_ends_at ?? null) : null,
       breakMessage: session.status === 'PAUSE_BREAK' ? (session.break_message ?? null) : null,
       teams: teams.map((team) => ({
@@ -151,6 +152,8 @@ export class QuizEngineService {
       if (!questionId) throw new BadRequestException('No question selected for this session');
       const question = await this.questions.findById(questionId);
       if (!question) throw new NotFoundException('Question not found');
+      const played = session.played_question_ids ?? [];
+      if (!played.includes(questionId)) patch.played_question_ids = [...played, questionId];
       // A question without a time limit has no deadline: answering stays open until the host closes it.
       patch.question_ends_at =
         question.time_limit_seconds > 0 ? new Date(Date.now() + question.time_limit_seconds * 1000).toISOString() : null;

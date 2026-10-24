@@ -11,6 +11,7 @@ import { DashboardPage } from './DashboardPage';
 import { QuizEditorPage } from './editor/QuizEditorPage';
 import { PubsPage } from './pubs';
 import { SettingsPage } from './SettingsPage';
+import { RemotePage } from './control-room/RemotePage';
 import { ToastProvider } from './ui';
 
 vi.mock('../lib/api-client', async (importOriginal) => ({
@@ -123,6 +124,7 @@ function liveState(status: QuizState, currentId: string | null = null): QuizSess
     questionEndsAt: status === 'QUESTION_ACTIVE' ? new Date(Date.now() + 20_000).toISOString() : null,
     questionPausedAt: null,
     answeredCount: null,
+    playedQuestionIds: [],
     breakEndsAt: null,
     breakMessage: null,
     teams: [
@@ -918,6 +920,62 @@ describe('control room', () => {
       await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'QUESTION_ACTIVE' }, 'jwt'));
       projector.close();
     });
+  });
+});
+
+describe('phone remote', () => {
+  const renderRemote = () => renderAt('/host/remote/s1', <RemotePage token="jwt" />, '/host/remote/:sessionId');
+
+  it('starts the quiz after confirmation, like the control room', async () => {
+    live.state = liveState('LOBBY');
+    renderRemote();
+    await waitFor(() => expect(screen.getByTestId('remote-next')).toBeEnabled());
+
+    fireEvent.click(screen.getByTestId('remote-next'));
+    fireEvent.click(within(screen.getByTestId('remote-start-dialog')).getByTestId('confirm-dialog-confirm'));
+
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'LOCK_IN_ROUND', questionId: 'q1' }, 'jwt'),
+    );
+  });
+
+  it('steps an open question: stop answers first, with the timer controls and the answered count', async () => {
+    live.state = { ...liveState('QUESTION_ACTIVE', 'q1'), answeredCount: 1 };
+    renderRemote();
+
+    expect(await screen.findByTestId('remote-answered')).toHaveTextContent('1 / 2');
+    fireEvent.click(screen.getByTestId('remote-timer-extend'));
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/timer', { action: 'extend' }, 'jwt'));
+    fireEvent.click(screen.getByTestId('remote-next'));
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/close-answers', {}, 'jwt'));
+  });
+
+  it('picks the next question from the night itself, not from what this phone has seen', async () => {
+    live.state = { ...liveState('QUESTION_REVEAL', 'q2'), playedQuestionIds: ['q1', 'q2'] };
+    renderRemote();
+    expect(await screen.findByTestId('remote-up-next')).toHaveTextContent('Question q3');
+
+    fireEvent.click(screen.getByTestId('remote-next'));
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'LOCK_IN_ROUND', questionId: 'q3' }, 'jwt'),
+    );
+  });
+
+  it('offers to end the quiz after the last question, with confirmation', async () => {
+    live.state = { ...liveState('QUESTION_REVEAL', 'q3'), playedQuestionIds: ['q1', 'q2', 'q3'] };
+    renderRemote();
+
+    fireEvent.click(await screen.findByTestId('remote-finish'));
+    fireEvent.click(within(screen.getByTestId('remote-finish-dialog')).getByTestId('confirm-dialog-confirm'));
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'FINISHED' }, 'jwt'));
+  });
+
+  it('is opened from the control room with a QR code', async () => {
+    live.state = liveState('LOBBY');
+    renderAt('/host/sessions/s1', <ControlRoomPage token="jwt" />, '/host/sessions/:sessionId');
+
+    fireEvent.click(await screen.findByTestId('room-remote'));
+    expect(screen.getByTestId('room-remote-url')).toHaveTextContent('/host/remote/s1');
   });
 });
 

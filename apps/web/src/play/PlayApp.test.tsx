@@ -55,6 +55,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
     questionEndsAt: null,
     questionPausedAt: null,
     answeredCount: null,
+    playedQuestionIds: [],
     breakEndsAt: null,
     breakMessage: null,
     teams: [
@@ -325,6 +326,7 @@ describe('answering', () => {
       questionEndsAt: new Date(Date.now() - 5_000).toISOString(),
       questionPausedAt: new Date(Date.now() - 20_000).toISOString(),
       answeredCount: 1,
+      playedQuestionIds: [],
     });
     renderPlay();
     expect(screen.getByTestId('player-paused')).toBeInTheDocument();
