@@ -90,6 +90,7 @@ export class QuizEngineService {
             correctOptionId: revealSafe ? (question.options?.find((o) => o.isCorrect)?.id ?? null) : null,
             correctNumeric: revealSafe ? question.correct_numeric : null,
             acceptedAnswers: revealSafe ? question.accepted_answers : null,
+            unit: question.unit ?? null,
           }
         : null,
       questionEndsAt: session.question_ends_at,
@@ -102,6 +103,7 @@ export class QuizEngineService {
         name: team.name,
         isActive: team.is_active,
         registeredTeamId: team.registered_team_id ?? null,
+        tableNumber: team.table_number ?? null,
         ready: readyFor !== null && team.ready_question_id === readyFor,
         readyFullscreen: readyFor !== null && team.ready_question_id === readyFor && team.ready_fullscreen,
         score: scoreByTeam.get(team.id) ?? 0,

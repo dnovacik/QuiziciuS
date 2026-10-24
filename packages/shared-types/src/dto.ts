@@ -18,6 +18,8 @@ export interface QuestionPublicDto {
   correctOptionId: string | null;
   correctNumeric: number | null;
   acceptedAnswers: string[] | null;
+  /** Numeric questions: the unit the answer is in, shown next to the input and the result. */
+  unit: string | null;
 }
 
 export interface TeamSummaryDto {
@@ -26,6 +28,8 @@ export interface TeamSummaryDto {
   isActive: boolean;
   /** The registered team this session team was joined as, or null for a one-off team. */
   registeredTeamId: string | null;
+  /** The table the team said it sits at, if any. */
+  tableNumber: string | null;
   /** Tapped "we're ready" for the question that is locked in right now (false outside LOCK_IN_ROUND). */
   ready: boolean;
   /** Ready and the browser entered fullscreen; ready without it means the fullscreen check is off. */

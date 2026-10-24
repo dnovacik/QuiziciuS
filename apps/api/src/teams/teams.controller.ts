@@ -12,7 +12,7 @@ export class TeamsController {
 
   @Post('join')
   join(@Param('sessionId') sessionId: string, @Body() dto: JoinTeamDto): Promise<JoinResult> {
-    return this.teams.join(sessionId, dto.name);
+    return this.teams.join(sessionId, dto.name, null, null, dto.tableNumber ?? null);
   }
 
   @Post('me/ready')

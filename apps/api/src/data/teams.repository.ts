@@ -13,12 +13,14 @@ export interface TeamRecord {
   /** The question the team last tapped "we're ready" for; ready only while that question is locked in. */
   ready_question_id: string | null;
   ready_fullscreen: boolean;
+  /** The table the team said it sits at. */
+  table_number?: string | null;
 }
 
 export abstract class TeamsRepository {
   abstract findById(teamId: string): Promise<TeamRecord | null>;
   abstract findBySessionAndName(sessionId: string, name: string): Promise<TeamRecord | null>;
-  abstract upsertJoin(sessionId: string, name: string, registeredTeamId?: string | null): Promise<TeamRecord>;
+  abstract upsertJoin(sessionId: string, name: string, registeredTeamId?: string | null, tableNumber?: string | null): Promise<TeamRecord>;
   abstract findBySessionAndRegisteredTeam(sessionId: string, registeredTeamId: string): Promise<TeamRecord | null>;
   abstract setDeviceTokenHash(teamId: string, tokenHash: string): Promise<TeamRecord>;
   abstract markReady(teamId: string, questionId: string, fullscreen: boolean): Promise<TeamRecord>;
@@ -77,9 +79,16 @@ export class SupabaseTeamsRepository extends TeamsRepository {
     return data as TeamRecord;
   }
 
-  async upsertJoin(sessionId: string, name: string, registeredTeamId: string | null = null): Promise<TeamRecord> {
+  async upsertJoin(
+    sessionId: string,
+    name: string,
+    registeredTeamId: string | null = null,
+    tableNumber: string | null = null,
+  ): Promise<TeamRecord> {
     const row: Record<string, unknown> = { session_id: sessionId, name, is_active: true, joined_at: new Date().toISOString() };
     if (registeredTeamId) row.registered_team_id = registeredTeamId;
+    // A rejoin without a table keeps the one given before.
+    if (tableNumber) row.table_number = tableNumber;
     const { data, error } = await this.supabase.getClient().from('teams').upsert(row, { onConflict: 'session_id,name' }).select().single();
     if (error) throw new InternalServerErrorException(error.message);
     return data as TeamRecord;

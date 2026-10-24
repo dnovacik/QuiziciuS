@@ -7,6 +7,8 @@ export interface QuizRecord {
   category_id: string | null;
   /** Default pub new sessions of this quiz are played at. */
   pub_id: string | null;
+  /** Answer time new questions start with; 0 = no timer. */
+  default_time_limit_seconds: number;
   title: string;
   created_at: string;
 }
@@ -19,7 +21,7 @@ export abstract class QuizzesRepository {
   abstract remove(id: string): Promise<void>;
 }
 
-export type QuizPatch = Partial<Pick<QuizRecord, 'title' | 'category_id' | 'pub_id'>>;
+export type QuizPatch = Partial<Pick<QuizRecord, 'title' | 'category_id' | 'pub_id' | 'default_time_limit_seconds'>>;
 
 @Injectable()
 export class SupabaseQuizzesRepository extends QuizzesRepository {

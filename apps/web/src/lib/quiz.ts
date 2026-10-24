@@ -6,6 +6,11 @@ export function optionLetter(index: number): string {
 }
 
 /** The answer to show once a question is revealed; null before the server releases it. */
+/** A number with the question's unit after it, e.g. "1994" or "384 km". */
+export function withUnit(value: number | string, unit: string | null | undefined): string {
+  return unit ? `${value} ${unit}` : String(value);
+}
+
 export function correctAnswerText(question: QuestionPublicDto): string | null {
   switch (question.type) {
     case 'MULTIPLE_CHOICE': {
@@ -15,7 +20,7 @@ export function correctAnswerText(question: QuestionPublicDto): string | null {
     case 'FREE_TEXT':
       return question.acceptedAnswers?.length ? question.acceptedAnswers.join(', ') : null;
     case 'NUMERIC_NEAREST':
-      return question.correctNumeric === null ? null : String(question.correctNumeric);
+      return question.correctNumeric === null ? null : withUnit(question.correctNumeric, question.unit);
   }
 }
 

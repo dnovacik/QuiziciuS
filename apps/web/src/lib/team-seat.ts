@@ -21,9 +21,11 @@ export async function findSessionByCode(code: string): Promise<string> {
   return session.id;
 }
 
-export async function joinSession(sessionId: string, teamName: string): Promise<TeamSeat> {
+/** Joins a quiz night; the table number (optional) helps the host find the team in the room. */
+export async function joinSession(sessionId: string, teamName: string, tableNumber = ''): Promise<TeamSeat> {
   const result = await apiPost<{ teamId: string; token: string }>(`/sessions/${sessionId}/teams/join`, {
     name: teamName.trim(),
+    ...(tableNumber.trim() ? { tableNumber: tableNumber.trim() } : {}),
   });
   const seat = { sessionId, teamId: result.teamId, token: result.token };
   saveSeat(seat);

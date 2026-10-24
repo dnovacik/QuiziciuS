@@ -41,6 +41,7 @@ function question(overrides: Partial<QuestionPublicDto> = {}): QuestionPublicDto
     correctOptionId: null,
     correctNumeric: null,
     acceptedAnswers: null,
+    unit: null,
     ...overrides,
   };
 }
@@ -62,6 +63,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
         name: 'Wise Ducks',
         isActive: true,
         registeredTeamId: null,
+        tableNumber: null,
         ready: false,
         readyFullscreen: false,
         score: 6,
@@ -72,6 +74,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
         name: 'Pub Mozarts',
         isActive: true,
         registeredTeamId: null,
+        tableNumber: null,
         ready: false,
         readyFullscreen: false,
         score: 9,
@@ -82,6 +85,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
         name: 'Einsteins',
         isActive: false,
         registeredTeamId: null,
+        tableNumber: null,
         ready: false,
         readyFullscreen: false,
         score: 3,
@@ -92,6 +96,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
         name: 'Quiz Wolves',
         isActive: true,
         registeredTeamId: null,
+        tableNumber: null,
         ready: false,
         readyFullscreen: false,
         score: 1,
@@ -183,6 +188,18 @@ describe('joining', () => {
     expect(JSON.parse(localStorage.getItem('quizicius:team:s1') ?? '{}')).toEqual(SEAT);
     expect(screen.getByTestId('player-team-name-display')).toHaveTextContent('Wise Ducks');
     expect(screen.getByTestId('player-team-count')).toHaveTextContent('4');
+  });
+
+  it('sends the table number when the team gives one', async () => {
+    vi.mocked(apiPost).mockResolvedValue({ teamId: 'team-1', token: 'team-token' });
+    setState('LOBBY');
+    renderPlay();
+
+    fireEvent.change(screen.getByTestId('player-team-name'), { target: { value: 'Wise Ducks' } });
+    fireEvent.change(screen.getByTestId('player-table'), { target: { value: ' 7 ' } });
+    fireEvent.submit(screen.getByTestId('player-join-form'));
+
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', { name: 'Wise Ducks', tableNumber: '7' }));
   });
 
   it('skips the code when arriving through a /play/:id link', async () => {
@@ -314,6 +331,15 @@ describe('answering', () => {
     expect(screen.getByTestId('player-answered')).toHaveTextContent(/^1 \/ \d+ /);
     // Paused with time left: still answerable although the deadline has passed.
     expect(screen.getByTestId('player-answer-form')).toBeInTheDocument();
+  });
+
+  it('shows the unit next to a numeric answer', () => {
+    setState('QUESTION_ACTIVE', {
+      currentQuestion: question({ type: 'NUMERIC_NEAREST', options: null, unit: 'km' }),
+      questionEndsAt: new Date(Date.now() + 20_000).toISOString(),
+    });
+    renderPlay();
+    expect(screen.getByTestId('player-numeric-unit')).toHaveTextContent('km');
   });
 
   it('stops accepting answers when the time is up', () => {

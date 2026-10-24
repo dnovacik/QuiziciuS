@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MinLength, ValidateIf } from 'class-validator';
+import { IsInt, IsOptional, IsString, Max, Min, MinLength, ValidateIf } from 'class-validator';
 
 export class UpdateQuizDto {
   @IsOptional()
@@ -17,4 +17,11 @@ export class UpdateQuizDto {
   @ValidateIf((_, value) => value !== null)
   @IsString()
   pubId?: string | null;
+
+  /** Answer time new questions start with; 0 = no timer. */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(3600)
+  defaultTimeLimitSeconds?: number;
 }

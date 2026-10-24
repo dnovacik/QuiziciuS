@@ -14,6 +14,8 @@ export interface QuestionRecord {
   options: { id: string; label: string; isCorrect: boolean }[] | null;
   accepted_answers: string[] | null;
   correct_numeric: number | null;
+  /** Numeric questions: the unit the answer is in (years, km, %). */
+  unit?: string | null;
   points: number;
   time_limit_seconds: number;
   order_index: number;

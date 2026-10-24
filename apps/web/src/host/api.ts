@@ -14,6 +14,8 @@ export interface Quiz {
   title: string;
   category_id: string | null;
   pub_id: string | null;
+  /** Answer time new questions start with; 0 = no timer. */
+  default_time_limit_seconds: number;
   created_at: string;
 }
 
@@ -51,6 +53,8 @@ export interface Question {
   options: QuestionOption[] | null;
   accepted_answers: string[] | null;
   correct_numeric: number | null;
+  /** Numeric questions: the unit the answer is in. */
+  unit: string | null;
   points: number;
   time_limit_seconds: number;
   order_index: number;
@@ -74,6 +78,7 @@ function toPayload(question: QuestionDraft) {
     options: question.type === 'MULTIPLE_CHOICE' ? question.options : undefined,
     acceptedAnswers: question.type === 'FREE_TEXT' ? question.accepted_answers?.map((answer) => answer.trim()) : undefined,
     correctNumeric: question.type === 'NUMERIC_NEAREST' ? (question.correct_numeric ?? undefined) : undefined,
+    unit: question.type === 'NUMERIC_NEAREST' && question.unit?.trim() ? question.unit.trim() : undefined,
     points: question.points,
     timeLimitSeconds: question.time_limit_seconds,
     orderIndex: question.order_index,
@@ -90,8 +95,11 @@ export const hostApi = {
   listCategories: (token: string) => apiGet<Category[]>('/categories', token),
   createQuiz: (token: string, title: string, categoryId: string | null, pubId: string | null = null) =>
     apiPost<Quiz>('/quizzes', { title: title.trim(), categoryId: categoryId ?? undefined, pubId: pubId ?? undefined }, token),
-  updateQuiz: (token: string, quizId: string, patch: { title?: string; categoryId?: string | null; pubId?: string | null }) =>
-    apiPatch<Quiz>(`/quizzes/${quizId}`, patch, token),
+  updateQuiz: (
+    token: string,
+    quizId: string,
+    patch: { title?: string; categoryId?: string | null; pubId?: string | null; defaultTimeLimitSeconds?: number },
+  ) => apiPatch<Quiz>(`/quizzes/${quizId}`, patch, token),
   deleteQuiz: (token: string, quizId: string) => apiDelete<void>(`/quizzes/${quizId}`, token),
 
   listQuestions: (token: string, quizId: string) => apiGet<Question[]>(`/quizzes/${quizId}/questions`, token),

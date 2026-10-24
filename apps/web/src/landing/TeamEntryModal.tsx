@@ -8,7 +8,6 @@ import { supabase } from '../lib/supabase-client';
 import { findSessionByCode, joinSession, normalizeJoinCode } from '../lib/team-seat';
 import { FieldLabel, FormNotice, IconInput, IconSelect, SegmentedControl, primaryButtonClass } from '../ui/form';
 import { Modal } from '../ui/Modal';
-import { Pending } from '../ui/Pending';
 
 type Tab = 'quick' | 'register' | 'login';
 type Notice = { tone: 'error' | 'success'; text: string };
@@ -22,6 +21,7 @@ export function TeamEntryModal({ onClose, onSwitchToHost }: { onClose: () => voi
   const [tab, setTab] = useState<Tab>('quick');
   const [code, setCode] = useState('');
   const [teamName, setTeamName] = useState('');
+  const [tableNumber, setTableNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [members, setMembers] = useState(4);
@@ -50,7 +50,7 @@ export function TeamEntryModal({ onClose, onSwitchToHost }: { onClose: () => voi
     event.preventDefault();
     void run(async () => {
       const sessionId = await findSessionByCode(code);
-      await joinSession(sessionId, teamName);
+      await joinSession(sessionId, teamName, tableNumber);
       navigate(`/play/${sessionId}`);
     });
   }
@@ -151,11 +151,16 @@ export function TeamEntryModal({ onClose, onSwitchToHost }: { onClose: () => voi
               required
             />
           </FieldLabel>
-          <Pending feature="table-number">
-            <FieldLabel label={t('teamEntry.quick.table')}>
-              <IconInput icon={Table2} placeholder={t('teamEntry.quick.tablePlaceholder')} />
-            </FieldLabel>
-          </Pending>
+          <FieldLabel label={`${t('teamEntry.quick.table')} (${t('common.optional')})`}>
+            <IconInput
+              icon={Table2}
+              data-testid="team-table"
+              value={tableNumber}
+              onChange={(event) => setTableNumber(event.target.value)}
+              placeholder={t('teamEntry.quick.tablePlaceholder')}
+              maxLength={10}
+            />
+          </FieldLabel>
           {notice && <FormNotice tone={notice.tone}>{notice.text}</FormNotice>}
           <button type="submit" data-testid="team-join-submit" disabled={pending} className={`${primaryButtonClass} mt-2`}>
             {submitLabel ?? t('teamEntry.quick.submit')}

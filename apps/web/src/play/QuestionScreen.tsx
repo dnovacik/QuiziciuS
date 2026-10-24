@@ -21,7 +21,7 @@ import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto } from '@
 import { apiPost } from '../lib/api-client';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
-import { formatClock, isUntimed, optionLetter, rankTeams, secondsLeft, useNow } from '../lib/quiz';
+import { formatClock, isUntimed, optionLetter, rankTeams, secondsLeft, useNow, withUnit } from '../lib/quiz';
 import type { TeamSeat } from '../lib/team-seat';
 import { useCurrentQuestionMedia } from '../lib/use-current-question-media';
 import { ProjectorMediaCard } from '../ui/ProjectorMediaCard';
@@ -240,7 +240,11 @@ function AnswerForm({
           : { value: Number(numeric) };
     const letter = question.type === 'MULTIPLE_CHOICE' ? optionLetter(optionIndex) : null;
     const display =
-      question.type === 'MULTIPLE_CHOICE' ? options[optionIndex].label : question.type === 'FREE_TEXT' ? text.trim() : numeric.trim();
+      question.type === 'MULTIPLE_CHOICE'
+        ? options[optionIndex].label
+        : question.type === 'FREE_TEXT'
+          ? text.trim()
+          : withUnit(numeric.trim(), question.unit);
 
     setSending(true);
     setError(null);
@@ -354,6 +358,11 @@ function AnswerForm({
               placeholder="0"
               className="w-32 rounded-2xl bg-surface-container-lowest px-4 py-2 text-center text-display-lg-mobile text-secondary shadow-inner outline-none placeholder:text-secondary/30"
             />
+            {question.unit && (
+              <span className="text-headline-sm font-bold text-on-surface-variant" data-testid="player-numeric-unit">
+                {question.unit}
+              </span>
+            )}
             <button
               type="button"
               aria-label="+1"

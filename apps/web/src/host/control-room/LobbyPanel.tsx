@@ -218,6 +218,11 @@ export function LobbyPanel({ room, sessionId, onCancel }: { room: ControlRoom; s
                     />
                   )}
                 </h4>
+                {team.tableNumber && (
+                  <span className="text-label-sm text-secondary" data-testid={`room-team-table-${team.id}`}>
+                    {t('teamEntry.quick.table')} {team.tableNumber}
+                  </span>
+                )}
                 <div className="flex items-center justify-between pt-1 text-label-sm">
                   <span className={team.isActive ? 'text-tertiary' : 'text-outline'}>
                     {t(team.isActive ? 'host.room.online' : 'host.room.offlineOne')}

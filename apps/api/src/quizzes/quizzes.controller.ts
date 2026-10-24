@@ -47,6 +47,7 @@ export class QuizzesController {
     if (dto.categoryId !== undefined) patch.category_id = dto.categoryId;
     if (dto.pubId) await this.pubs.requirePub(dto.pubId);
     if (dto.pubId !== undefined) patch.pub_id = dto.pubId;
+    if (dto.defaultTimeLimitSeconds !== undefined) patch.default_time_limit_seconds = dto.defaultTimeLimitSeconds;
     return this.quizzes.update(quizId, patch);
   }
 

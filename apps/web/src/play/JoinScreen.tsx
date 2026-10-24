@@ -20,6 +20,7 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
   const [method, setMethod] = useState<Method>('pin');
   const [pin, setPin] = useState(['', '', '', '']);
   const [teamName, setTeamName] = useState('');
+  const [tableNumber, setTableNumber] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recent] = useState(recentTeamNames);
@@ -60,7 +61,7 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
     setError(null);
     try {
       const resolvedSessionId = sessionId ?? (await findSessionByCode(code));
-      onJoined(await joinSession(resolvedSessionId, teamName));
+      onJoined(await joinSession(resolvedSessionId, teamName, tableNumber));
     } catch (err) {
       setError(err instanceof ApiError && err.status === 404 ? t('play.join.codeNotFound') : describeError(err, t, 'play.join.failed'));
     } finally {
@@ -238,18 +239,20 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
                 )}
               </div>
 
-              <Pending feature="table-number">
-                <div className="flex flex-col gap-space-xs">
-                  <span className="flex items-center gap-1 text-label-md uppercase tracking-wider text-on-surface-variant">
-                    <Table2 className="h-4 w-4 text-outline" />
-                    {t('teamEntry.quick.table')}
-                  </span>
-                  <input
-                    placeholder={t('teamEntry.quick.tablePlaceholder')}
-                    className="h-12 w-full rounded-xl bg-surface-container-lowest px-space-md text-body-md text-on-surface outline-none placeholder:text-outline"
-                  />
-                </div>
-              </Pending>
+              <label className="flex flex-col gap-space-xs">
+                <span className="flex items-center gap-1 text-label-md uppercase tracking-wider text-on-surface-variant">
+                  <Table2 className="h-4 w-4 text-outline" />
+                  {t('teamEntry.quick.table')} ({t('common.optional')})
+                </span>
+                <input
+                  data-testid="player-table"
+                  value={tableNumber}
+                  maxLength={10}
+                  onChange={(event) => setTableNumber(event.target.value)}
+                  placeholder={t('teamEntry.quick.tablePlaceholder')}
+                  className="h-12 w-full rounded-xl bg-surface-container-lowest px-space-md text-body-md text-on-surface outline-none placeholder:text-outline"
+                />
+              </label>
 
               <div className="flex flex-col gap-space-sm pt-2">
                 <button

@@ -1,4 +1,4 @@
-import { IsArray, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { QUESTION_TYPES, QuestionType } from '@quizicius/shared-types';
 
 export class CreateQuestionDto {
@@ -28,6 +28,12 @@ export class CreateQuestionDto {
   @IsOptional()
   @IsNumber()
   correctNumeric?: number;
+
+  /** Numeric questions only: the unit, e.g. "km". */
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  unit?: string;
 
   @IsOptional()
   @IsInt()

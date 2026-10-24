@@ -11,17 +11,17 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 |---|---|---|---|
 | `social-login` | Landing – host card | Google / Microsoft OAuth providers in Supabase + redirect handling | |
 | `remember-me` | Landing – host card | Supabase always persists the session; needs a session-storage auth client when unchecked | |
-| `table-number` | Landing – team dialog, player join | `teams.table_number` column + join endpoint field; show it to the host | |
+| `table-number` | Landing – team dialog, player join | `teams.table_number` column + join endpoint field; show it to the host | Built (2026-10-24): optional `tableNumber` on join, shown on the host lobby cards (migration `0018`) |
 | `qr-scanner` | Player join | In-app camera QR scanner (phones can already scan the projector QR with the camera app) | |
 | `answer-dispute` | Player reveal | Endpoint for a team to dispute its graded answer + host review queue entry | Built (2026-10-24): `POST /sessions/:id/answers/:answerId/dispute`, once per wrong answer, note shown in the review queue |
 | `result-certificate` | Player final results | Generated certificate (PDF/image) for a team's result | |
 | `leagues` | Host sidebar | Leagues section (pub leagues, seasons, super leagues — see PUBS_AND_LEAGUES.md) | Built (2026-10-23): `/host/leagues`, see `docs/superpowers/specs/2026-10-23-leagues-design.md` |
-| `host-settings` | Host sidebar | Host account / venue settings page | |
+| `host-settings` | Host sidebar | Host account / venue settings page | Built (2026-10-24): `/host/settings` — the host name (`PATCH /me`), e-mail and subscription |
 | `notifications` | Host top bar | Notification feed (new teams, disputes) | |
 | `team-ratings` | Host dashboard stat | Teams rate the night after it ends | |
 | `scheduled-sessions` | Host dashboard | Sessions planned ahead (date, venue, table capacity, reservations) | |
-| `quiz-default-timer` | Quiz settings | Default answer time stored per quiz | |
-| `numeric-unit` | Quiz editor | `unit` column on numeric questions, shown to players and on the projector | |
+| `quiz-default-timer` | Quiz settings | Default answer time stored per quiz | Built (2026-10-24): `quizzes.default_time_limit_seconds`, used for new questions (migration `0018`) |
+| `numeric-unit` | Quiz editor | `unit` column on numeric questions, shown to players and on the projector | Built (2026-10-24): `questions.unit`, shown next to the phone input, on the projector and with the answer (migration `0018`) |
 | `timer-controls` | Control room | Pause / +10 s / host pause — needs a pausable timer in the quiz engine (stopping answers early is built: `POST /sessions/:id/close-answers`) | Built (2026-10-24): `POST /sessions/:id/timer` (pause, resume, extend), migration `0017_live_night_controls.sql` |
 | `session-archive` | Control room results | Archiving into league tables, deactivating the code | |
 
@@ -44,7 +44,7 @@ These are omitted from the screens (no fake values); adding them needs API work 
 | Room success rate, fastest team | projector reveal | per-question answer stats after reveal |
 | Points gained this round per team | projector leaderboard | score history per question |
 | Break countdown, bar promo text | projector pause | Built (2026-10-24): `breakEndsAt` / `breakMessage`, set by the host before the break |
-| Host name ("Michal Kováč") | host dashboard, editor header | display name on the host profile (the email is shown) |
+| Host name ("Michal Kováč") | host dashboard, editor header | Built (2026-10-24): set in `/host/settings`, shown in the sidebar and top bar |
 | Rounds, quiz description, AI question generator | host dashboard, editor | rounds model, description field |
 | Projector connected ("HDMI #1 • 4K"), average ping | control room lobby | projector presence in realtime |
 | Answer time per team ("04.1s") and speed bonus | control room question/review | `submitted_at` in the answer summary, scoring rules |

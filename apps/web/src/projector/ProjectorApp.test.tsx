@@ -28,6 +28,7 @@ const QUESTION: QuestionPublicDto = {
   correctOptionId: null,
   correctNumeric: null,
   acceptedAnswers: null,
+  unit: null,
 };
 
 function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {}) {
@@ -47,6 +48,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
         name: 'Wise Ducks',
         isActive: true,
         registeredTeamId: null,
+        tableNumber: null,
         ready: false,
         readyFullscreen: false,
         score: 6,
@@ -57,6 +59,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
         name: 'Pub Mozarts',
         isActive: true,
         registeredTeamId: null,
+        tableNumber: null,
         ready: false,
         readyFullscreen: false,
         score: 9,
@@ -67,6 +70,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
         name: 'Einsteins',
         isActive: false,
         registeredTeamId: null,
+        tableNumber: null,
         ready: false,
         readyFullscreen: false,
         score: 3,
@@ -77,6 +81,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
         name: 'Quiz Wolves',
         isActive: true,
         registeredTeamId: null,
+        tableNumber: null,
         ready: false,
         readyFullscreen: false,
         score: 1,
@@ -180,6 +185,18 @@ describe('ProjectorApp', () => {
     renderProjector();
     expect(screen.getByTestId('projector-break-clock')).toHaveTextContent(/^(5:00|4:59)$/);
     expect(screen.getByTestId('projector-break-message')).toHaveTextContent('Bar is open');
+  });
+
+  it('names the unit of a numeric question, and shows it with the revealed answer', () => {
+    const numeric = { ...QUESTION, type: 'NUMERIC_NEAREST' as const, options: null, unit: 'km' };
+    setState('QUESTION_ACTIVE', { currentQuestion: numeric, questionEndsAt: new Date(Date.now() + 20_000).toISOString() });
+    const view = renderProjector();
+    expect(screen.getByTestId('projector-unit')).toHaveTextContent('km');
+    view.unmount();
+
+    setState('QUESTION_REVEAL', { currentQuestion: { ...numeric, correctNumeric: 384 } });
+    renderProjector();
+    expect(screen.getByTestId('projector-correct-answer')).toHaveTextContent('384 km');
   });
 
   it('highlights the correct option on reveal', () => {
