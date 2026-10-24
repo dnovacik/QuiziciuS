@@ -54,6 +54,7 @@ export class InMemorySessionsRepository extends SessionsRepository {
       question_paused_at: null,
       break_ends_at: null,
       break_message: null,
+      played_question_ids: [],
       created_at: new Date().toISOString(),
       started_at: null,
       finished_at: null,

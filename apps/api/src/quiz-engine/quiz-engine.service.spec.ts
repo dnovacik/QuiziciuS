@@ -306,6 +306,24 @@ describe('QuizEngineService.controlTimer', () => {
   });
 });
 
+describe('QuizEngineService played questions', () => {
+  it('records each question once, in order, when it is shown', async () => {
+    const { service, sessions } = buildHarness({
+      session: { status: 'LOCK_IN_ROUND', current_question_id: 'q2', played_question_ids: ['q1'] },
+    });
+
+    const shown = await service.transitionState('s1', 'host1', 'QUESTION_ACTIVE');
+    expect(shown.played_question_ids).toEqual(['q1', 'q2']);
+
+    (sessions.findById as jest.Mock).mockResolvedValue({ ...shown, status: 'LOCK_IN_ROUND' });
+    await service.transitionState('s1', 'host1', 'QUESTION_ACTIVE');
+    expect(sessions.updateStatus).toHaveBeenLastCalledWith('s1', expect.not.objectContaining({ played_question_ids: expect.anything() }));
+
+    (sessions.findById as jest.Mock).mockResolvedValue(shown);
+    expect((await service.getState('s1')).playedQuestionIds).toEqual(['q1', 'q2']);
+  });
+});
+
 describe('QuizEngineService breaks', () => {
   it('stores the break length and message, and clears them when the quiz moves on', async () => {
     const { service, sessions } = buildHarness({ session: { status: 'QUESTION_REVEAL', current_question_id: 'q1' } });

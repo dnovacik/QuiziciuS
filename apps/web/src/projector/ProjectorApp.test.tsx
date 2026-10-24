@@ -40,6 +40,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
     questionEndsAt: null,
     questionPausedAt: null,
     answeredCount: null,
+    playedQuestionIds: [],
     breakEndsAt: null,
     breakMessage: null,
     teams: [
@@ -173,6 +174,7 @@ describe('ProjectorApp', () => {
       questionEndsAt: new Date(now + 20_000).toISOString(),
       questionPausedAt: new Date(now - 60_000).toISOString(),
       answeredCount: 2,
+      playedQuestionIds: [],
     });
     renderProjector();
     expect(screen.getByTestId('projector-answered')).toHaveTextContent(/^2 \/ \d+ /);

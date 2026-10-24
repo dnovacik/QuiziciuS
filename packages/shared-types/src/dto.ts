@@ -48,6 +48,8 @@ export interface QuizSessionStateDto {
   questionPausedAt: string | null;
   /** Teams that have answered the current question; null outside a question. */
   answeredCount: number | null;
+  /** Questions shown so far, in order (ids only), so every host device agrees what comes next. */
+  playedQuestionIds: string[];
   /** During a break: when it is planned to end and the host's message, if any. */
   breakEndsAt: string | null;
   breakMessage: string | null;
