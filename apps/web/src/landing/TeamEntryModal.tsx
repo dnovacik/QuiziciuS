@@ -7,6 +7,7 @@ import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase-client';
 import { findSessionByCode, joinSession, normalizeJoinCode } from '../lib/team-seat';
 import { FieldLabel, FormNotice, IconInput, IconSelect, SegmentedControl, primaryButtonClass } from '../ui/form';
+import { GOOGLE_AUTH, GoogleButton } from '../ui/GoogleButton';
 import { Modal } from '../ui/Modal';
 
 type Tab = 'quick' | 'register' | 'login';
@@ -291,6 +292,7 @@ export function TeamEntryModal({ onClose, onSwitchToHost }: { onClose: () => voi
             {submitLabel ?? t('teamEntry.login.submit')}
             <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
           </button>
+          {GOOGLE_AUTH && <GoogleButton returnPath="/team" onError={(text) => setNotice({ tone: 'error', text })} />}
           <button
             type="button"
             data-testid="team-forgot-password"

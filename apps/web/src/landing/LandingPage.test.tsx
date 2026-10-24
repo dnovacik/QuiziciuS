@@ -94,9 +94,14 @@ describe('LandingPage host card', () => {
 
   it('renders unsupported Stitch features disabled and flagged', () => {
     renderLanding();
-    const social = document.querySelector('[data-pending-feature="social-login"]');
-    expect(social).toBeDisabled();
-    expect(within(social as HTMLElement).getByText('Čoskoro')).toBeInTheDocument();
+    const rememberMe = document.querySelector('[data-pending-feature="remember-me"]');
+    expect(rememberMe).toBeDisabled();
+    expect(within(rememberMe as HTMLElement).getByText('Čoskoro')).toBeInTheDocument();
+  });
+
+  it('hides Google sign-in until it is set up (VITE_GOOGLE_AUTH)', () => {
+    renderLanding();
+    expect(screen.queryByTestId('google-sign-in')).not.toBeInTheDocument();
   });
 
   it('switches the interface to English', () => {
