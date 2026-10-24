@@ -42,6 +42,14 @@ export class AccountsService {
     return toAccount(profile);
   }
 
+  /** The name others see instead of the e-mail; an empty name falls back to the e-mail. */
+  async rename(accountId: string, rawName: string): Promise<AccountDto> {
+    const profile = await this.profiles.findById(accountId);
+    if (!profile) throw new NotFoundException({ code: 'ACCOUNT_NOT_FOUND', message: 'Account not found' });
+    const displayName = rawName.trim().replace(/\s+/g, ' ') || profile.email || profile.display_name;
+    return toAccount(await this.profiles.update(accountId, { display_name: displayName }));
+  }
+
   /** Hosts and super admins, with what they have been doing. */
   async listHosts(): Promise<AdminHostDto[]> {
     const hosts = await this.profiles.listByRoles(['SUPER_ADMIN', 'HOST']);

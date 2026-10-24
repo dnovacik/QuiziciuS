@@ -33,6 +33,7 @@ export interface AdminTeam {
   badgeColor: string;
   createdAt: string;
   captainEmail: string | null;
+  captainName: string | null;
   pubs: { id: string; name: string; city: string; primary: boolean }[];
   legacyHomePub: string | null;
 }
@@ -480,7 +481,10 @@ function TeamsSection({ token }: { token: string }) {
                       </span>
                     )}
                   </td>
-                  <td className="p-space-sm text-on-surface-variant">{team.captainEmail ?? '—'}</td>
+                  <td className="p-space-sm text-on-surface-variant">
+                    {team.captainName && <span className="block text-label-md text-on-surface">{team.captainName}</span>}
+                    {team.captainEmail ?? '—'}
+                  </td>
                   <td className="p-space-sm text-on-surface-variant">{date(team.createdAt)}</td>
                   <td className="p-space-sm text-right">
                     <span className="inline-flex gap-1">

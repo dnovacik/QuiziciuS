@@ -22,7 +22,7 @@ import { Pending } from '../../ui/Pending';
 import type { QuestionDraft } from '../api';
 import { btn, Card, inputClass, Label } from '../ui';
 import { MediaSlot } from './MediaSlot';
-import { MAX_OPTIONS, MAX_PROMPT, nextOptionId, TIMER_CHOICES, withType } from './question-draft';
+import { listedVariants, MAX_OPTIONS, MAX_PROMPT, nextOptionId, TIMER_CHOICES, withType } from './question-draft';
 
 const TYPES: { type: QuestionType; icon: typeof LayoutGrid }[] = [
   { type: 'MULTIPLE_CHOICE', icon: LayoutGrid },
@@ -282,30 +282,57 @@ export function QuestionForm({
             </button>
           </div>
           <div className="flex flex-col gap-2.5">
-            {accepted.map((answer, answerIndex) => (
-              <div key={answerIndex} className="flex items-center gap-2 rounded-xl bg-surface-container p-2">
-                <span className="px-2 text-label-sm text-primary">#{answerIndex + 1}</span>
-                <input
-                  value={answer}
-                  onChange={(event) =>
-                    onChange({ accepted_answers: accepted.map((item, i) => (i === answerIndex ? event.target.value : item)) })
-                  }
-                  placeholder={t('host.editor.acceptedPlaceholder')}
-                  className="w-full bg-transparent px-2 py-1 text-body-md text-on-surface focus:outline-none"
-                  data-testid={`editor-accepted-${answerIndex}`}
-                />
-                {accepted.length > 1 && (
-                  <button
-                    type="button"
-                    className="p-1 text-on-surface-variant hover:text-error"
-                    aria-label={t('host.editor.removeOption')}
-                    onClick={() => onChange({ accepted_answers: accepted.filter((_, i) => i !== answerIndex) })}
-                  >
-                    <X className="h-[18px] w-[18px]" />
-                  </button>
-                )}
-              </div>
-            ))}
+            {accepted.map((answer, answerIndex) => {
+              const listed = listedVariants(answer);
+              return (
+                <div key={answerIndex} className="flex flex-col gap-1.5 rounded-xl bg-surface-container p-2">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 text-label-sm text-primary">#{answerIndex + 1}</span>
+                    <input
+                      value={answer}
+                      onChange={(event) =>
+                        onChange({ accepted_answers: accepted.map((item, i) => (i === answerIndex ? event.target.value : item)) })
+                      }
+                      placeholder={t('host.editor.acceptedPlaceholder')}
+                      className="w-full bg-transparent px-2 py-1 text-body-md text-on-surface focus:outline-none"
+                      data-testid={`editor-accepted-${answerIndex}`}
+                    />
+                    {accepted.length > 1 && (
+                      <button
+                        type="button"
+                        className="p-1 text-on-surface-variant hover:text-error"
+                        aria-label={t('host.editor.removeOption')}
+                        onClick={() => onChange({ accepted_answers: accepted.filter((_, i) => i !== answerIndex) })}
+                      >
+                        <X className="h-[18px] w-[18px]" />
+                      </button>
+                    )}
+                  </div>
+                  {listed && (
+                    // A comma does not make alternatives: the whole text is one answer unless split.
+                    <div
+                      className="flex flex-wrap items-center gap-2 px-2 text-body-sm text-secondary"
+                      data-testid={`editor-accepted-listed-${answerIndex}`}
+                    >
+                      <Info className="h-4 w-4 shrink-0" />
+                      <span className="flex-1">{t('host.editor.acceptedListed')}</span>
+                      <button
+                        type="button"
+                        className="rounded-lg bg-surface-container-high px-3 py-1 text-label-sm text-primary transition-all hover:brightness-110"
+                        onClick={() =>
+                          onChange({
+                            accepted_answers: [...accepted.slice(0, answerIndex), ...listed, ...accepted.slice(answerIndex + 1)],
+                          })
+                        }
+                        data-testid={`editor-accepted-split-${answerIndex}`}
+                      >
+                        {t('host.editor.acceptedSplit')} ({listed.length})
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
           <div className="flex items-center gap-2 rounded-lg bg-surface-container p-2 text-body-sm text-on-surface-variant">
             <SpellCheck className="h-[18px] w-[18px] text-tertiary" />

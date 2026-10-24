@@ -43,12 +43,17 @@ function initials(text: string): string {
 export function OnboardingPage({
   token,
   email,
+  captainName,
+  onCaptainRenamed,
   suggestedName,
   suggestedMembers,
   onCreated,
 }: {
   token: string;
   email: string;
+  /** The name the captain set; null while it is still just the e-mail. */
+  captainName: string | null;
+  onCaptainRenamed: () => void;
   suggestedName: string;
   suggestedMembers: number;
   onCreated: (team: RegisteredTeam) => void;
@@ -63,6 +68,8 @@ export function OnboardingPage({
     pubIds: [],
     primaryPubId: null,
   });
+  const [ownName, setOwnName] = useState(captainName ?? '');
+  const shownCaptain = ownName.trim() || email;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<RegisteredTeam | null>(null);
@@ -78,6 +85,10 @@ export function OnboardingPage({
     setBusy(true);
     setError(null);
     try {
+      if (ownName.trim() !== (captainName ?? '')) {
+        await teamApi.renameCaptain(token, ownName);
+        onCaptainRenamed();
+      }
       setCreated(await teamApi.create(token, profile));
     } catch (err) {
       setError(describeError(err, t, 'errors.generic'));
@@ -98,14 +109,14 @@ export function OnboardingPage({
         </div>
         <div className="flex items-center gap-3 self-start rounded-2xl bg-surface-container-low px-3 py-1.5 shadow-sm sm:self-auto">
           <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-secondary text-xs font-bold text-on-primary shadow-md">
-            {initials(email)}
+            {initials(shownCaptain)}
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-tertiary" />
           </div>
           <div className="flex flex-col">
             <span className="w-fit rounded bg-secondary-container/20 px-1.5 text-[10px] font-bold uppercase text-secondary">
               {t('team.captain')}
             </span>
-            <span className="text-[11px] leading-tight text-on-surface-variant">{email}</span>
+            <span className="text-[11px] leading-tight text-on-surface-variant">{shownCaptain}</span>
           </div>
         </div>
       </div>
@@ -152,6 +163,17 @@ export function OnboardingPage({
                 {t('team.form.random')}
               </button>
             </div>
+            <label className="flex flex-col gap-2 pt-2">
+              <span className="text-label-md text-on-surface">{t('team.captainName.label')}</span>
+              <input
+                data-testid="onboarding-captain-name"
+                value={ownName}
+                maxLength={60}
+                onChange={(event) => setOwnName(event.target.value)}
+                placeholder={t('team.captainName.placeholder')}
+                className="w-full rounded-xl bg-surface-container-lowest p-3.5 text-body-md text-on-surface shadow-inner placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </label>
           </Section>
 
           <Section icon={Palette} tone="text-secondary" title={t('team.form.badgeTitle')} subtitle={t('team.form.badgeHint')}>
@@ -264,10 +286,10 @@ export function OnboardingPage({
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-2.5 rounded-xl bg-surface-container-low p-2 shadow-sm">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-secondary text-xs font-bold text-on-primary">
-                    {initials(email)}
+                    {initials(shownCaptain)}
                   </div>
                   <div className="flex min-w-0 flex-col">
-                    <span className="truncate text-label-sm text-on-surface">{email}</span>
+                    <span className="truncate text-label-sm text-on-surface">{shownCaptain}</span>
                     <span className="text-[10px] font-bold text-secondary">{t('team.captain')}</span>
                   </div>
                 </div>

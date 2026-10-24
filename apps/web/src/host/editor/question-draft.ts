@@ -60,6 +60,18 @@ export function validate(draft: QuestionDraft): TranslationKey[] {
   return errors;
 }
 
+/**
+ * The variants in one accepted-answer field written as a list ("Missouri, Misouri"), or null when
+ * it holds a single answer. Each variant needs its own field: the grader compares the whole text.
+ */
+export function listedVariants(answer: string): string[] | null {
+  const parts = answer
+    .split(/[,;]/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return parts.length > 1 ? parts : null;
+}
+
 /** Empty alternatives are dropped before saving. */
 export function cleanForSave(draft: QuestionDraft): QuestionDraft {
   return draft.type === 'FREE_TEXT'
