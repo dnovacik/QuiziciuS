@@ -14,7 +14,6 @@ export const PENDING_FEATURES = {
   leagues: 'Leagues section of the host app (pub leagues, seasons, super leagues).',
   notifications: 'Host notifications (new teams, disputes) in the top bar.',
   'team-ratings': 'Team satisfaction ratings after a quiz night.',
-  'scheduled-sessions': 'Planning quiz nights ahead with a date, venue and table capacity.',
 } as const;
 
 export type PendingFeature = keyof typeof PENDING_FEATURES;

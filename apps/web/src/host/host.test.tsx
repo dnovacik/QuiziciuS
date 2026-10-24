@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import type { HostLeagueDto, AnswerSummaryDto, QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
+import type { HostLeagueDto, AnswerSummaryDto, QuizSessionStateDto, QuizState, ScheduledNightDto } from '@quizicius/shared-types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../lib/api-client';
 import type { Pub } from '../lib/pubs';
@@ -87,6 +87,7 @@ const db = vi.hoisted(() => ({
   answers: [] as AnswerSummaryDto[],
   disputes: [] as AnswerSummaryDto[],
   leagues: [] as HostLeagueDto[],
+  schedule: [] as ScheduledNightDto[],
   display: { title: 'Friday Movies', pub: null, league: null } as { title: string; pub: null; league: { id: string; name: string } | null },
 }));
 
@@ -165,6 +166,7 @@ beforeEach(() => {
   pubs.all = [LION, DOG];
   db.disputes = [];
   db.leagues = [];
+  db.schedule = [];
   db.display = { title: 'Friday Movies', pub: null, league: null };
   live.state = null;
   live.refetch = vi.fn();
@@ -183,6 +185,7 @@ beforeEach(() => {
       if (path === '/sessions/s1/state') return live.state;
       if (path === '/sessions/s1/display') return db.display;
       if (path === '/leagues') return db.leagues;
+      if (path === '/host/schedule') return db.schedule;
       const questions = path.match(/^\/quizzes\/(\w+)\/questions$/);
       if (questions) return db.questions[questions[1]] ?? [];
       throw new Error(`unexpected GET ${path}`);
@@ -237,6 +240,39 @@ function renderAt(path: string, element: React.ReactNode, routePath: string) {
 }
 
 describe('host dashboard', () => {
+  it('plans a quiz night ahead and lists the planned ones', async () => {
+    db.schedule = [
+      {
+        id: 'n1',
+        startsAt: '2026-10-31T19:00:00Z',
+        pub: { id: 'pub1', name: 'U Zlatého leva', city: 'Žilina' },
+        quizId: 'quiz1',
+        quizTitle: 'Friday Movies',
+        note: 'Halloween',
+      },
+    ];
+    vi.mocked(apiPost).mockResolvedValue({});
+    renderAt('/host', <DashboardPage token="jwt" />, '/host');
+
+    expect(await screen.findByTestId('schedule-n1')).toHaveTextContent('Friday Movies');
+    expect(screen.getByTestId('schedule-n1')).toHaveTextContent('Halloween');
+    fireEvent.click(screen.getByTestId('schedule-add'));
+    fireEvent.change(screen.getByTestId('schedule-starts'), { target: { value: '2026-11-07T20:00' } });
+    await waitFor(() => expect(screen.getByTestId('schedule-pub')).toHaveValue('pub1'));
+    fireEvent.change(screen.getByTestId('schedule-note'), { target: { value: 'Music quiz' } });
+    fireEvent.click(screen.getByTestId('schedule-save'));
+
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith(
+        '/host/schedule',
+        { startsAt: new Date('2026-11-07T20:00').toISOString(), pubId: 'pub1', quizId: null, note: 'Music quiz' },
+        'jwt',
+      ),
+    );
+    fireEvent.click(screen.getByTestId('schedule-delete-n1'));
+    await waitFor(() => expect(apiDelete).toHaveBeenCalledWith('/host/schedule/n1', 'jwt'));
+  });
+
   it('shows real stats, the live session and the quiz library', async () => {
     renderAt('/host', <DashboardPage token="jwt" />, '/host');
 
