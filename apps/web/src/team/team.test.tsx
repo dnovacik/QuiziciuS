@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
 import { I18nProvider } from '../lib/i18n';
 import type { Player, RegisteredTeam } from './api';
+import InvitePage from './InvitePage';
 import TeamApp from './TeamApp';
 
 vi.mock('../lib/api-client', async (importOriginal) => ({
@@ -92,6 +93,9 @@ beforeEach(() => {
         return { available: !data.taken.includes(name), code: 'X' };
       }
       if (path === '/registered-teams/rt1/players') return data.players;
+      if (path === '/registered-teams/rt1/access') return { pin: '482915', inviteToken: 'invite-token-1234567' };
+      if (path === '/team-access/invite/invite-token-1234567')
+        return { name: 'Wise Ducks', badge: 'brain', badgeColor: 'amber', rosterSize: 2 };
       if (path === '/registered-teams/rt1/leagues') return data.leagues;
       if (path === '/pubs') return PUBS;
       if (path === '/sessions/by-code/A7F3') return { id: 's1' };
@@ -102,6 +106,9 @@ beforeEach(() => {
     .mockImplementation(async (path: string, body: unknown) => {
       if (path === '/registered-teams') return { ...TEAM, name: (body as { name: string }).name };
       if (path === '/registered-teams/rt1/players') return { id: 'p2', name: (body as { name: string }).name, created_at: 'now' };
+      if (path === '/registered-teams/rt1/access/rotate') return { pin: '000111', inviteToken: 'invite-token-new-7654321' };
+      if (path === '/team-access/invite/invite-token-1234567/players')
+        return { id: 'p3', name: (body as { name: string }).name, created_at: 'now' };
       if (path === '/registered-teams/rt1/sessions/s1/join') return { teamId: 'session-team', token: 'team-token' };
       if (path === '/registered-teams/rt1/leagues/l1/join') return { ...data.leagues[0], status: 'JOINED' };
       if (path === '/registered-teams/rt1/sessions/s1/claim') {
@@ -224,6 +231,28 @@ describe('team dashboard', () => {
     expect(apiPatch).toHaveBeenCalledWith('/me', { displayName: 'Peter Kováč' }, 'captain-jwt');
     expect(screen.getByTestId('roster-captain')).toHaveTextContent('captain@example.com');
     expect(screen.getByTestId('team-captain-chip')).toHaveTextContent('Peter Kováč');
+  });
+
+  it('keeps the team PIN hidden until asked, and replaces it on request', async () => {
+    renderTeam();
+    const pin = await screen.findByTestId('team-pin-value');
+    await waitFor(() => expect(pin).toHaveTextContent('••••••'));
+
+    fireEvent.click(pin);
+    expect(pin).toHaveTextContent('482915');
+    fireEvent.click(screen.getByTestId('team-pin-rotate'));
+    await waitFor(() => expect(pin).toHaveTextContent('000111'));
+    expect(apiPost).toHaveBeenCalledWith('/registered-teams/rt1/access/rotate', { what: 'pin' }, 'captain-jwt');
+  });
+
+  it('shares the invite link, and a new link replaces it', async () => {
+    renderTeam();
+    fireEvent.click(await screen.findByTestId('team-share-open'));
+
+    await waitFor(() => expect(screen.getByTestId('share-team-url')).toHaveTextContent('/join-team/invite-token-1234567'));
+    fireEvent.click(screen.getByTestId('share-team-rotate'));
+    await waitFor(() => expect(screen.getByTestId('share-team-url')).toHaveTextContent('/join-team/invite-token-new-7654321'));
+    expect(apiPost).toHaveBeenCalledWith('/registered-teams/rt1/access/rotate', { what: 'invite' }, 'captain-jwt');
   });
 
   it('adds, renames and removes players', async () => {
@@ -391,5 +420,34 @@ describe('registering from a league night', () => {
     const notice = await screen.findByTestId('team-claim-error');
     expect(notice).toHaveTextContent('registrácia do ligy je uzavretá');
     expect(within(notice).getByRole('link')).toHaveAttribute('href', '/play/s1');
+  });
+});
+
+describe('team invite link', () => {
+  const renderInvite = (token = 'invite-token-1234567') =>
+    render(
+      <I18nProvider>
+        <MemoryRouter initialEntries={[`/join-team/${token}`]}>
+          <Routes>
+            <Route path="/join-team/:inviteToken" element={<InvitePage />} />
+          </Routes>
+        </MemoryRouter>
+      </I18nProvider>,
+    );
+
+  it('puts a teammate on the roster without an account', async () => {
+    renderInvite();
+    expect(await screen.findByTestId('team-invite-name')).toHaveTextContent('Wise Ducks');
+
+    fireEvent.change(screen.getByTestId('team-invite-player'), { target: { value: ' Peter ' } });
+    fireEvent.click(screen.getByTestId('team-invite-submit'));
+
+    expect(await screen.findByTestId('team-invite-joined')).toHaveTextContent('Wise Ducks');
+    expect(apiPost).toHaveBeenCalledWith('/team-access/invite/invite-token-1234567/players', { name: 'Peter' });
+  });
+
+  it('says when the link no longer works', async () => {
+    renderInvite('old-token');
+    expect(await screen.findByTestId('team-invite-error')).toBeInTheDocument();
   });
 });

@@ -21,6 +21,8 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
   const [pin, setPin] = useState(['', '', '', '']);
   const [teamName, setTeamName] = useState('');
   const [tableNumber, setTableNumber] = useState('');
+  const [teamPin, setTeamPin] = useState('');
+  const [askPin, setAskPin] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recent] = useState(recentTeamNames);
@@ -61,9 +63,16 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
     setError(null);
     try {
       const resolvedSessionId = sessionId ?? (await findSessionByCode(code));
-      onJoined(await joinSession(resolvedSessionId, teamName, tableNumber));
+      onJoined(await joinSession(resolvedSessionId, teamName, tableNumber, askPin ? teamPin : ''));
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 404 ? t('play.join.codeNotFound') : describeError(err, t, 'play.join.failed'));
+      const code = err instanceof ApiError ? err.body.code : undefined;
+      // A registered team plays under this name: its members join with the team PIN.
+      if (code === 'TEAM_NAME_RESERVED') setAskPin(true);
+      setError(
+        err instanceof ApiError && err.status === 404 && code !== 'TEAM_NOT_REGISTERED'
+          ? t('play.join.codeNotFound')
+          : describeError(err, t, 'play.join.failed'),
+      );
     } finally {
       setPending(false);
     }
@@ -253,6 +262,35 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
                   className="h-12 w-full rounded-xl bg-surface-container-lowest px-space-md text-body-md text-on-surface outline-none placeholder:text-outline"
                 />
               </label>
+
+              {askPin ? (
+                <label className="flex flex-col gap-space-xs">
+                  <span className="flex items-center gap-1 text-label-md uppercase tracking-wider text-on-surface-variant">
+                    <KeyRound className="h-4 w-4 text-outline" />
+                    {t('team.access.pinLabel')}
+                  </span>
+                  <input
+                    data-testid="player-team-pin"
+                    value={teamPin}
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={6}
+                    onChange={(event) => setTeamPin(event.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    className="h-12 w-full rounded-xl bg-surface-container-lowest px-space-md text-center font-mono text-headline-sm tracking-[0.4em] text-on-surface outline-none placeholder:text-outline"
+                  />
+                  <span className="text-body-sm text-on-surface-variant">{t('team.access.pinJoinHint')}</span>
+                </label>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setAskPin(true)}
+                  className="self-start text-label-md text-primary hover:underline"
+                  data-testid="player-team-pin-toggle"
+                >
+                  {t('team.access.registeredTeam')}
+                </button>
+              )}
 
               <div className="flex flex-col gap-space-sm pt-2">
                 <button

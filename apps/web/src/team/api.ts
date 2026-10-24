@@ -29,6 +29,16 @@ export interface TeamPub extends Pub {
 /** A team can play at several pubs; the primary one is the pub it represents in leagues. */
 export const MAX_TEAM_PUBS = 5;
 
+export interface TeamAccess {
+  pin: string;
+  inviteToken: string;
+}
+
+/** The link a teammate opens to put their name on the roster. */
+export function inviteUrl(inviteToken: string): string {
+  return new URL(`/join-team/${inviteToken}`, window.location.origin).href;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -58,6 +68,10 @@ export const teamApi = {
   update: (token: string, teamId: string, profile: TeamProfile) =>
     apiPatch<RegisteredTeam>(`/registered-teams/${teamId}`, { ...profile, name: profile.name.trim() }, token),
   players: (token: string, teamId: string) => apiGet<Player[]>(`/registered-teams/${teamId}/players`, token),
+  /** The team PIN and invite link secret; created on first use. */
+  access: (token: string, teamId: string) => apiGet<TeamAccess>(`/registered-teams/${teamId}/access`, token),
+  rotateAccess: (token: string, teamId: string, what: 'pin' | 'invite') =>
+    apiPost<TeamAccess>(`/registered-teams/${teamId}/access/rotate`, { what }, token),
   addPlayer: (token: string, teamId: string, name: string) =>
     apiPost<Player>(`/registered-teams/${teamId}/players`, { name: name.trim() }, token),
   renamePlayer: (token: string, teamId: string, playerId: string, name: string) =>

@@ -15,6 +15,10 @@ export interface RegisteredTeamRecord {
   expected_members: number;
   /** Deprecated free-text pub, superseded by `registered_team_pubs`. */
   home_pub: string | null;
+  /** 6 digits that let a teammate's phone play a quiz night as the team; null until first shown. */
+  access_pin?: string | null;
+  /** Secret in the link that lets teammates add their name to the roster; null until first shared. */
+  invite_token?: string | null;
   created_at: string;
 }
 
@@ -34,7 +38,7 @@ export interface NewRegisteredTeam {
 }
 
 export type RegisteredTeamPatch = Partial<
-  Pick<RegisteredTeamRecord, 'name' | 'description' | 'badge' | 'badge_color' | 'expected_members'>
+  Pick<RegisteredTeamRecord, 'name' | 'description' | 'badge' | 'badge_color' | 'expected_members' | 'access_pin' | 'invite_token'>
 >;
 
 interface DbError {
@@ -54,6 +58,9 @@ export abstract class RegisteredTeamsRepository {
   abstract listByCaptain(captainId: string): Promise<RegisteredTeamRecord[]>;
   abstract findById(id: string): Promise<RegisteredTeamRecord | null>;
   abstract isNameTaken(name: string): Promise<boolean>;
+  /** The team registered under this name (case-insensitive). */
+  abstract findByName(name: string): Promise<RegisteredTeamRecord | null>;
+  abstract findByInviteToken(token: string): Promise<RegisteredTeamRecord | null>;
   abstract create(team: NewRegisteredTeam): Promise<RegisteredTeamRecord>;
   abstract update(id: string, patch: RegisteredTeamPatch): Promise<RegisteredTeamRecord>;
   abstract listPlayers(teamId: string): Promise<RegisteredTeamPlayerRecord[]>;
@@ -101,6 +108,23 @@ export class SupabaseRegisteredTeamsRepository extends RegisteredTeamsRepository
       .limit(1);
     if (error) this.fail(error);
     return Boolean(data?.length);
+  }
+
+  async findByName(name: string): Promise<RegisteredTeamRecord | null> {
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('registered_teams')
+      .select('*')
+      .eq('normalized_name', name.trim().toLowerCase())
+      .maybeSingle();
+    if (error) this.fail(error);
+    return (data as RegisteredTeamRecord | null) ?? null;
+  }
+
+  async findByInviteToken(token: string): Promise<RegisteredTeamRecord | null> {
+    const { data, error } = await this.supabase.getClient().from('registered_teams').select('*').eq('invite_token', token).maybeSingle();
+    if (error) this.fail(error);
+    return (data as RegisteredTeamRecord | null) ?? null;
   }
 
   async create(team: NewRegisteredTeam): Promise<RegisteredTeamRecord> {

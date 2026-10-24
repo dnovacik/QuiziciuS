@@ -1,4 +1,5 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomBytes, randomInt } from 'node:crypto';
+import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { TeamLeagueDto } from '@quizicius/shared-types';
 import {
   RegisteredTeamPatch,
@@ -11,6 +12,25 @@ import { PubsService } from '../pubs/pubs.service';
 import { TeamTokenService } from '../teams/team-token.service';
 import { JoinResult, TeamsService } from '../teams/teams.service';
 import { EditTeamDto, RegisterTeamDto } from './dto/registered-team.dto';
+
+/** Wrong PINs allowed per team within the window before it is locked for a while. */
+const PIN_ATTEMPTS = 10;
+const PIN_WINDOW_MS = 15 * 60_000;
+
+const newPin = () => String(randomInt(0, 1_000_000)).padStart(6, '0');
+const newInviteToken = () => randomBytes(18).toString('base64url');
+
+export interface TeamAccess {
+  pin: string;
+  inviteToken: string;
+}
+
+export interface InvitePreview {
+  name: string;
+  badge: string;
+  badgeColor: string;
+  rosterSize: number;
+}
 
 export interface TeamPub {
   id: string;
@@ -38,6 +58,9 @@ function validName(raw: string): string | null {
  */
 @Injectable()
 export class RegisteredTeamsService {
+  /** Recent wrong PIN attempts per registered team. */
+  private readonly pinAttempts = new Map<string, number[]>();
+
   constructor(
     private readonly teams: RegisteredTeamsRepository,
     private readonly pubs: PubsService,
@@ -102,6 +125,64 @@ export class RegisteredTeamsService {
     if (pubsChanged) await this.pubs.setTeamPubs(teamId, dto.pubIds ?? [], dto.primaryPubId);
     if (Object.keys(patch).length) team = await this.teams.update(teamId, patch);
     return this.withPubs(team);
+  }
+
+  /** The team's PIN and invite link secret, created the first time the captain needs them. */
+  async access(captainId: string, teamId: string): Promise<TeamAccess> {
+    let team = await this.own(teamId, captainId);
+    if (!team.access_pin || !team.invite_token) {
+      team = await this.teams.update(teamId, {
+        access_pin: team.access_pin ?? newPin(),
+        invite_token: team.invite_token ?? newInviteToken(),
+      });
+    }
+    return { pin: team.access_pin!, inviteToken: team.invite_token! };
+  }
+
+  /** A new PIN or invite link; the old one stops working at once. */
+  async rotateAccess(captainId: string, teamId: string, what: 'pin' | 'invite'): Promise<TeamAccess> {
+    await this.access(captainId, teamId);
+    const team = await this.teams.update(teamId, what === 'pin' ? { access_pin: newPin() } : { invite_token: newInviteToken() });
+    return { pin: team.access_pin!, inviteToken: team.invite_token! };
+  }
+
+  /** What an invite link shows before a teammate adds their name. */
+  async invitePreview(token: string): Promise<InvitePreview> {
+    const team = await this.byInvite(token);
+    const roster = await this.teams.listPlayers(team.id);
+    return { name: team.name, badge: team.badge, badgeColor: team.badge_color, rosterSize: roster.length };
+  }
+
+  /** A teammate puts their name on the roster through the captain's invite link. */
+  async joinRosterByInvite(token: string, name: string): Promise<RegisteredTeamPlayerRecord> {
+    const team = await this.byInvite(token);
+    return this.teams.addPlayer(team.id, team.captain_id, name);
+  }
+
+  /**
+   * A teammate's phone joins a quiz night as the registered team with the team PIN, e.g. when the
+   * captain is not there. Wrong PINs are counted per team, so the 6 digits cannot be guessed.
+   */
+  async joinSessionWithPin(sessionId: string, name: string, pin: string, tableNumber: string | null): Promise<JoinResult> {
+    const team = await this.teams.findByName(name);
+    if (!team) throw new NotFoundException({ code: 'TEAM_NOT_REGISTERED', message: 'No registered team has this name' });
+    const now = Date.now();
+    const attempts = (this.pinAttempts.get(team.id) ?? []).filter((at) => now - at < PIN_WINDOW_MS);
+    if (attempts.length >= PIN_ATTEMPTS) {
+      throw new HttpException({ code: 'TOO_MANY_ATTEMPTS', message: 'Too many wrong PINs, try again later' }, HttpStatus.TOO_MANY_REQUESTS);
+    }
+    if (!team.access_pin || team.access_pin !== pin) {
+      this.pinAttempts.set(team.id, [...attempts, now]);
+      throw new ForbiddenException({ code: 'WRONG_PIN', message: 'Wrong team PIN' });
+    }
+    this.pinAttempts.delete(team.id);
+    return this.sessionTeams.join(sessionId, team.name, team.id, null, tableNumber);
+  }
+
+  private async byInvite(token: string): Promise<RegisteredTeamRecord> {
+    const team = await this.teams.findByInviteToken(token);
+    if (!team) throw new NotFoundException({ code: 'INVITE_NOT_FOUND', message: 'This invite link is not valid' });
+    return team;
   }
 
   /** The captain joins a live session as the registered team, which links the session team to it. */

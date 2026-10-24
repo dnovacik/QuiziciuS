@@ -203,6 +203,22 @@ describe('joining', () => {
     await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', { name: 'Wise Ducks', tableNumber: '7' }));
   });
 
+  it('joins as a registered team with the team PIN, offered when the name is taken', async () => {
+    vi.mocked(apiPost).mockImplementation(async (path: string) => {
+      if (path === '/sessions/s1/teams/join') throw new ApiError(409, 'reserved', { code: 'TEAM_NAME_RESERVED' });
+      return { teamId: 'team-1', token: 'team-token' };
+    });
+    setState('LOBBY');
+    renderPlay();
+
+    fireEvent.change(screen.getByTestId('player-team-name'), { target: { value: 'Wise Ducks' } });
+    fireEvent.submit(screen.getByTestId('player-join-form'));
+    fireEvent.change(await screen.findByTestId('player-team-pin'), { target: { value: '48-29 15' } });
+    fireEvent.submit(screen.getByTestId('player-join-form'));
+
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/team-access/sessions/s1/join', { name: 'Wise Ducks', pin: '482915' }));
+  });
+
   it('skips the code when arriving through a /play/:id link', async () => {
     vi.mocked(apiPost).mockResolvedValue({ teamId: 'team-1', token: 'team-token' });
     setState('LOBBY');

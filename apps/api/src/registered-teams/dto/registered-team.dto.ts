@@ -1,4 +1,17 @@
-import { ArrayMaxSize, IsArray, IsIn, IsInt, IsOptional, IsString, Length, Max, Min, ValidateIf } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 import { MAX_TEAM_PUBS } from '../../pubs/pubs.service';
 
 export const TEAM_BADGES = ['shield', 'crown', 'bolt', 'star', 'brain', 'trophy'] as const;
@@ -31,4 +44,15 @@ export class PlayerDto {
 export class ClaimSeatDto {
   /** The team token the phone joined the quiz night with. */
   @IsString() @Length(10, 2000) teamToken!: string;
+}
+
+export class RotateAccessDto {
+  @IsIn(['pin', 'invite']) what!: 'pin' | 'invite';
+}
+
+/** A teammate's phone joins a quiz night as the registered team, with the team PIN. */
+export class PinJoinDto {
+  @IsString() @Length(1, 80) name!: string;
+  @Matches(/^[0-9]{6}$/) pin!: string;
+  @IsOptional() @IsString() @MaxLength(10) tableNumber?: string;
 }

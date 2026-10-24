@@ -12,6 +12,7 @@ import {
   Pencil,
   QrCode,
   Radio,
+  RefreshCw,
   Share2,
   SlidersHorizontal,
   Star,
@@ -27,7 +28,7 @@ import { findSessionByCode, normalizeJoinCode } from '../lib/team-seat';
 import { Modal } from '../ui/Modal';
 import { Pending } from '../ui/Pending';
 import { TeamLeagues } from './TeamLeagues';
-import { MAX_PLAYERS, profileOf, teamApi, type Player, type RegisteredTeam, type TeamProfile } from './api';
+import { inviteUrl, MAX_PLAYERS, profileOf, teamApi, type Player, type RegisteredTeam, type TeamAccess, type TeamProfile } from './api';
 import { NameField } from './OnboardingPage';
 import { BadgePicker, CapacityPicker, ColorPicker, PubsPicker, useNameAvailability, usePubList } from './profile-fields';
 import { TeamEmblem } from './TeamEmblem';
@@ -58,6 +59,8 @@ export function TeamDashboard({
   const [rosterError, setRosterError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const access = useTeamAccess(token, team.id);
 
   const loadPlayers = useCallback(() => {
     teamApi
@@ -125,12 +128,15 @@ export function TeamDashboard({
               <Pencil className="h-5 w-5" />
               {t('team.dashboard.edit')}
             </button>
-            <Pending feature="team-invite-link" badge="inline">
-              <span className="flex items-center justify-center gap-space-xs rounded-xl bg-primary-container px-space-md py-space-sm text-label-lg text-on-primary-container">
-                <Share2 className="h-5 w-5" />
-                {t('team.dashboard.share')}
-              </span>
-            </Pending>
+            <button
+              type="button"
+              data-testid="team-share-open"
+              onClick={() => setSharing(true)}
+              className="flex flex-1 items-center justify-center gap-space-xs rounded-xl bg-primary-container px-space-md py-space-sm text-label-lg text-on-primary-container shadow-md transition-all hover:brightness-110 active:scale-95 sm:flex-none"
+            >
+              <Share2 className="h-5 w-5" />
+              {t('team.dashboard.share')}
+            </button>
           </div>
         </div>
       </section>
@@ -187,14 +193,7 @@ export function TeamDashboard({
               </p>
             )}
           </div>
-          <Pending feature="team-access-pin" className="mt-space-md">
-            <div className="flex items-center justify-between gap-space-sm rounded-2xl bg-surface-container-lowest/80 p-space-sm">
-              <div className="flex items-center gap-space-xs">
-                <KeyRound className="h-5 w-5 text-primary" />
-                <span className="text-label-sm text-on-surface-variant">{t('team.roster.pin')}</span>
-              </div>
-            </div>
-          </Pending>
+          <PinCard access={access.value} onRotate={() => void access.rotate('pin')} busy={access.busy} />
         </section>
 
         <div className="flex flex-col gap-space-lg lg:col-span-7">
@@ -252,10 +251,23 @@ export function TeamDashboard({
           }}
         />
       )}
+      {sharing && (
+        <ShareDialog
+          teamName={team.name}
+          access={access.value}
+          busy={access.busy}
+          onRotate={() => void access.rotate('invite')}
+          onClose={() => setSharing(false)}
+        />
+      )}
       {adding && (
         <AddPlayerDialog
           token={token}
           teamId={team.id}
+          onShare={() => {
+            setAdding(false);
+            setSharing(true);
+          }}
           onClose={() => setAdding(false)}
           onAdded={() => {
             setAdding(false);
@@ -576,7 +588,166 @@ function PlayerRow({
   );
 }
 
-function AddPlayerDialog({ token, teamId, onClose, onAdded }: { token: string; teamId: string; onClose: () => void; onAdded: () => void }) {
+/** The team PIN and invite link, loaded (and created on the server) once the dashboard opens. */
+function useTeamAccess(token: string, teamId: string) {
+  const { t } = useI18n();
+  const [value, setValue] = useState<TeamAccess | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    teamApi
+      .access(token, teamId)
+      .then((row) => active && setValue(row))
+      .catch((err) => active && setError(describeError(err, t, 'errors.generic')));
+    return () => {
+      active = false;
+    };
+  }, [token, teamId, t]);
+  const rotate = useCallback(
+    async (what: 'pin' | 'invite') => {
+      setBusy(true);
+      try {
+        setValue(await teamApi.rotateAccess(token, teamId, what));
+      } catch (err) {
+        setError(describeError(err, t, 'errors.generic'));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [token, teamId, t],
+  );
+  return { value, busy, error, rotate };
+}
+
+/** The PIN a teammate's phone needs to play a quiz night as the team; hidden until asked. */
+function PinCard({ access, busy, onRotate }: { access: TeamAccess | null; busy: boolean; onRotate: () => void }) {
+  const { t } = useI18n();
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="mt-space-md flex flex-col gap-space-xs rounded-2xl bg-surface-container-lowest/80 p-space-sm" data-testid="team-pin">
+      <div className="flex items-center justify-between gap-space-sm">
+        <div className="flex items-center gap-space-xs">
+          <KeyRound className="h-5 w-5 text-primary" />
+          <span className="text-label-sm text-on-surface-variant">{t('team.roster.pin')}</span>
+        </div>
+        <div className="flex items-center gap-space-xs">
+          <button
+            type="button"
+            onClick={() => setShown((value) => !value)}
+            className="rounded-lg bg-surface-container-high px-space-sm py-1 font-mono text-headline-sm tracking-[0.3em] text-secondary"
+            data-testid="team-pin-value"
+            aria-label={t(shown ? 'team.access.hidePin' : 'team.access.showPin')}
+          >
+            {access ? (shown ? access.pin : '\u2022'.repeat(6)) : '\u2026'}
+          </button>
+          <button
+            type="button"
+            disabled={busy || !access}
+            onClick={onRotate}
+            className="rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-primary disabled:opacity-50"
+            aria-label={t('team.access.newPin')}
+            data-testid="team-pin-rotate"
+          >
+            <RefreshCw className="h-[18px] w-[18px]" />
+          </button>
+        </div>
+      </div>
+      <p className="text-body-sm text-on-surface-variant">{t('team.access.pinHint')}</p>
+    </div>
+  );
+}
+
+/** The invite link: copy it, share it, or replace it so the old one stops working. */
+function ShareDialog({
+  teamName,
+  access,
+  busy,
+  onRotate,
+  onClose,
+}: {
+  teamName: string;
+  access: TeamAccess | null;
+  busy: boolean;
+  onRotate: () => void;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const [copied, setCopied] = useState(false);
+  const url = access ? inviteUrl(access.inviteToken) : '';
+  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+
+  return (
+    <Modal tone="surface" labelledBy="share-team-title" onClose={onClose} className="max-w-md" testId="share-team-dialog">
+      <div className="flex flex-col gap-space-md">
+        <div className="flex items-center gap-space-xs">
+          <Share2 className="h-6 w-6 text-primary" />
+          <h3 id="share-team-title" className="text-headline-sm text-on-surface">
+            {t('team.access.shareTitle')}
+          </h3>
+        </div>
+        <p className="text-body-sm text-on-surface-variant">{t('team.access.shareText')}</p>
+        <div
+          className="break-all rounded-xl bg-surface-container-lowest p-space-sm text-body-md text-on-surface"
+          data-testid="share-team-url"
+        >
+          {url || '\u2026'}
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-space-sm">
+          <button
+            type="button"
+            disabled={busy || !access}
+            onClick={onRotate}
+            className="mr-auto flex items-center gap-1 text-label-md text-on-surface-variant hover:text-error disabled:opacity-50"
+            data-testid="share-team-rotate"
+          >
+            <RefreshCw className="h-4 w-4" />
+            {t('team.access.newLink')}
+          </button>
+          {canShare && (
+            <button
+              type="button"
+              disabled={!access}
+              onClick={() => void navigator.share({ title: teamName, url }).catch(() => undefined)}
+              className="rounded-xl bg-surface-container-high px-space-md py-space-sm text-label-md text-on-surface hover:bg-surface-bright"
+            >
+              {t('team.dashboard.share')}
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={!access}
+            data-testid="share-team-copy"
+            onClick={() =>
+              void navigator.clipboard
+                ?.writeText(url)
+                .then(() => setCopied(true))
+                .catch(() => undefined)
+            }
+            className="rounded-xl bg-primary-container px-space-md py-space-sm text-label-md font-bold text-on-primary-container disabled:opacity-50"
+          >
+            {t(copied ? 'host.common.copied' : 'team.access.copy')}
+          </button>
+        </div>
+        <p className="text-body-sm text-on-surface-variant">{t('team.access.rotateHint')}</p>
+      </div>
+    </Modal>
+  );
+}
+
+function AddPlayerDialog({
+  token,
+  teamId,
+  onShare,
+  onClose,
+  onAdded,
+}: {
+  token: string;
+  teamId: string;
+  onShare: () => void;
+  onClose: () => void;
+  onAdded: () => void;
+}) {
   const { t } = useI18n();
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -614,12 +785,15 @@ function AddPlayerDialog({ token, teamId, onClose, onAdded }: { token: string; t
           onChange={(event) => setName(event.target.value)}
           placeholder={t('team.roster.namePlaceholder')}
         />
-        <Pending feature="team-invite-link">
-          <div className="space-y-space-xs">
-            <span className="text-label-sm uppercase tracking-wider text-on-surface-variant">{t('team.roster.inviteEmail')}</span>
-            <input className={fieldClass} type="email" placeholder="kamos@pivo.sk" />
-          </div>
-        </Pending>
+        <button
+          type="button"
+          onClick={onShare}
+          className="flex items-center gap-1 text-label-md text-primary hover:underline"
+          data-testid="roster-share-invite"
+        >
+          <Share2 className="h-4 w-4" />
+          {t('team.access.orShare')}
+        </button>
         {error && (
           <p role="alert" className="text-body-sm text-error">
             {error}

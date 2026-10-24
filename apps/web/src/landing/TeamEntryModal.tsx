@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, LogIn, Lock, Mail, Table2, UserPlus, Users, Zap } from 'lucide-react';
-import { apiPost } from '../lib/api-client';
+import { ArrowRight, KeyRound, LogIn, Lock, Mail, Table2, UserPlus, Users, Zap } from 'lucide-react';
+import { ApiError, apiPost } from '../lib/api-client';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase-client';
@@ -22,6 +22,8 @@ export function TeamEntryModal({ onClose, onSwitchToHost }: { onClose: () => voi
   const [code, setCode] = useState('');
   const [teamName, setTeamName] = useState('');
   const [tableNumber, setTableNumber] = useState('');
+  const [teamPin, setTeamPin] = useState('');
+  const [askPin, setAskPin] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [members, setMembers] = useState(4);
@@ -40,6 +42,8 @@ export function TeamEntryModal({ onClose, onSwitchToHost }: { onClose: () => voi
     try {
       await action();
     } catch (error) {
+      // A registered team plays under this name: its members join with the team PIN.
+      if (error instanceof ApiError && error.body.code === 'TEAM_NAME_RESERVED') setAskPin(true);
       setNotice({ tone: 'error', text: describeError(error, t, 'errors.generic') });
     } finally {
       setPending(false);
@@ -50,7 +54,7 @@ export function TeamEntryModal({ onClose, onSwitchToHost }: { onClose: () => voi
     event.preventDefault();
     void run(async () => {
       const sessionId = await findSessionByCode(code);
-      await joinSession(sessionId, teamName, tableNumber);
+      await joinSession(sessionId, teamName, tableNumber, askPin ? teamPin : '');
       navigate(`/play/${sessionId}`);
     });
   }
@@ -161,6 +165,29 @@ export function TeamEntryModal({ onClose, onSwitchToHost }: { onClose: () => voi
               maxLength={10}
             />
           </FieldLabel>
+          {askPin ? (
+            <FieldLabel label={t('team.access.pinLabel')}>
+              <IconInput
+                icon={KeyRound}
+                data-testid="team-pin-input"
+                value={teamPin}
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={6}
+                onChange={(event) => setTeamPin(event.target.value.replace(/\D/g, ''))}
+                placeholder="000000"
+              />
+            </FieldLabel>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAskPin(true)}
+              className="text-label-md text-primary hover:underline"
+              data-testid="team-pin-toggle"
+            >
+              {t('team.access.registeredTeam')}
+            </button>
+          )}
           {notice && <FormNotice tone={notice.tone}>{notice.text}</FormNotice>}
           <button type="submit" data-testid="team-join-submit" disabled={pending} className={`${primaryButtonClass} mt-2`}>
             {submitLabel ?? t('teamEntry.quick.submit')}
