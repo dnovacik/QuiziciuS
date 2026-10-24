@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Beer,
-  Bell,
   CirclePlus,
   Hourglass,
   LayoutGrid,
@@ -24,11 +23,11 @@ import { supabase } from '../lib/supabase-client';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { LogoMark } from '../ui/Logo';
 import { Modal } from '../ui/Modal';
-import { Pending } from '../ui/Pending';
 import type { AccountDto } from '@quizicius/shared-types';
 import { hostApi, type Category, type HostSession } from './api';
 import { PubSelect, useHostPubs } from './pubs';
 import { ownName } from './SettingsPage';
+import { NotificationsBell } from './notifications';
 import { btn, inputClass, Label } from './ui';
 
 const NAV_ITEM =
@@ -188,11 +187,7 @@ export function HostShell({ token, email, account, children }: { token: string; 
           </div>
           <div className="flex items-center gap-space-md">
             <LanguageSwitcher />
-            <Pending feature="notifications" badge="inline">
-              <span className="flex rounded-xl p-space-sm text-on-surface-variant">
-                <Bell className="h-5 w-5" />
-              </span>
-            </Pending>
+            <NotificationsBell token={token} account={account} />
             <div className="hidden items-center gap-space-sm sm:flex">
               <div className="flex flex-col text-right">
                 <span className="max-w-[200px] truncate text-label-lg text-on-surface">{name ?? email}</span>

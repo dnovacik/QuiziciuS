@@ -12,7 +12,6 @@ export const PENDING_FEATURES = {
   'qr-scanner': 'In-app QR scanner on the join screen — phones can scan the projector QR with the camera app meanwhile.',
   'result-certificate': 'Downloadable result certificate for a finished quiz.',
   leagues: 'Leagues section of the host app (pub leagues, seasons, super leagues).',
-  notifications: 'Host notifications (new teams, disputes) in the top bar.',
   'team-ratings': 'Team satisfaction ratings after a quiz night.',
 } as const;
 

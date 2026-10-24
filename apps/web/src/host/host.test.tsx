@@ -10,6 +10,7 @@ import { ControlRoomPage } from './control-room/ControlRoomPage';
 import { DashboardPage } from './DashboardPage';
 import { QuizEditorPage } from './editor/QuizEditorPage';
 import { PubsPage } from './pubs';
+import { NotificationsBell } from './notifications';
 import { SessionsPage } from './SessionsPage';
 import { SettingsPage } from './SettingsPage';
 import { RemotePage } from './control-room/RemotePage';
@@ -1042,6 +1043,55 @@ describe('sessions page', () => {
     fireEvent.click(await screen.findByTestId('history-archive-s2'));
 
     await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s2/archive', { archived: false }, 'jwt'));
+  });
+});
+
+describe('notifications', () => {
+  it('counts what needs the host now and links to each place', async () => {
+    db.sessions = [session('s1', 'QUESTION_REVEAL'), session('s0', 'FINISHED')];
+    db.disputes = [
+      {
+        id: 'd1',
+        sessionId: 's1',
+        questionId: 'q1',
+        teamId: 't2',
+        response: { text: 'Forest Gamp' },
+        isCorrect: null,
+        confidence: 0.7,
+        needsReview: true,
+        gradedBy: null,
+        scoreAwarded: 0,
+        disputed: false,
+        disputeNote: null,
+      },
+    ];
+    db.leagues = [{ id: 'l1', name: 'Zimná liga', myStatus: 'INVITED' } as unknown as HostLeagueDto];
+    const until = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
+    const account = {
+      id: 'h1',
+      email: 'host@pub.sk',
+      displayName: 'host@pub.sk',
+      role: 'HOST' as const,
+      deactivated: false,
+      subscription: { status: 'ACTIVE' as const, until, forever: false },
+    };
+    renderAt('/host', <NotificationsBell token="jwt" account={account} />, '/host');
+
+    expect(await screen.findByTestId('host-notifications-count')).toHaveTextContent('3');
+    fireEvent.click(screen.getByTestId('host-notifications'));
+    expect(screen.getByTestId('host-notice-review:s1')).toHaveAttribute('href', '/host/sessions/s1');
+    expect(screen.getByTestId('host-notice-league:l1')).toHaveTextContent('Zimná liga');
+    expect(screen.getByTestId('host-notice-subscription')).toHaveAttribute('href', '/host/settings');
+  });
+
+  it('says when nothing needs attention', async () => {
+    db.sessions = [session('s0', 'FINISHED')];
+    const account = { id: 'h1', email: 'h@p.sk', displayName: 'h@p.sk', role: 'HOST' as const, deactivated: false, subscription: null };
+    renderAt('/host', <NotificationsBell token="jwt" account={account} />, '/host');
+
+    fireEvent.click(await screen.findByTestId('host-notifications'));
+    await waitFor(() => expect(screen.getByTestId('host-notifications-panel')).toBeInTheDocument());
+    expect(screen.queryByTestId('host-notifications-count')).not.toBeInTheDocument();
   });
 });
 
