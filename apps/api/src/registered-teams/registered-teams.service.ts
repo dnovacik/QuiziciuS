@@ -1,6 +1,6 @@
 import { randomBytes, randomInt } from 'node:crypto';
 import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
-import { TeamLeagueDto } from '@quizicius/shared-types';
+import { PubLeaderboardDto, TeamLeagueDto } from '@quizicius/shared-types';
 import {
   RegisteredTeamPatch,
   RegisteredTeamPlayerRecord,
@@ -217,6 +217,11 @@ export class RegisteredTeamsService {
   }
 
   /** The team's league invitations and leagues, with standings. */
+  /** The leaderboard of a pub, for the captains' area. */
+  pubLeaderboard(pubId: string, period: 'year' | 'all'): Promise<PubLeaderboardDto> {
+    return this.leaguesService.pubLeaderboard(pubId, period);
+  }
+
   async leagues(captainId: string, teamId: string): Promise<TeamLeagueDto[]> {
     await this.own(teamId, captainId);
     return this.leaguesService.forTeam(teamId);

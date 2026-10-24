@@ -15,8 +15,6 @@ export const PENDING_FEATURES = {
   notifications: 'Host notifications (new teams, disputes) in the top bar.',
   'team-ratings': 'Team satisfaction ratings after a quiz night.',
   'scheduled-sessions': 'Planning quiz nights ahead with a date, venue and table capacity.',
-  'session-archive': 'Archiving a finished session into league tables.',
-  'pub-leaderboard': 'Pub / league leaderboard for registered teams.',
 } as const;
 
 export type PendingFeature = keyof typeof PENDING_FEATURES;

@@ -221,6 +221,15 @@ export class QuizEngineService {
     return updated;
   }
 
+  /** Files a finished night away from the sessions list (or brings it back). */
+  async setArchived(sessionId: string, hostId: string, archived: boolean): Promise<SessionRecord> {
+    const session = await this.requireOwnedSession(sessionId, hostId);
+    if (session.status !== 'FINISHED') {
+      throw new ConflictException({ code: 'NOT_FINISHED', message: 'Only a finished quiz night can be archived' });
+    }
+    return this.sessions.updateStatus(sessionId, { archived_at: archived ? new Date().toISOString() : null });
+  }
+
   async resolveDispute(answerId: string, hostId: string, decision: 'APPROVE' | 'REJECT'): Promise<AnswerRecord> {
     const answer = await this.answers.findById(answerId);
     if (!answer) throw new NotFoundException('Answer not found');

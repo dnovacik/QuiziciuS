@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { RequireRole } from '../auth/require-role';
 import { ClaimSeatDto, EditTeamDto, PinJoinDto, PlayerDto, RegisterTeamDto, RotateAccessDto } from './dto/registered-team.dto';
@@ -12,6 +12,12 @@ export class RegisteredTeamsController {
   @Get('mine')
   mine(@CurrentHost() user: CurrentHostPayload) {
     return this.teams.mine(user.id);
+  }
+
+  /** A pub's leaderboard; `period=all` for every night, else this year. */
+  @Get('pubs/:pubId/leaderboard')
+  pubLeaderboard(@Param('pubId') pubId: string, @Query('period') period?: string) {
+    return this.teams.pubLeaderboard(pubId, period === 'all' ? 'all' : 'year');
   }
 
   @Get('availability/:name')

@@ -93,6 +93,18 @@ beforeEach(() => {
         return { available: !data.taken.includes(name), code: 'X' };
       }
       if (path === '/registered-teams/rt1/players') return data.players;
+      if (path.startsWith('/registered-teams/pubs/pub1/leaderboard')) {
+        const period = path.endsWith('all') ? 'all' : 'year';
+        return {
+          pub: { id: 'pub1', name: 'The Golden Lion', city: 'Žilina' },
+          period,
+          nights: period === 'all' ? 9 : 3,
+          standings: [
+            { rank: 1, registeredTeamId: 'rt9', teamName: 'Night Owls', pubId: 'pub1', points: 28, nights: 3, placements: [1, 1, 2] },
+            { rank: 2, registeredTeamId: 'rt1', teamName: 'Wise Ducks', pubId: 'pub1', points: 26, nights: 3, placements: [2, 2, 1] },
+          ],
+        };
+      }
       if (path === '/registered-teams/rt1/access') return { pin: '482915', inviteToken: 'invite-token-1234567' };
       if (path === '/team-access/invite/invite-token-1234567')
         return { name: 'Wise Ducks', badge: 'brain', badgeColor: 'amber', rosterSize: 2 };
@@ -253,6 +265,17 @@ describe('team dashboard', () => {
     fireEvent.click(screen.getByTestId('share-team-rotate'));
     await waitFor(() => expect(screen.getByTestId('share-team-url')).toHaveTextContent('/join-team/invite-token-new-7654321'));
     expect(apiPost).toHaveBeenCalledWith('/registered-teams/rt1/access/rotate', { what: 'invite' }, 'captain-jwt');
+  });
+
+  it("shows the home pub's leaderboard with the own team highlighted, this year or all time", async () => {
+    renderTeam();
+    fireEvent.click(await screen.findByTestId('team-tab-leaderboard'));
+
+    expect(await screen.findByTestId('leaderboard-nights')).toHaveTextContent('The Golden Lion, Žilina · 3');
+    expect(screen.getByTestId('standing-rt1')).toHaveClass('bg-primary-container/20');
+    fireEvent.click(screen.getByTestId('leaderboard-period-all'));
+    await waitFor(() => expect(screen.getByTestId('leaderboard-nights')).toHaveTextContent('· 9'));
+    expect(apiGet).toHaveBeenCalledWith('/registered-teams/pubs/pub1/leaderboard?period=all', 'captain-jwt');
   });
 
   it('adds, renames and removes players', async () => {

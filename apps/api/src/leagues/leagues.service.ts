@@ -9,6 +9,7 @@ import {
   LeagueStandingDto,
   LeagueSummaryDto,
   LeagueTeamStatus,
+  PubLeaderboardDto,
   TeamLeagueDto,
 } from '@quizicius/shared-types';
 import { today } from '../accounts/subscription';
@@ -411,6 +412,31 @@ export class LeaguesService {
   }
 
   /** What players and the projector may know about a night's league. */
+  /**
+   * A pub's leaderboard: every registered team that played a finished night there, ranked with the
+   * league place points. `year` counts this calendar year's nights only.
+   */
+  async pubLeaderboard(pubId: string, period: 'year' | 'all'): Promise<PubLeaderboardDto> {
+    const pub = await this.pubs.findById(pubId);
+    if (!pub) throw new NotFoundException({ code: 'PUB_NOT_FOUND', message: 'Pub not found' });
+    const year = String(new Date().getFullYear());
+    const finished = (await this.sessions.listFinishedByPub(pubId)).filter(
+      (session) => period === 'all' || (session.finished_at ?? session.created_at).startsWith(year),
+    );
+    const nights = await this.nights({ finished } as LeagueData);
+    const teamIds = [
+      ...new Set(nights.flatMap((night) => night.teams.map((team) => team.registeredTeamId)).filter((id): id is string => !!id)),
+    ];
+    const names = await this.teamNames(teamIds);
+    const members: LeagueMember[] = teamIds.map((id) => ({ registeredTeamId: id, teamName: names.get(id) ?? '—', pubId }));
+    return {
+      pub: { id: pub.id, name: pub.name, city: pub.city },
+      period,
+      nights: nights.length,
+      standings: leagueStandings(nights, members),
+    };
+  }
+
   async publicInfo(leagueId: string): Promise<{ id: string; name: string; kind: LeagueKind } | null> {
     const league = await this.leagues.findById(leagueId);
     return league && { id: league.id, name: league.name, kind: league.kind };

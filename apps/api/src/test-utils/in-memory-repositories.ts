@@ -71,6 +71,10 @@ export class InMemorySessionsRepository extends SessionsRepository {
     return [...this.rows.values()].filter((row) => row.league_id === leagueId);
   }
 
+  async listFinishedByPub(pubId: string): Promise<SessionRecord[]> {
+    return [...this.rows.values()].filter((row) => row.pub_id === pubId && row.status === 'FINISHED');
+  }
+
   async findById(id: string): Promise<SessionRecord | null> {
     return this.rows.get(id) ?? null;
   }

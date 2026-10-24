@@ -8,6 +8,7 @@ import { SessionsRepository } from '../data/sessions.repository';
 import { PubsService } from '../pubs/pubs.service';
 import { QuizEngineService } from '../quiz-engine/quiz-engine.service';
 import { AddPaperScoreDto } from './dto/add-paper-score.dto';
+import { ArchiveSessionDto } from './dto/archive-session.dto';
 import { ControlTimerDto } from './dto/control-timer.dto';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
@@ -104,6 +105,12 @@ export class SessionsController {
   @RequireRole('HOST')
   closeAnswers(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload) {
     return this.quizEngine.closeAnswers(sessionId, host.id);
+  }
+
+  @Post('sessions/:sessionId/archive')
+  @RequireRole('HOST')
+  archive(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: ArchiveSessionDto) {
+    return this.quizEngine.setArchived(sessionId, host.id, dto.archived);
   }
 
   @Post('answers/:answerId/resolve-dispute')

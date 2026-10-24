@@ -189,7 +189,7 @@ export function ControlRoomPage({ token }: { token: string }) {
               {tab === 'lobby' && <LobbyPanel room={room} sessionId={sessionId} onCancel={() => setEnding(true)} />}
               {tab === 'question' && <QuestionPanel room={room} onReview={() => setTab('review')} onEnd={() => setEnding(true)} />}
               {tab === 'review' && <ReviewPanel room={room} token={token} sessionId={sessionId} onDone={() => setTab('results')} />}
-              {tab === 'results' && <ResultsPanel room={room} projectorUrl={projectorUrl} />}
+              {tab === 'results' && <ResultsPanel room={room} token={token} projectorUrl={projectorUrl} />}
             </>
           )}
         </div>

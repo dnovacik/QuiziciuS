@@ -1,8 +1,11 @@
 import { Archive, Crown, Download, Medal, MonitorPlay } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { describeError } from '../../lib/errors';
 import { useI18n } from '../../lib/i18n';
 import { rankTeams, type RankedTeam } from '../../lib/quiz';
-import { Pending } from '../../ui/Pending';
-import { btn } from '../ui';
+import { hostApi } from '../api';
+import { btn, useToast } from '../ui';
 import type { ControlRoom } from './use-control-room';
 
 function downloadCsv(filename: string, rows: (string | number)[][]) {
@@ -16,8 +19,24 @@ function downloadCsv(filename: string, rows: (string | number)[][]) {
 }
 
 /** Stitch "Výsledky" — podium, the rest of the table, CSV export. */
-export function ResultsPanel({ room, projectorUrl }: { room: ControlRoom; projectorUrl: string }) {
+export function ResultsPanel({ room, token, projectorUrl }: { room: ControlRoom; token: string; projectorUrl: string }) {
   const { t, plural } = useI18n();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const [archiving, setArchiving] = useState(false);
+
+  /** Files the finished night away and goes back to the sessions list. */
+  async function archive() {
+    setArchiving(true);
+    try {
+      await hostApi.archiveSession(token, room.state!.id, true);
+      toast(t('host.sessions.archived'));
+      navigate('/host/sessions');
+    } catch (err) {
+      room.setError(describeError(err, t, 'errors.generic'));
+      setArchiving(false);
+    }
+  }
   const state = room.state!;
   const ranked = rankTeams(state.teams);
   const [first, second, third] = ranked;
@@ -59,12 +78,12 @@ export function ResultsPanel({ room, projectorUrl }: { room: ControlRoom; projec
             <Download className="h-[18px] w-[18px]" />
             {t('host.room.exportCsv')}
           </button>
-          <Pending feature="session-archive" badge="inline">
-            <span className={btn.primary}>
+          {finished && (
+            <button type="button" className={btn.primary} disabled={archiving} onClick={() => void archive()} data-testid="results-archive">
               <Archive className="h-[18px] w-[18px]" />
               {t('host.room.archive')}
-            </span>
-          </Pending>
+            </button>
+          )}
         </div>
       </div>
 
