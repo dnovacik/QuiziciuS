@@ -92,6 +92,7 @@ beforeEach(() => {
       badgeColor: 'amber',
       createdAt: '2026-10-02T18:00:00Z',
       captainEmail: 'cap@example.com',
+      captainName: null,
       pubs: [
         { id: 'p2', name: 'Zlatý Bažant', city: 'Žilina', primary: false },
         { id: 'p1', name: 'KC Hoffman', city: 'Žilina', primary: true },

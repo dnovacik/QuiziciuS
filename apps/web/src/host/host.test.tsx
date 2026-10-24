@@ -333,6 +333,25 @@ describe('quiz editor', () => {
     );
   });
 
+  it('splits accepted answers written as a list into separate variants', async () => {
+    db.questions.quiz1[0] = question('q1', 0, { type: 'FREE_TEXT', options: null, accepted_answers: ['Missouri, Misouri'] });
+    renderEditor();
+
+    fireEvent.click(await screen.findByTestId('editor-accepted-split-0'));
+    expect(screen.getByTestId('editor-accepted-0')).toHaveValue('Missouri');
+    expect(screen.getByTestId('editor-accepted-1')).toHaveValue('Misouri');
+    expect(screen.queryByTestId('editor-accepted-listed-0')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('editor-save'));
+
+    await waitFor(() =>
+      expect(apiPatch).toHaveBeenCalledWith(
+        '/quizzes/quiz1/questions/q1',
+        expect.objectContaining({ acceptedAnswers: ['Missouri', 'Misouri'] }),
+        'jwt',
+      ),
+    );
+  });
+
   it('edits and saves the selected question with the full payload', async () => {
     renderEditor();
     const prompt = await screen.findByTestId('editor-prompt');

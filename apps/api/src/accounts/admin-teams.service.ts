@@ -8,10 +8,16 @@ export interface AdminTeamDto {
   badgeColor: string;
   createdAt: string;
   captainEmail: string | null;
+  /** The name the captain set; null while it is still just the e-mail. */
+  captainName: string | null;
   /** Pubs the team registered with, primary first. */
   pubs: { id: string; name: string; city: string; primary: boolean }[];
   /** Free-text home pub from before shared pubs existed; shown only when `pubs` is empty. */
   legacyHomePub: string | null;
+}
+
+function captainNameOf(profile: { email: string | null; display_name: string } | undefined): string | null {
+  return profile && profile.display_name !== profile.email ? profile.display_name : null;
 }
 
 /** Moderation of self-registered teams (name squatting, fake teams). */
@@ -38,17 +44,20 @@ export class AdminTeamsService {
     }[];
     const captainIds = [...new Set(teams.map((team) => team.captain_id))];
     const { data: profiles, error: profileError } = captainIds.length
-      ? await client.from('profiles').select('id,email').in('id', captainIds)
+      ? await client.from('profiles').select('id,email,display_name').in('id', captainIds)
       : { data: [], error: null };
     if (profileError) throw new InternalServerErrorException(profileError.message);
-    const emailById = new Map(((profiles ?? []) as { id: string; email: string | null }[]).map((row) => [row.id, row.email]));
+    const captainById = new Map(
+      ((profiles ?? []) as { id: string; email: string | null; display_name: string }[]).map((row) => [row.id, row]),
+    );
     return teams.map((team) => ({
       id: team.id,
       name: team.name,
       badge: team.badge,
       badgeColor: team.badge_color,
       createdAt: team.created_at,
-      captainEmail: emailById.get(team.captain_id) ?? null,
+      captainEmail: captainById.get(team.captain_id)?.email ?? null,
+      captainName: captainNameOf(captainById.get(team.captain_id)),
       pubs: (team.registered_team_pubs ?? [])
         .map((link) => ({ ...link.pubs, primary: link.is_primary }))
         .sort((a, b) => Number(b.primary) - Number(a.primary) || a.name.localeCompare(b.name)),

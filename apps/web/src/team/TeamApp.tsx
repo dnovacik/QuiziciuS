@@ -5,6 +5,7 @@ import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase-client';
 import { clearPendingClaim, pendingClaim } from '../lib/team-seat';
+import { useAccount } from '../lib/use-account';
 import { useHostSession } from '../lib/use-host-session';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 import { Logo } from '../ui/Logo';
@@ -17,6 +18,7 @@ import { TeamDashboard } from './TeamDashboard';
 export default function TeamApp() {
   const { t } = useI18n();
   const { session, loading, token } = useHostSession();
+  const { account, reload: reloadAccount } = useAccount(token);
   const [teams, setTeams] = useState<RegisteredTeam[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -48,7 +50,7 @@ export default function TeamApp() {
 
   if (!session || !token) {
     return (
-      <TeamShell email={null} teamName={null}>
+      <TeamShell captain={null} teamName={null}>
         <div
           className="mx-auto flex max-w-lg flex-col items-center gap-space-md rounded-3xl bg-surface-container-low/90 p-space-xl text-center shadow-2xl"
           data-testid="team-signed-out"
@@ -67,11 +69,13 @@ export default function TeamApp() {
   }
 
   const email = session.user.email ?? '';
+  // Accounts start with the e-mail as their name; only a name the captain set counts as one.
+  const ownName = account && account.displayName !== account.email ? account.displayName : null;
   const team = teams?.[0] ?? null;
   const metadata = session.user.user_metadata as { team_name?: string; expected_members?: number };
 
   return (
-    <TeamShell email={email} teamName={team?.name ?? null}>
+    <TeamShell captain={ownName ?? email} teamName={team?.name ?? null}>
       {error && (
         <p role="alert" className="mx-auto mb-space-md max-w-7xl rounded-xl bg-error-container/30 p-space-md text-on-error-container">
           {error}
@@ -94,12 +98,16 @@ export default function TeamApp() {
           token={token}
           team={team}
           email={email}
+          captainName={ownName}
+          onCaptainRenamed={reloadAccount}
           onUpdated={(updated) => setTeams((list) => (list ?? []).map((row) => (row.id === updated.id ? updated : row)))}
         />
       ) : (
         <OnboardingPage
           token={token}
           email={email}
+          captainName={ownName}
+          onCaptainRenamed={reloadAccount}
           suggestedName={claim?.teamName ?? metadata.team_name ?? ''}
           suggestedMembers={metadata.expected_members ?? 4}
           onCreated={(created) => setTeams([created])}
@@ -110,7 +118,7 @@ export default function TeamApp() {
 }
 
 /** Header from the Stitch captain screens: logo, team-area navigation, language and the captain chip. */
-function TeamShell({ email, teamName, children }: { email: string | null; teamName: string | null; children: ReactNode }) {
+function TeamShell({ captain, teamName, children }: { captain: string | null; teamName: string | null; children: ReactNode }) {
   const { t } = useI18n();
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-surface-container-lowest text-on-surface" data-testid="team-app">
@@ -150,13 +158,15 @@ function TeamShell({ email, teamName, children }: { email: string | null; teamNa
               </a>
             )}
             <LanguageSwitcher />
-            {email && (
+            {captain && (
               <div className="flex items-center gap-space-sm rounded-full bg-surface-container-low py-1 pl-space-xs pr-space-md shadow-[0_1px_8px_rgba(0,0,0,0.4)]">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">
                   <UserRound className="h-[18px] w-[18px] text-on-primary" />
                 </div>
                 <div className="hidden flex-col text-left lg:flex">
-                  <span className="max-w-[180px] truncate text-label-md leading-tight text-on-surface">{email}</span>
+                  <span className="max-w-[180px] truncate text-label-md leading-tight text-on-surface" data-testid="team-captain-chip">
+                    {captain}
+                  </span>
                   {teamName && (
                     <span className="flex items-center gap-1 text-label-sm text-secondary">
                       <Award className="h-3 w-3" />

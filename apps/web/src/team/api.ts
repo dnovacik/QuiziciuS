@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
-import type { TeamLeagueDto } from '@quizicius/shared-types';
+import type { AccountDto, TeamLeagueDto } from '@quizicius/shared-types';
 import type { Pub } from '../lib/pubs';
 import { saveSeat, type TeamSeat } from '../lib/team-seat';
 
@@ -48,6 +48,8 @@ export interface TeamProfile {
 export const MAX_PLAYERS = 6;
 
 export const teamApi = {
+  /** The captain's own name, shown instead of the e-mail; empty resets it to the e-mail. */
+  renameCaptain: (token: string, displayName: string) => apiPatch<AccountDto>('/me', { displayName: displayName.trim() }, token),
   mine: (token: string) => apiGet<RegisteredTeam[]>('/registered-teams/mine', token),
   availability: (token: string, name: string) =>
     apiGet<{ available: boolean; code: string }>(`/registered-teams/availability/${encodeURIComponent(name.trim().toLowerCase())}`, token),

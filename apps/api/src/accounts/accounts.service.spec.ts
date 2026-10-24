@@ -88,6 +88,15 @@ describe('AccountsService', () => {
     });
   });
 
+  it('lets an account set its own name, and falls back to the e-mail when it is cleared', async () => {
+    const { service, profiles } = buildService();
+    profiles.add('captain-1', 'TEAM_CAPTAIN', 'captain@example.com');
+
+    expect((await service.rename('captain-1', '  Jana   Nováková ')).displayName).toBe('Jana Nováková');
+    expect((await service.me('captain-1')).displayName).toBe('Jana Nováková');
+    expect((await service.rename('captain-1', '   ')).displayName).toBe('captain@example.com');
+  });
+
   describe('subscriptions', () => {
     it('starts a 14-day trial for an invited host', async () => {
       const { service } = buildService();

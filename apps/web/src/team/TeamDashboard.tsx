@@ -41,11 +41,16 @@ export function TeamDashboard({
   token,
   team,
   email,
+  captainName,
+  onCaptainRenamed,
   onUpdated,
 }: {
   token: string;
   team: RegisteredTeam;
   email: string;
+  /** The name the captain set; null while it is still just the e-mail. */
+  captainName: string | null;
+  onCaptainRenamed: () => void;
   onUpdated: (team: RegisteredTeam) => void;
 }) {
   const { t, plural } = useI18n();
@@ -105,7 +110,7 @@ export function TeamDashboard({
                 </span>
                 <span className="flex items-center gap-1 rounded-xl bg-tertiary-container/30 px-space-sm py-1 text-label-md text-tertiary">
                   <Check className="h-4 w-4" />
-                  {t('team.captain')}: {email}
+                  {t('team.captain')}: {captainName ?? email}
                 </span>
               </div>
             </div>
@@ -164,18 +169,7 @@ export function TeamDashboard({
               </p>
             )}
             <ul className="space-y-space-xs">
-              <li className="flex items-center justify-between rounded-2xl bg-surface-container-high/70 p-space-sm shadow-sm">
-                <div className="flex min-w-0 items-center gap-space-sm">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary-container text-headline-sm font-bold text-on-secondary-container">
-                    {email.slice(0, 1).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <span className="block truncate text-label-lg text-on-surface">{email}</span>
-                    <span className="rounded bg-secondary/20 px-1.5 text-label-sm text-secondary">{t('team.captain')}</span>
-                  </div>
-                </div>
-                <Star className="h-5 w-5 text-secondary" />
-              </li>
+              <CaptainRow token={token} email={email} name={captainName} onRenamed={onCaptainRenamed} onError={setRosterError} />
               {players.map((player) => (
                 <PlayerRow
                   key={player.id}
@@ -361,6 +355,118 @@ function JoinQuizBar({ token, team }: { token: string; team: RegisteredTeam }) {
         </p>
       )}
     </section>
+  );
+}
+
+/** The captain at the top of the roster: their own name (the e-mail until they set one), editable. */
+function CaptainRow({
+  token,
+  email,
+  name,
+  onRenamed,
+  onError,
+}: {
+  token: string;
+  email: string;
+  name: string | null;
+  onRenamed: () => void;
+  onError: (message: string | null) => void;
+}) {
+  const { t } = useI18n();
+  const [renaming, setRenaming] = useState(false);
+  const [value, setValue] = useState(name ?? '');
+  const [busy, setBusy] = useState(false);
+  const shown = name ?? email;
+
+  async function save() {
+    setBusy(true);
+    onError(null);
+    try {
+      await teamApi.renameCaptain(token, value);
+      setRenaming(false);
+      onRenamed();
+    } catch (err) {
+      onError(describeError(err, t, 'errors.generic'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <li
+      className="flex items-center justify-between gap-space-sm rounded-2xl bg-surface-container-high/70 p-space-sm shadow-sm"
+      data-testid="roster-captain"
+    >
+      {renaming ? (
+        <form
+          className="flex flex-1 items-center gap-space-xs"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void save();
+          }}
+        >
+          <input
+            autoFocus
+            data-testid="captain-name-input"
+            value={value}
+            maxLength={60}
+            placeholder={t('team.captainName.placeholder')}
+            onChange={(event) => setValue(event.target.value)}
+            className="min-w-0 flex-1 rounded-lg bg-surface-container-lowest px-space-sm py-1.5 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-lg p-1.5 text-tertiary hover:bg-surface-container"
+            aria-label={t('host.editor.save')}
+            data-testid="captain-name-save"
+          >
+            <Check className="h-[18px] w-[18px]" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setRenaming(false)}
+            className="rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container"
+            aria-label={t('host.common.cancel')}
+          >
+            <X className="h-[18px] w-[18px]" />
+          </button>
+        </form>
+      ) : (
+        <>
+          <div className="flex min-w-0 items-center gap-space-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary-container text-headline-sm font-bold text-on-secondary-container">
+              {shown.slice(0, 1).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <span className="block truncate text-label-lg text-on-surface" data-testid="captain-name">
+                {shown}
+              </span>
+              <span className="flex flex-wrap items-center gap-x-space-xs">
+                <span className="rounded bg-secondary/20 px-1.5 text-label-sm text-secondary">{t('team.captain')}</span>
+                {name && <span className="truncate text-label-sm text-on-surface-variant">{email}</span>}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setValue(name ?? '');
+                setRenaming(true);
+              }}
+              className={`flex items-center gap-1 rounded-lg p-1 text-label-sm transition-colors hover:text-primary ${name ? 'text-on-surface-variant' : 'text-primary'}`}
+              aria-label={t('team.captainName.edit')}
+              data-testid="captain-rename"
+            >
+              <Pencil className="h-[18px] w-[18px]" />
+              {!name && <span>{t('team.captainName.add')}</span>}
+            </button>
+            <Star className="h-5 w-5 text-secondary" />
+          </div>
+        </>
+      )}
+    </li>
   );
 }
 

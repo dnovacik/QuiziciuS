@@ -47,6 +47,7 @@ const data = vi.hoisted(() => ({
   taken: [] as string[],
   leagues: [] as TeamLeagueDto[],
   claimError: null as Error | null,
+  captainName: 'captain@example.com',
 }));
 
 function renderTeam() {
@@ -71,10 +72,20 @@ beforeEach(() => {
   data.taken = ['pub mozarts'];
   data.leagues = [];
   data.claimError = null;
+  data.captainName = 'captain@example.com';
   sessionStorage.clear();
   vi.mocked(apiGet)
     .mockReset()
     .mockImplementation(async (path: string) => {
+      if (path === '/me')
+        return {
+          id: 'c1',
+          email: 'captain@example.com',
+          displayName: data.captainName,
+          role: 'TEAM_CAPTAIN',
+          deactivated: false,
+          subscription: null,
+        };
       if (path === '/registered-teams/mine') return data.teams;
       if (path.startsWith('/registered-teams/availability/')) {
         const name = decodeURIComponent(path.split('/').pop()!);
@@ -101,11 +112,24 @@ beforeEach(() => {
     });
   vi.mocked(apiPatch)
     .mockReset()
-    .mockImplementation(async (_path: string, body: unknown) => ({
-      ...TEAM,
-      ...(body as object),
-      name: (body as { name?: string }).name ?? TEAM.name,
-    }));
+    .mockImplementation(async (path: string, body: unknown) => {
+      if (path === '/me') {
+        data.captainName = (body as { displayName: string }).displayName || 'captain@example.com';
+        return {
+          id: 'c1',
+          email: 'captain@example.com',
+          displayName: data.captainName,
+          role: 'TEAM_CAPTAIN',
+          deactivated: false,
+          subscription: null,
+        };
+      }
+      return {
+        ...TEAM,
+        ...(body as object),
+        name: (body as { name?: string }).name ?? TEAM.name,
+      };
+    });
   vi.mocked(apiDelete).mockReset().mockResolvedValue(undefined);
 });
 
@@ -156,6 +180,17 @@ describe('team area', () => {
     expect(await screen.findByTestId('team-dashboard')).toBeInTheDocument();
   });
 
+  it('saves the captain name given while creating the team', async () => {
+    renderTeam();
+    fireEvent.change(await screen.findByTestId('team-name-input'), { target: { value: 'Quiz Wolves' } });
+    fireEvent.change(screen.getByTestId('onboarding-captain-name'), { target: { value: 'Peter Kováč' } });
+    await waitFor(() => expect(screen.getByTestId('team-name-status')).toHaveAttribute('data-status', 'available'));
+    fireEvent.click(screen.getByTestId('team-create-submit'));
+
+    await screen.findByTestId('team-created-dialog');
+    expect(apiPatch).toHaveBeenCalledWith('/me', { displayName: 'Peter Kováč' }, 'captain-jwt');
+  });
+
   it('will not create a team whose name is taken', async () => {
     renderTeam();
     fireEvent.change(await screen.findByTestId('team-name-input'), { target: { value: 'Pub Mozarts' } });
@@ -175,6 +210,20 @@ describe('team dashboard', () => {
     expect(screen.getByTestId('team-pub')).toHaveTextContent('The Golden Lion, Žilina');
     expect(await screen.findByText('Jana')).toBeInTheDocument();
     expect(screen.getByTestId('roster-count')).toHaveTextContent('1 / 6');
+  });
+
+  it('lets the captain set a name, shown instead of the e-mail', async () => {
+    renderTeam();
+    expect(await screen.findByTestId('captain-name')).toHaveTextContent('captain@example.com');
+
+    fireEvent.click(screen.getByTestId('captain-rename'));
+    fireEvent.change(screen.getByTestId('captain-name-input'), { target: { value: 'Peter Kováč' } });
+    fireEvent.click(screen.getByTestId('captain-name-save'));
+
+    await waitFor(() => expect(screen.getByTestId('captain-name')).toHaveTextContent('Peter Kováč'));
+    expect(apiPatch).toHaveBeenCalledWith('/me', { displayName: 'Peter Kováč' }, 'captain-jwt');
+    expect(screen.getByTestId('roster-captain')).toHaveTextContent('captain@example.com');
+    expect(screen.getByTestId('team-captain-chip')).toHaveTextContent('Peter Kováč');
   });
 
   it('adds, renames and removes players', async () => {

@@ -6,6 +6,7 @@ import { AccountsService, AdminHostDto } from './accounts.service';
 import { AdminTeamDto, AdminTeamsService } from './admin-teams.service';
 import { RenameTeamDto, SetHostActiveDto, SetSubscriptionDto } from './dto/admin-patch.dto';
 import { InviteHostDto } from './dto/invite-host.dto';
+import { RenameAccountDto } from './dto/rename-account.dto';
 
 @Controller()
 export class AccountsController {
@@ -16,6 +17,13 @@ export class AccountsController {
   @RequireRole('TEAM_CAPTAIN')
   me(@CurrentHost() account: CurrentHostPayload): Promise<AccountDto> {
     return this.accounts.me(account.id);
+  }
+
+  /** Sets the signed-in account's own name, e.g. a captain's, shown instead of the e-mail. */
+  @Patch('me')
+  @RequireRole('TEAM_CAPTAIN')
+  rename(@CurrentHost() account: CurrentHostPayload, @Body() dto: RenameAccountDto): Promise<AccountDto> {
+    return this.accounts.rename(account.id, dto.displayName);
   }
 }
 
