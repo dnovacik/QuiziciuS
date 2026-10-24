@@ -185,6 +185,8 @@
   "play.results.shared": "Result ready to share",
   "play.results.home": "Back to home",
   "play.results.certificate": "Download certificate",
+  "play.results.certificateHeading": "Certificate of achievement",
+  "play.results.of": "of",
   "play.reveal.grading.title": "Grading…",
   "play.reveal.grading.subtitle": "Your answer's result is loading.",
   "projector.room": "Room",

@@ -9,7 +9,6 @@ import { useI18n } from '../lib/i18n';
 export const PENDING_FEATURES = {
   'social-login': 'Google / Microsoft sign-in — Supabase OAuth providers are not configured.',
   'remember-me': 'Opt-out of session persistence — Supabase always persists the session.',
-  'result-certificate': 'Downloadable result certificate for a finished quiz.',
   leagues: 'Leagues section of the host app (pub leagues, seasons, super leagues).',
   'team-ratings': 'Team satisfaction ratings after a quiz night.',
 } as const;
