@@ -17,7 +17,7 @@ For each item decide: **build** (add backend + remove the `<Pending>` wrapper) o
 | `result-certificate` | Player final results | Generated certificate (PDF/image) for a team's result | |
 | `leagues` | Host sidebar | Leagues section (pub leagues, seasons, super leagues — see PUBS_AND_LEAGUES.md) | Built (2026-10-23): `/host/leagues`, see `docs/superpowers/specs/2026-10-23-leagues-design.md` |
 | `host-settings` | Host sidebar | Host account / venue settings page | Built (2026-10-24): `/host/settings` — the host name (`PATCH /me`), e-mail and subscription |
-| `notifications` | Host top bar | Notification feed (new teams, disputes) | |
+| `notifications` | Host top bar | Notification feed (new teams, disputes) | Built (2026-10-24): computed from live data, nothing stored — answers to review in running nights, league invitations, subscription ending/expired; refreshed every minute |
 | `team-ratings` | Host dashboard stat | Teams rate the night after it ends | |
 | `scheduled-sessions` | Host dashboard | Sessions planned ahead (date, venue, table capacity, reservations) | Built (2026-10-24), basic data only (date, pub, quiz, note; no capacity or reservations): `/host/schedule`, captains see upcoming nights at their pubs (migration `0022`) |
 | `quiz-default-timer` | Quiz settings | Default answer time stored per quiz | Built (2026-10-24): `quizzes.default_time_limit_seconds`, used for new questions (migration `0018`) |
