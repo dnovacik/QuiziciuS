@@ -10,6 +10,7 @@ import { ControlRoomPage } from './control-room/ControlRoomPage';
 import { DashboardPage } from './DashboardPage';
 import { QuizEditorPage } from './editor/QuizEditorPage';
 import { PubsPage } from './pubs';
+import { SettingsPage } from './SettingsPage';
 import { ToastProvider } from './ui';
 
 vi.mock('../lib/api-client', async (importOriginal) => ({
@@ -38,8 +39,22 @@ vi.mock('../lib/use-session-state', () => ({
 
 const LION: Pub = { id: 'pub1', name: 'U Zlatého leva', city: 'Žilina', address: null };
 const DOG: Pub = { id: 'pub2', name: 'Black Dog', city: 'Bratislava', address: null };
-const QUIZ: Quiz = { id: 'quiz1', title: 'Friday Movies', category_id: 'cat1', pub_id: 'pub1', created_at: '2026-10-01T18:00:00Z' };
-const EMPTY_QUIZ: Quiz = { id: 'quiz2', title: 'History draft', category_id: null, pub_id: null, created_at: '2026-09-01T18:00:00Z' };
+const QUIZ: Quiz = {
+  id: 'quiz1',
+  title: 'Friday Movies',
+  category_id: 'cat1',
+  pub_id: 'pub1',
+  default_time_limit_seconds: 30,
+  created_at: '2026-10-01T18:00:00Z',
+};
+const EMPTY_QUIZ: Quiz = {
+  id: 'quiz2',
+  title: 'History draft',
+  category_id: null,
+  pub_id: null,
+  default_time_limit_seconds: 30,
+  created_at: '2026-09-01T18:00:00Z',
+};
 
 function question(id: string, order: number, overrides: Partial<Question> = {}): Question {
   return {
@@ -55,6 +70,7 @@ function question(id: string, order: number, overrides: Partial<Question> = {}):
     ],
     accepted_answers: null,
     correct_numeric: null,
+    unit: null,
     points: 10,
     time_limit_seconds: 30,
     order_index: order,
@@ -102,6 +118,7 @@ function liveState(status: QuizState, currentId: string | null = null): QuizSess
       correctOptionId: null,
       correctNumeric: null,
       acceptedAnswers: null,
+      unit: null,
     },
     questionEndsAt: status === 'QUESTION_ACTIVE' ? new Date(Date.now() + 20_000).toISOString() : null,
     questionPausedAt: null,
@@ -114,6 +131,7 @@ function liveState(status: QuizState, currentId: string | null = null): QuizSess
         name: 'Wise Ducks',
         isActive: true,
         registeredTeamId: null,
+        tableNumber: null,
         ready: false,
         readyFullscreen: false,
         score: 20,
@@ -124,6 +142,7 @@ function liveState(status: QuizState, currentId: string | null = null): QuizSess
         name: 'Pub Mozarts',
         isActive: true,
         registeredTeamId: null,
+        tableNumber: null,
         ready: false,
         readyFullscreen: false,
         score: 10,
@@ -444,10 +463,39 @@ describe('quiz editor', () => {
     fireEvent.change(screen.getByTestId('settings-title'), { target: { value: 'Saturday Movies' } });
     fireEvent.change(screen.getByTestId('settings-category'), { target: { value: '' } });
     fireEvent.change(screen.getByTestId('settings-pub'), { target: { value: '' } });
+    fireEvent.change(screen.getByTestId('settings-timer'), { target: { value: '45' } });
     fireEvent.click(screen.getByTestId('settings-save'));
 
     await waitFor(() =>
-      expect(apiPatch).toHaveBeenCalledWith('/quizzes/quiz1', { title: 'Saturday Movies', categoryId: null, pubId: null }, 'jwt'),
+      expect(apiPatch).toHaveBeenCalledWith(
+        '/quizzes/quiz1',
+        { title: 'Saturday Movies', categoryId: null, pubId: null, defaultTimeLimitSeconds: 45 },
+        'jwt',
+      ),
+    );
+  });
+
+  it("starts new questions with the quiz's default answer time", async () => {
+    db.quizzes = [{ ...QUIZ, default_time_limit_seconds: 60 }, EMPTY_QUIZ];
+    renderEditor();
+    await screen.findByTestId('editor-prompt');
+    fireEvent.click(screen.getByTestId('editor-add-question'));
+
+    await waitFor(() => expect(screen.getByTestId('editor-timer')).toHaveValue('60'));
+  });
+
+  it('saves the unit of a numeric question', async () => {
+    db.questions.quiz1[0] = question('q1', 0, { type: 'NUMERIC_NEAREST', options: null, correct_numeric: 384 });
+    renderEditor();
+    fireEvent.change(await screen.findByTestId('editor-unit'), { target: { value: ' km ' } });
+    fireEvent.click(screen.getByTestId('editor-save'));
+
+    await waitFor(() =>
+      expect(apiPatch).toHaveBeenCalledWith(
+        '/quizzes/quiz1/questions/q1',
+        expect.objectContaining({ correctNumeric: 384, unit: 'km' }),
+        'jwt',
+      ),
     );
   });
 });
@@ -464,6 +512,15 @@ describe('control room', () => {
     expect(await screen.findByTestId('lobby-unregistered-count')).toHaveTextContent('2 tímy');
     expect(screen.getByTestId('unregistered-t1')).toBeInTheDocument();
     expect(screen.queryByTestId('unregistered-t3')).not.toBeInTheDocument();
+  });
+
+  it('shows the table a team sits at', async () => {
+    const base = liveState('LOBBY');
+    live.state = { ...base, teams: [{ ...base.teams[0], tableNumber: '12' }, base.teams[1]] };
+    renderRoom();
+
+    expect(await screen.findByTestId('room-team-table-t1')).toHaveTextContent('12');
+    expect(screen.queryByTestId('room-team-table-t2')).not.toBeInTheDocument();
   });
 
   it('shows no league markers on an ordinary night', async () => {
@@ -861,6 +918,31 @@ describe('control room', () => {
       await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'QUESTION_ACTIVE' }, 'jwt'));
       projector.close();
     });
+  });
+});
+
+describe('host settings', () => {
+  const ACCOUNT = {
+    id: 'h1',
+    email: 'host@pub.sk',
+    displayName: 'host@pub.sk',
+    role: 'HOST' as const,
+    deactivated: false,
+    subscription: { status: 'ACTIVE' as const, until: '2026-12-31', forever: false },
+  };
+
+  it('saves the host name, shown instead of the e-mail', async () => {
+    const onSaved = vi.fn();
+    vi.mocked(apiPatch).mockResolvedValue({ ...ACCOUNT, displayName: 'Michal Kováč' });
+    renderAt('/host/settings', <SettingsPage token="jwt" account={ACCOUNT} onSaved={onSaved} />, '/host/settings');
+
+    expect(screen.getByTestId('settings-email')).toHaveTextContent('host@pub.sk');
+    expect(screen.getByTestId('settings-name')).toHaveValue('');
+    fireEvent.change(screen.getByTestId('settings-name'), { target: { value: ' Michal Kováč ' } });
+    fireEvent.click(screen.getByTestId('settings-save'));
+
+    await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/me', { displayName: 'Michal Kováč' }, 'jwt'));
+    expect(onSaved).toHaveBeenCalled();
   });
 });
 

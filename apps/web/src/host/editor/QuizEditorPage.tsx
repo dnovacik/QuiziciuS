@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -24,7 +24,6 @@ import { describeError } from '../../lib/errors';
 import { useI18n } from '../../lib/i18n';
 import { isUntimed } from '../../lib/quiz';
 import { Modal } from '../../ui/Modal';
-import { Pending } from '../../ui/Pending';
 import {
   hostApi,
   isAcceptedMedia,
@@ -40,7 +39,7 @@ import { PubSelect, useHostPubs } from '../pubs';
 import { btn, Card, ConfirmDialog, ErrorBanner, inputClass, Label, useToast } from '../ui';
 import { PhonePreview } from './PhonePreview';
 import { QuestionForm } from './QuestionForm';
-import { blankQuestion, cleanForSave, validate } from './question-draft';
+import { blankQuestion, cleanForSave, TIMER_CHOICES, validate } from './question-draft';
 
 const TYPE_ICON: Record<QuestionType, typeof LayoutGrid> = { MULTIPLE_CHOICE: LayoutGrid, FREE_TEXT: Type, NUMERIC_NEAREST: Hash };
 const TYPE_BADGE: Record<QuestionType, string> = { MULTIPLE_CHOICE: 'ABCD', FREE_TEXT: 'Aa', NUMERIC_NEAREST: '#~' };
@@ -79,8 +78,11 @@ export function QuizEditorPage({ token }: { token: string }) {
   const titleDirty = quiz !== null && title.trim() !== quiz.title;
   const dirty = questionDirty || titleDirty;
 
+  // New questions start with the quiz's default answer time.
+  const defaultTimer = useRef(30);
+  defaultTimer.current = quiz?.default_time_limit_seconds ?? 30;
   const startEditing = useCallback((question: Question | null, orderIndex: number) => {
-    const draft = question ? stripIds(question) : blankQuestion(orderIndex);
+    const draft = question ? { ...stripIds(question), unit: question.unit ?? null } : blankQuestion(orderIndex, defaultTimer.current);
     setEditing({ id: question?.id ?? null, draft, original: draft });
   }, []);
 
@@ -642,6 +644,7 @@ function QuizSettingsDialog({
   const [categoryId, setCategoryId] = useState(quiz.category_id ?? '');
   const { pubs } = useHostPubs(token);
   const [pubId, setPubId] = useState(quiz.pub_id ?? '');
+  const [defaultTimer, setDefaultTimer] = useState(quiz.default_time_limit_seconds ?? 30);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -650,7 +653,14 @@ function QuizSettingsDialog({
     setBusy(true);
     setError(null);
     try {
-      onSaved(await hostApi.updateQuiz(token, quiz.id, { title: title.trim(), categoryId: categoryId || null, pubId: pubId || null }));
+      onSaved(
+        await hostApi.updateQuiz(token, quiz.id, {
+          title: title.trim(),
+          categoryId: categoryId || null,
+          pubId: pubId || null,
+          defaultTimeLimitSeconds: defaultTimer,
+        }),
+      );
     } catch (err) {
       setError(describeError(err, t, 'errors.generic'));
       setBusy(false);
@@ -691,14 +701,22 @@ function QuizSettingsDialog({
               ))}
             </select>
           </div>
-          <Pending feature="quiz-default-timer">
-            <div>
-              <Label>{t('host.editor.defaultTimer')}</Label>
-              <select className={`${inputClass} p-space-md`} defaultValue="30">
-                <option value="30">30 {plural('count.seconds', 30)}</option>
-              </select>
-            </div>
-          </Pending>
+          <div>
+            <Label htmlFor="settings-timer">{t('host.editor.defaultTimer')}</Label>
+            <select
+              id="settings-timer"
+              data-testid="settings-timer"
+              className={`${inputClass} p-space-md`}
+              value={defaultTimer}
+              onChange={(event) => setDefaultTimer(Number(event.target.value))}
+            >
+              {TIMER_CHOICES.map((seconds) => (
+                <option key={seconds} value={seconds}>
+                  {isUntimed(seconds) ? t('host.editor.noTimerOption') : `${seconds} ${plural('count.seconds', seconds)}`}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <PubSelect id="settings-pub" testId="settings-pub" pubs={pubs} value={pubId} onChange={setPubId} />
         {error && (

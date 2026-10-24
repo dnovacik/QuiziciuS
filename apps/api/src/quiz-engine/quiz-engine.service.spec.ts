@@ -444,6 +444,7 @@ describe('QuizEngineService.getState', () => {
         name: 'Team A',
         isActive: true,
         registeredTeamId: null,
+        tableNumber: null,
         ready: false,
         readyFullscreen: false,
         score: 3,

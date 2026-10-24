@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import type { AnswerSummaryDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
-import { isUntimed, optionLetter, rankTeams, secondsLeft, useNow } from '../../lib/quiz';
+import { isUntimed, optionLetter, rankTeams, secondsLeft, useNow, withUnit } from '../../lib/quiz';
 import type { Question } from '../api';
 import { btn } from '../ui';
 import { MediaControls } from './MediaControls';
@@ -39,7 +39,7 @@ export function correctLabel(question: Question): string {
     return index >= 0 ? `${optionLetter(index)}) ${question.options![index].label}` : '—';
   }
   if (question.type === 'FREE_TEXT') return question.accepted_answers?.join(', ') ?? '—';
-  return question.correct_numeric === null ? '—' : String(question.correct_numeric);
+  return question.correct_numeric === null ? '—' : withUnit(question.correct_numeric, question.unit);
 }
 
 export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; onReview: () => void; onEnd: () => void }) {

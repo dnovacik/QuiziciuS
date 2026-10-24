@@ -6,6 +6,7 @@ import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { pendingPasswordLink } from '../lib/supabase-client';
 import { useAccount } from '../lib/use-account';
+import { SettingsPage } from './SettingsPage';
 import { useHostSession } from '../lib/use-host-session';
 import { NotHostPage, SetPasswordPage } from '../ui/AccountPages';
 import { AdminPage } from './admin/AdminPage';
@@ -23,7 +24,7 @@ import { ToastProvider } from './ui';
 export default function HostApp() {
   const { t } = useI18n();
   const { session, loading, token } = useHostSession();
-  const { account, error: accountError, loading: accountLoading } = useAccount(token);
+  const { account, error: accountError, loading: accountLoading, reload: reloadAccount } = useAccount(token);
   const [passwordLink, setPasswordLink] = useState(pendingPasswordLink);
 
   if (loading || (token && accountLoading && !account)) {
@@ -77,6 +78,7 @@ export default function HostApp() {
                   <Route path="pubs" element={<PubsPage token={token} />} />
                   <Route path="leagues" element={<LeaguesPage token={token} />} />
                   <Route path="leagues/:leagueId" element={<LeagueDetailPage token={token} />} />
+                  <Route path="settings" element={<SettingsPage token={token} account={account} onSaved={reloadAccount} />} />
                   {account.role === 'SUPER_ADMIN' && <Route path="admin" element={<AdminPage token={token} />} />}
                   <Route path="*" element={<DashboardPage token={token} />} />
                 </Routes>

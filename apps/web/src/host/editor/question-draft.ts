@@ -11,7 +11,8 @@ function freshOptions(): QuestionOption[] {
   return ['a', 'b', 'c', 'd'].map((id, index) => ({ id, label: '', isCorrect: index === 0 }));
 }
 
-export function blankQuestion(orderIndex: number): QuestionDraft {
+/** A new question, with the quiz's default answer time. */
+export function blankQuestion(orderIndex: number, timeLimitSeconds = 30): QuestionDraft {
   return {
     type: 'MULTIPLE_CHOICE',
     prompt: '',
@@ -20,8 +21,9 @@ export function blankQuestion(orderIndex: number): QuestionDraft {
     options: freshOptions(),
     accepted_answers: null,
     correct_numeric: null,
+    unit: null,
     points: 1,
-    time_limit_seconds: 30,
+    time_limit_seconds: timeLimitSeconds,
     order_index: orderIndex,
   };
 }

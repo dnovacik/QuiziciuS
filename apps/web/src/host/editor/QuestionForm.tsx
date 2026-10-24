@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Calculator,
   Check,
@@ -18,7 +17,6 @@ import {
 import type { MediaSlot as MediaSlotName, QuestionType } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
 import { isUntimed, optionLetter } from '../../lib/quiz';
-import { Pending } from '../../ui/Pending';
 import type { QuestionDraft } from '../api';
 import { btn, Card, inputClass, Label } from '../ui';
 import { MediaSlot } from './MediaSlot';
@@ -63,7 +61,6 @@ export function QuestionForm({
   onDelete: () => void;
 }) {
   const { t, plural } = useI18n();
-  const [unit, setUnit] = useState('');
   const options = draft.options ?? [];
   const accepted = draft.accepted_answers ?? [''];
   const timerChoices = TIMER_CHOICES.includes(draft.time_limit_seconds as (typeof TIMER_CHOICES)[number])
@@ -364,17 +361,18 @@ export function QuestionForm({
                 className="w-full rounded-xl bg-surface-container p-space-md text-headline-sm text-secondary placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-secondary/40"
               />
             </div>
-            <Pending feature="numeric-unit">
-              <div className="flex flex-col gap-1.5">
-                <Label>{t('host.editor.unit')}</Label>
-                <input
-                  value={unit}
-                  onChange={(event) => setUnit(event.target.value)}
-                  placeholder={t('host.editor.unitPlaceholder')}
-                  className={`${inputClass} p-space-md`}
-                />
-              </div>
-            </Pending>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="editor-unit">{t('host.editor.unit')}</Label>
+              <input
+                id="editor-unit"
+                data-testid="editor-unit"
+                value={draft.unit ?? ''}
+                maxLength={20}
+                onChange={(event) => onChange({ unit: event.target.value || null })}
+                placeholder={t('host.editor.unitPlaceholder')}
+                className={`${inputClass} p-space-md`}
+              />
+            </div>
           </div>
         </div>
       )}

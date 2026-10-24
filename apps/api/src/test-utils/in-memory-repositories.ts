@@ -132,7 +132,12 @@ export class InMemoryTeamsRepository extends TeamsRepository {
     return [...this.rows.values()].find((t) => t.session_id === sessionId && t.registered_team_id === registeredTeamId) ?? null;
   }
 
-  async upsertJoin(sessionId: string, name: string, registeredTeamId: string | null = null): Promise<TeamRecord> {
+  async upsertJoin(
+    sessionId: string,
+    name: string,
+    registeredTeamId: string | null = null,
+    tableNumber: string | null = null,
+  ): Promise<TeamRecord> {
     const existing = await this.findBySessionAndName(sessionId, name);
     if (existing) {
       const updated = {
@@ -140,6 +145,7 @@ export class InMemoryTeamsRepository extends TeamsRepository {
         is_active: true,
         joined_at: new Date().toISOString(),
         registered_team_id: registeredTeamId ?? existing.registered_team_id,
+        table_number: tableNumber ?? existing.table_number ?? null,
       };
       this.rows.set(updated.id, updated);
       return updated;
@@ -154,6 +160,7 @@ export class InMemoryTeamsRepository extends TeamsRepository {
       registered_team_id: registeredTeamId,
       ready_question_id: null,
       ready_fullscreen: false,
+      table_number: tableNumber,
     };
     this.rows.set(record.id, record);
     return record;
@@ -318,6 +325,7 @@ export class InMemoryQuizzesRepository extends QuizzesRepository {
       host_id: hostId,
       category_id: categoryId,
       pub_id: pubId,
+      default_time_limit_seconds: 30,
       title,
       created_at: new Date().toISOString(),
     };

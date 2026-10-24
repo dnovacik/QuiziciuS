@@ -110,6 +110,7 @@ export class QuestionsController {
       options: dto.options ?? null,
       accepted_answers: dto.acceptedAnswers ?? null,
       correct_numeric: dto.correctNumeric ?? null,
+      unit: dto.type === 'NUMERIC_NEAREST' ? dto.unit?.trim() || null : null,
       points: dto.points ?? 1,
       time_limit_seconds: dto.timeLimitSeconds ?? 30,
       order_index: dto.orderIndex,

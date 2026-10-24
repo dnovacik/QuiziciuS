@@ -28,6 +28,7 @@ import { Pending } from '../ui/Pending';
 import type { AccountDto } from '@quizicius/shared-types';
 import { hostApi, type Category, type HostSession } from './api';
 import { PubSelect, useHostPubs } from './pubs';
+import { ownName } from './SettingsPage';
 import { btn, inputClass, Label } from './ui';
 
 const NAV_ITEM =
@@ -39,6 +40,7 @@ const NAV_ACTIVE =
 export function HostShell({ token, email, account, children }: { token: string; email: string; account: AccountDto; children: ReactNode }) {
   const { t, locale } = useI18n();
   const notice = subscriptionNotice(account.subscription);
+  const name = ownName(account);
   const subscriptionLabel = account.subscription
     ? account.subscription.status === 'FOREVER'
       ? t('account.subscription.FOREVER')
@@ -111,12 +113,10 @@ export function HostShell({ token, email, account, children }: { token: string; 
               <Trophy className="h-5 w-5" />
               {t('host.nav.leagues')}
             </NavLink>
-            <Pending feature="host-settings">
-              <span className={`${NAV_ITEM} text-on-surface-variant`}>
-                <Settings className="h-5 w-5" />
-                {t('host.nav.settings')}
-              </span>
-            </Pending>
+            <NavLink to="/host/settings" className={navLink} data-testid="host-nav-settings">
+              <Settings className="h-5 w-5" />
+              {t('host.nav.settings')}
+            </NavLink>
           </nav>
         </div>
       </div>
@@ -127,9 +127,10 @@ export function HostShell({ token, email, account, children }: { token: string; 
           </div>
           <span className="text-label-sm uppercase text-secondary">{t(`account.role.${account.role}`)}</span>
         </div>
-        <div className="truncate text-body-md font-semibold text-on-surface" title={email}>
-          {email}
+        <div className="truncate text-body-md font-semibold text-on-surface" title={email} data-testid="host-account-name">
+          {name ?? email}
         </div>
+        {name && <div className="truncate text-body-sm text-on-surface-variant">{email}</div>}
         {subscriptionLabel && (
           <div
             data-testid="host-subscription-status"
@@ -194,7 +195,7 @@ export function HostShell({ token, email, account, children }: { token: string; 
             </Pending>
             <div className="hidden items-center gap-space-sm sm:flex">
               <div className="flex flex-col text-right">
-                <span className="max-w-[200px] truncate text-label-lg text-on-surface">{email}</span>
+                <span className="max-w-[200px] truncate text-label-lg text-on-surface">{name ?? email}</span>
                 <span className="text-body-sm text-on-surface-variant">{t(`account.role.${account.role}`)}</span>
               </div>
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary">

@@ -202,6 +202,11 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
           <p className="mt-space-xs max-w-xl text-body-lg text-on-surface-variant">
             {t(`projector.question.${question.type === 'FREE_TEXT' ? 'text' : 'numeric'}Hint`)}
           </p>
+          {question.type === 'NUMERIC_NEAREST' && question.unit && (
+            <p className="mt-space-sm text-headline-md font-bold text-secondary" data-testid="projector-unit">
+              {t('projector.question.unit')}: {question.unit}
+            </p>
+          )}
         </div>
       )}
     </section>

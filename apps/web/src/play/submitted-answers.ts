@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AnswerSummaryDto, QuestionPublicDto } from '@quizicius/shared-types';
 import { apiGet } from '../lib/api-client';
-import { optionLetter } from '../lib/quiz';
+import { optionLetter, withUnit } from '../lib/quiz';
 
 /** What this device sent for a question, kept so the locked screen can show it back. */
 export interface SubmittedAnswer {
@@ -78,5 +78,6 @@ export function describeResponse(question: QuestionPublicDto, response: unknown)
     const index = question.options?.findIndex((option) => option.id === value.optionId) ?? -1;
     return index >= 0 ? { display: question.options![index].label, letter: optionLetter(index) } : { display: '—', letter: null };
   }
-  return { display: String(question.type === 'FREE_TEXT' ? (value.text ?? '—') : (value.value ?? '—')), letter: null };
+  if (question.type === 'FREE_TEXT') return { display: value.text ?? '—', letter: null };
+  return { display: value.value === undefined ? '—' : withUnit(value.value, question.unit), letter: null };
 }
