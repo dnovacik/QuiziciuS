@@ -16,9 +16,11 @@ import {
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { RequireRole } from '../auth/require-role';
 import { QuestionRecord, QuestionsRepository } from '../data/questions.repository';
-import { QuizzesRepository } from '../data/quizzes.repository';
+import { QuizRecord, QuizzesRepository } from '../data/quizzes.repository';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { ImportQuestionsDto } from './dto/import-questions.dto';
 import { normalizeMediaRef } from './media-ref';
+import { CsvRowError, parseQuestionsCsv, questionsToCsv } from './question-csv';
 
 const MB = 1024 * 1024;
 const UPLOADS: Record<string, { ext: string; type: 'image' | 'video' | 'audio'; max: number }> = {
@@ -82,6 +84,56 @@ export class QuestionsController {
     return this.questions.listByQuiz(quizId);
   }
 
+  /** The quiz's questions as a CSV file's text; uploaded media is left out (links only). */
+  @Get('export')
+  async exportCsv(@Param('quizId') quizId: string, @CurrentHost() host: CurrentHostPayload) {
+    const quiz = await this.requireOwnedQuiz(quizId, host.id);
+    const slug =
+      quiz.title
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^A-Za-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .toLowerCase() || 'quiz';
+    return { filename: `${slug}.csv`, csv: questionsToCsv(await this.questions.listByQuiz(quizId)) };
+  }
+
+  /**
+   * Adds the file's questions after the quiz's own. Every row is checked first: on any problem
+   * nothing is stored and INVALID_CSV lists the problems by row.
+   */
+  @Post('import')
+  async importCsv(@Param('quizId') quizId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: ImportQuestionsDto) {
+    const quiz = await this.requireOwnedQuiz(quizId, host.id);
+    const parsed = parseQuestionsCsv(dto.csv);
+    const errors: CsvRowError[] = parsed.ok ? [] : parsed.errors;
+    const existing = await this.questions.listByQuiz(quizId);
+    let next = existing.reduce((max, question) => Math.max(max, question.order_index + 1), 0);
+    const records = (parsed.ok ? parsed.questions : []).map(({ row, media, reveal_media, time_limit_seconds, ...question }) => {
+      const record = {
+        ...question,
+        media: null,
+        reveal_media: null,
+        time_limit_seconds: time_limit_seconds ?? quiz.default_time_limit_seconds,
+        order_index: next++,
+      };
+      try {
+        return {
+          ...record,
+          media: normalizeMediaRef(media, host.id, quizId),
+          reveal_media: normalizeMediaRef(reveal_media, host.id, quizId),
+        };
+      } catch (error) {
+        const response = error instanceof BadRequestException ? (error.getResponse() as { message?: string }) : {};
+        errors.push({ row, message: `Media: ${response.message ?? 'invalid'}` });
+        return record;
+      }
+    });
+    if (errors.length) throw new BadRequestException({ code: 'INVALID_CSV', message: `The file has ${errors.length} problem(s)`, errors });
+    const saved = await this.questions.createMany(quizId, records);
+    return { imported: saved.length };
+  }
+
   @Patch(':questionId')
   async update(
     @Param('quizId') quizId: string,
@@ -116,9 +168,10 @@ export class QuestionsController {
       order_index: dto.orderIndex,
     };
   }
-  private async requireOwnedQuiz(quizId: string, hostId: string): Promise<void> {
+  private async requireOwnedQuiz(quizId: string, hostId: string): Promise<QuizRecord> {
     const quiz = await this.quizzes.findById(quizId);
     if (!quiz) throw new NotFoundException('Quiz not found');
     if (quiz.host_id !== hostId) throw new ForbiddenException('Not your quiz');
+    return quiz;
   }
 }

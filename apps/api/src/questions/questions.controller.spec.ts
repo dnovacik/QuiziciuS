@@ -95,4 +95,61 @@ describe('QuestionsController', () => {
       await expect(controller.createMediaUpload(quizId, host, { mimeType: 'video/mp4', fileSize: 60 * MB })).rejects.toThrow();
     });
   });
+
+  describe('CSV', () => {
+    it('adds imported questions after the existing ones, with the quiz default timer when none is given', async () => {
+      await controller.create(quizId, host, question({}));
+      await quizzes.update(quizId, { default_time_limit_seconds: 45 });
+
+      const result = await controller.importCsv(quizId, host, {
+        csv: 'type,prompt,answer,time_limit_seconds,media_url\nFREE_TEXT,Prvá?,A,,https://youtu.be/dQw4w9WgXcQ\nNUMERIC_NEAREST,Druhá?,7,0,\n',
+      });
+
+      expect(result).toEqual({ imported: 2 });
+      const stored = await questions.listByQuiz(quizId);
+      expect(stored.map((q) => [q.prompt, q.order_index, q.time_limit_seconds])).toEqual([
+        ['Kto spieva?', 0, 30],
+        ['Prvá?', 1, 45],
+        ['Druhá?', 2, 0],
+      ]);
+      expect(stored[1].media).toEqual({ kind: 'youtube', source: 'link', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' });
+    });
+
+    it('stores nothing when any row is wrong, and says which rows', async () => {
+      await expect(
+        controller.importCsv(quizId, host, {
+          csv: 'type,prompt,answer,media_url\nFREE_TEXT,Dobrá?,A,\nFREE_TEXT,Zlá?,A,http://cdn.example/a.mp3\nFREE_TEXT,,A,\n',
+        }),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'INVALID_CSV',
+          errors: [{ row: 4, message: 'prompt is empty' }],
+        },
+      });
+      // Media is only checked once the file itself reads cleanly.
+      await expect(
+        controller.importCsv(quizId, host, {
+          csv: 'type,prompt,answer,media_url\nFREE_TEXT,Dobrá?,A,\nFREE_TEXT,Zlá?,A,http://cdn.example/a.mp3\n',
+        }),
+      ).rejects.toMatchObject({ response: { errors: [{ row: 3, message: 'Media: Links must start with https://' }] } });
+
+      expect(await questions.listByQuiz(quizId)).toHaveLength(0);
+    });
+
+    it('exports the quiz under a file name made from its title', async () => {
+      await controller.create(quizId, host, question({}));
+
+      const exported = await controller.exportCsv(quizId, host);
+
+      expect(exported.filename).toBe('hudobny-kviz.csv');
+      expect(exported.csv).toContain('FREE_TEXT,Kto spieva?,,ABBA,,1,30');
+    });
+
+    it("refuses another host's quiz", async () => {
+      await expect(controller.exportCsv(quizId, { id: 'host-2' } as never)).rejects.toThrow('Not your quiz');
+      await expect(controller.importCsv(quizId, { id: 'host-2' } as never, { csv: 'type,prompt,answer\nFREE_TEXT,x,y' })).rejects.toThrow(
+        'Not your quiz',
+      );
+    });
+  });
 });

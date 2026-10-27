@@ -110,6 +110,12 @@ export const hostApi = {
   updateQuestion: (token: string, quizId: string, questionId: string, draft: QuestionDraft) =>
     apiPatch<Question>(`/quizzes/${quizId}/questions/${questionId}`, toPayload(draft), token),
   deleteQuestion: (token: string, quizId: string, questionId: string) => apiDelete(`/quizzes/${quizId}/questions/${questionId}`, token),
+  /** The quiz's questions as CSV text; uploaded media is left out. */
+  exportQuestionsCsv: (token: string, quizId: string) =>
+    apiGet<{ filename: string; csv: string }>(`/quizzes/${quizId}/questions/export`, token),
+  /** Adds the file's questions after the quiz's own; INVALID_CSV (with `errors` by row) stores nothing. */
+  importQuestionsCsv: (token: string, quizId: string, csv: string) =>
+    apiPost<{ imported: number }>(`/quizzes/${quizId}/questions/import`, { csv }, token),
   mediaUrl: (token: string, quizId: string, path: string) =>
     apiGet<{ url: string }>(`/quizzes/${quizId}/questions/media/url?path=${encodeURIComponent(path)}`, token).then((row) => row.url),
 

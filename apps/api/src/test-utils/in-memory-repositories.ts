@@ -109,6 +109,9 @@ export class InMemoryQuestionsRepository extends QuestionsRepository {
     this.rows.set(record.id, record);
     return record;
   }
+  async createMany(quizId: string, inputs: Omit<QuestionRecord, 'id' | 'quiz_id'>[]): Promise<QuestionRecord[]> {
+    return Promise.all(inputs.map((input) => this.create(quizId, input)));
+  }
   async update(quizId: string, id: string, input: Omit<QuestionRecord, 'id' | 'quiz_id'>): Promise<QuestionRecord | null> {
     const record = this.rows.get(id);
     if (!record || record.quiz_id !== quizId) return null;
