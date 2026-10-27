@@ -1,6 +1,9 @@
 # Running a live quiz night from a laptop
 
-Until there is a production setup, the laptop runs everything and an ngrok tunnel makes it
+> The app is hosted at **https://quiz.cognision.eu** (see [DEPLOY_VPS.md](DEPLOY_VPS.md)): the
+> pub's projector computer only needs a browser. This laptop setup is the fallback.
+
+The laptop runs everything and an ngrok tunnel makes it
 reachable for players' phones over the internet (pub Wi-Fi often blocks phones from reaching
 other devices on the same network).
 
