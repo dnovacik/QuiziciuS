@@ -25,6 +25,8 @@ export abstract class QuestionsRepository {
   abstract findById(id: string): Promise<QuestionRecord | null>;
   abstract listByQuiz(quizId: string): Promise<QuestionRecord[]>;
   abstract create(quizId: string, input: Omit<QuestionRecord, 'id' | 'quiz_id'>): Promise<QuestionRecord>;
+  /** Stores all the questions or none of them. */
+  abstract createMany(quizId: string, inputs: Omit<QuestionRecord, 'id' | 'quiz_id'>[]): Promise<QuestionRecord[]>;
   abstract update(quizId: string, id: string, input: Omit<QuestionRecord, 'id' | 'quiz_id'>): Promise<QuestionRecord | null>;
   abstract remove(quizId: string, id: string): Promise<boolean>;
 }
@@ -56,6 +58,16 @@ export class SupabaseQuestionsRepository extends QuestionsRepository {
       .single();
     if (error) throw new InternalServerErrorException(error.message);
     return data as QuestionRecord;
+  }
+  async createMany(quizId: string, inputs: Omit<QuestionRecord, 'id' | 'quiz_id'>[]): Promise<QuestionRecord[]> {
+    // A single insert statement, so Postgres stores every row or none.
+    const { data, error } = await this.supabase
+      .getClient()
+      .from('questions')
+      .insert(inputs.map((input) => ({ quiz_id: quizId, ...input })))
+      .select();
+    if (error) throw new InternalServerErrorException(error.message);
+    return (data ?? []) as QuestionRecord[];
   }
   async update(quizId: string, id: string, input: Omit<QuestionRecord, 'id' | 'quiz_id'>): Promise<QuestionRecord | null> {
     const { data, error } = await this.supabase

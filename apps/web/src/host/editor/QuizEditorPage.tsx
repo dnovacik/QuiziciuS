@@ -5,6 +5,7 @@ import {
   BadgeCheck,
   CheckCircle2,
   Clock,
+  Download,
   GripVertical,
   Hash,
   HelpCircle,
@@ -18,8 +19,10 @@ import {
   Trophy,
   TriangleAlert,
   Type,
+  Upload,
 } from 'lucide-react';
 import type { MediaRefDto, MediaSlot, QuestionType } from '@quizicius/shared-types';
+import { ApiError } from '../../lib/api-client';
 import { describeError } from '../../lib/errors';
 import { useI18n } from '../../lib/i18n';
 import { isUntimed } from '../../lib/quiz';
@@ -53,6 +56,15 @@ interface Editing {
 
 type MobileTab = 'list' | 'editor' | 'preview';
 
+function readText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file, 'utf-8');
+  });
+}
+
 /** Stitch "Správa kvízu a Editor otázok". */
 export function QuizEditorPage({ token }: { token: string }) {
   const { quizId = '' } = useParams<{ quizId: string }>();
@@ -72,6 +84,9 @@ export function QuizEditorPage({ token }: { token: string }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor');
   const [dragId, setDragId] = useState<string | null>(null);
+  /** Rows of a CSV file the API refused, shown with the error until the next try. */
+  const [importErrors, setImportErrors] = useState<{ row: number; message: string }[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const ordered = useMemo(() => [...questions].sort((a, b) => a.order_index - b.order_index), [questions]);
   const questionDirty = editing ? JSON.stringify(editing.draft) !== JSON.stringify(editing.original) : false;
@@ -143,6 +158,7 @@ export function QuizEditorPage({ token }: { token: string }) {
   async function run(action: () => Promise<void>) {
     setBusy(true);
     setError(null);
+    setImportErrors([]);
     try {
       await action();
     } catch (err) {
@@ -246,6 +262,34 @@ export function QuizEditorPage({ token }: { token: string }) {
     });
   }
 
+  const exportCsv = () =>
+    run(async () => {
+      const { filename, csv } = await hostApi.exportQuestionsCsv(token, quizId);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+  const importCsv = (file: File) =>
+    run(async () => {
+      try {
+        const { imported } = await hostApi.importQuestionsCsv(token, quizId, await readText(file));
+        const rows = await hostApi.listQuestions(token, quizId);
+        setQuestions(rows);
+        const first = [...rows].sort((a, b) => a.order_index - b.order_index)[0];
+        if (!editing && first) startEditing(first, first.order_index);
+        toast(`${t('host.editor.imported')}: ${imported}`);
+      } catch (err) {
+        if (err instanceof ApiError && err.body.code === 'INVALID_CSV') {
+          setImportErrors((err.body.errors as { row: number; message: string }[]) ?? []);
+          throw new Error(t('host.editor.importFailed'));
+        }
+        throw err;
+      }
+    });
+
   async function uploadMedia(slot: MediaSlot, file: File) {
     if (!editing) return;
     if (!isAcceptedMedia(file)) {
@@ -337,6 +381,39 @@ export function QuizEditorPage({ token }: { token: string }) {
             </div>
           </div>
           <div className="z-10 flex shrink-0 flex-wrap items-center gap-space-sm">
+            <input
+              ref={fileInput}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              data-testid="editor-import-file"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (file) void importCsv(file);
+              }}
+            />
+            <button
+              type="button"
+              className={btn.ghost}
+              disabled={busy}
+              title={t('host.editor.importHint')}
+              onClick={() => guard(() => fileInput.current?.click())}
+              data-testid="editor-import"
+            >
+              <Upload className="h-5 w-5" />
+              {t('host.editor.import')}
+            </button>
+            <button
+              type="button"
+              className={btn.ghost}
+              disabled={busy || !ordered.length}
+              onClick={() => void exportCsv()}
+              data-testid="editor-export"
+            >
+              <Download className="h-5 w-5" />
+              {t('host.editor.export')}
+            </button>
             <button type="button" className={btn.secondary} onClick={() => setSettingsOpen(true)} data-testid="editor-settings">
               <SlidersHorizontal className="h-5 w-5" />
               {t('host.editor.settings')}
@@ -366,6 +443,21 @@ export function QuizEditorPage({ token }: { token: string }) {
       {error && (
         <div className="mb-space-md">
           <ErrorBanner>{error}</ErrorBanner>
+          {importErrors.length > 0 && (
+            <ul
+              className="mt-space-xs flex flex-col gap-1 rounded-xl bg-surface-container-low p-space-md text-body-sm text-on-surface-variant"
+              data-testid="editor-import-errors"
+            >
+              {importErrors.map((item, index) => (
+                <li key={index}>
+                  <span className="text-label-md text-on-surface">
+                    {t('host.editor.importRow')} {item.row}:
+                  </span>{' '}
+                  {item.message}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

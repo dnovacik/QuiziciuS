@@ -56,6 +56,7 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
     findById: jest.fn().mockResolvedValue(NUMERIC_QUESTION),
     listByQuiz: jest.fn(),
     create: jest.fn(),
+    createMany: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
   };

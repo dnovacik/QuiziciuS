@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { HostLeagueDto, AnswerSummaryDto, QuizSessionStateDto, QuizState, ScheduledNightDto } from '@quizicius/shared-types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../lib/api-client';
+import { ApiError, apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../lib/api-client';
 import type { Pub } from '../lib/pubs';
 import { I18nProvider } from '../lib/i18n';
 import type { HostSession, Question, Quiz } from './api';
@@ -385,6 +385,43 @@ describe('host dashboard', () => {
 
 describe('quiz editor', () => {
   const renderEditor = () => renderAt('/host/quizzes/quiz1', <QuizEditorPage token="jwt" />, '/host/quizzes/:quizId');
+
+  it('imports questions from a CSV file and shows refused rows', async () => {
+    renderEditor();
+    await screen.findByTestId('editor-prompt');
+    const csv = 'type,prompt,answer\nFREE_TEXT,Kto?,ABBA\n';
+    const pick = () =>
+      fireEvent.change(screen.getByTestId('editor-import-file'), {
+        target: { files: [new File([csv], 'kviz.csv', { type: 'text/csv' })] },
+      });
+
+    vi.mocked(apiPost).mockResolvedValueOnce({ imported: 1 });
+    db.questions.quiz1 = [...db.questions.quiz1, question('q4', 3, { prompt: 'Kto?' })];
+    pick();
+    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/quizzes/quiz1/questions/import', { csv }, 'jwt'));
+    expect(await screen.findByText('Kto?')).toBeInTheDocument();
+
+    vi.mocked(apiPost).mockRejectedValueOnce(
+      new ApiError(400, 'The file has 1 problem(s)', { code: 'INVALID_CSV', errors: [{ row: 3, message: 'prompt is empty' }] }),
+    );
+    pick();
+    expect(await screen.findByTestId('editor-import-errors')).toHaveTextContent('3: prompt is empty');
+  });
+
+  it('exports the questions as a CSV download', async () => {
+    const createObjectURL = vi.fn(() => 'blob:csv');
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    renderEditor();
+    await screen.findByTestId('editor-prompt');
+    vi.mocked(apiGet).mockResolvedValueOnce({ filename: 'friday-movies.csv', csv: 'type,prompt\n' });
+
+    fireEvent.click(screen.getByTestId('editor-export'));
+
+    await waitFor(() => expect(click).toHaveBeenCalled());
+    expect(apiGet).toHaveBeenCalledWith('/quizzes/quiz1/questions/export', 'jwt');
+    click.mockRestore();
+  });
 
   it('saves a question without a time limit (0 s)', async () => {
     renderEditor();
