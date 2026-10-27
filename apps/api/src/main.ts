@@ -10,6 +10,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalFilters(new InvalidTransitionExceptionFilter());
   app.setGlobalPrefix('api');
-  await app.listen(process.env.PORT ?? 3000);
+  // HOST=127.0.0.1 keeps the API behind the server's nginx; unset, it listens on every interface.
+  await app.listen(process.env.PORT ?? 3000, process.env.HOST ?? '0.0.0.0');
 }
 bootstrap();
