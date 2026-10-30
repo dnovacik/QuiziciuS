@@ -76,6 +76,7 @@ export class TeamsService {
     registeredTeamId: string | null = null,
     captainId: string | null = null,
     rawTableNumber: string | null = null,
+    attendanceMode: 'IN_PERSON' | 'REMOTE' = 'IN_PERSON',
   ): Promise<JoinResult> {
     const session = await this.sessions.findById(sessionId);
     if (!session) throw new NotFoundException('Session not found');
@@ -98,7 +99,7 @@ export class TeamsService {
       throw new ConflictException({ code: 'TEAM_NAME_RESERVED', message: 'A registered team plays under this name' });
     }
 
-    const team = await this.teams.upsertJoin(sessionId, name, registeredTeamId, rawTableNumber?.trim() || null);
+    const team = await this.teams.upsertJoin(sessionId, name, registeredTeamId, rawTableNumber?.trim() || null, attendanceMode);
     const token = this.teamTokens.sign({ sessionId, teamId: team.id });
     await this.teams.setDeviceTokenHash(team.id, hashToken(token));
 
