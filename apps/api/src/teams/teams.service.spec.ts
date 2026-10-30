@@ -62,7 +62,7 @@ describe('TeamsService.join', () => {
 
     const result = await service.join('s1', 'The Quizzards');
 
-    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', null, null, 'IN_PERSON');
+    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', null, null, 'REMOTE');
     expect(result.teamId).toBe('t1');
     expect(result.name).toBe('The Quizzards');
     expect(teamTokens.verify(result.token)).toMatchObject({ sessionId: 's1', teamId: 't1' });
@@ -74,7 +74,7 @@ describe('TeamsService.join', () => {
 
     await service.join('s1', 'The Quizzards', null, null, ' 12 ');
 
-    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', null, '12', 'IN_PERSON');
+    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', null, '12', 'REMOTE');
   });
 
   it('broadcasts a state change so the host live view picks up the new team', async () => {
@@ -119,7 +119,7 @@ describe('TeamsService.join as a registered team', () => {
 
     await service.join('s1', 'The Quizzards', 'rt1');
 
-    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', 'rt1', null, 'IN_PERSON');
+    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', 'rt1', null, 'REMOTE');
   });
 
   it('keeps the existing session team when the registered team was renamed', async () => {
@@ -128,7 +128,7 @@ describe('TeamsService.join as a registered team', () => {
 
     await service.join('s1', 'Renamed Quizzards', 'rt1');
 
-    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', 'rt1', null, 'IN_PERSON');
+    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', 'rt1', null, 'REMOTE');
   });
 
   it("refuses a one-off team that takes a registered team's name in the session", async () => {
@@ -172,6 +172,6 @@ describe('TeamsService.join by a host-captain', () => {
 
     await service.join('s1', 'The Quizzards', 'rt1', 'another-host');
 
-    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', 'rt1', null, 'IN_PERSON');
+    expect(teams.upsertJoin).toHaveBeenCalledWith('s1', 'The Quizzards', 'rt1', null, 'REMOTE');
   });
 });
