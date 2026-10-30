@@ -296,8 +296,6 @@ export class QuizEngineService {
       rankable.map((p) => ({ teamId: p.answer.team_id, value: p.value })),
       question.correct_numeric,
     );
-    const winnerCount = graded.filter((g) => g.isCorrect).length || 1;
-    const pointsPerWinner = Math.floor(question.points / winnerCount);
 
     const byTeamId = new Map(rankable.map((p) => [p.answer.team_id, p.answer.id]));
     for (const result of graded) {
@@ -306,7 +304,7 @@ export class QuizEngineService {
       await this.answers.updateGrade(answerId, {
         is_correct: result.isCorrect,
         graded_by: 'AUTO',
-        score_awarded: result.isCorrect ? pointsPerWinner : 0,
+        score_awarded: result.isCorrect ? question.points : 0,
       });
     }
 
