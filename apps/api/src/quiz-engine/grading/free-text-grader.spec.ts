@@ -34,8 +34,11 @@ describe('gradeFreeText', () => {
   });
 
   it('accepts the fourth or fifth alternative', () => {
-    expect(gradeFreeText('Prešporok', ['Bratislava', 'Pressburg', 'Pozsony', 'Prešporok', 'Presporok']))
-      .toMatchObject({ isCorrect: true, needsReview: false, matchedAnswer: 'Prešporok' });
+    expect(gradeFreeText('Prešporok', ['Bratislava', 'Pressburg', 'Pozsony', 'Prešporok', 'Presporok'])).toMatchObject({
+      isCorrect: true,
+      needsReview: false,
+      matchedAnswer: 'Prešporok',
+    });
   });
 
   it('accepts a fuzzy score exactly on the acceptance threshold', () => {
