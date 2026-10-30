@@ -54,6 +54,7 @@ export function QuestionScreen({
   const ranked = rankTeams(state.teams);
   const own = ranked.find((team) => team.id === seat.teamId);
   const showStandings = state.scoresVisible ?? false;
+  const attendanceMode = state.teams.find((team) => team.id === seat.teamId)?.attendanceMode ?? seat.attendanceMode ?? 'REMOTE';
 
   if (submitted) {
     return (
@@ -99,7 +100,7 @@ export function QuestionScreen({
       </section>
 
       <RoomProgress state={state} />
-      {seat.attendanceMode === 'IN_PERSON' ? (
+      {attendanceMode === 'IN_PERSON' ? (
         <section className="rounded-xl bg-surface-container-high p-4 text-center text-on-surface" data-testid="player-venue-prompt">
           {t('play.question.projectorPrompt')}
         </section>
