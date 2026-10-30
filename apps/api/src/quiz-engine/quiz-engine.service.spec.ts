@@ -562,7 +562,7 @@ describe('QuizEngineService.getState', () => {
         id: 't1',
         name: 'Team A',
         isActive: true,
-        attendanceMode: 'IN_PERSON',
+        attendanceMode: 'REMOTE',
         registeredTeamId: null,
         tableNumber: null,
         ready: false,
