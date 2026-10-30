@@ -244,12 +244,7 @@ export class QuizEngineService {
       throw new BadRequestException('Points must be between zero and the question maximum');
     }
     if (!isCorrect && points !== 0) throw new BadRequestException('Incorrect answers must receive zero points');
-    const updated = await this.answers.updateGrade(answerId, {
-      is_correct: isCorrect,
-      needs_review: false,
-      graded_by: 'HOST',
-      score_awarded: points,
-    });
+    const updated = await this.answers.overrideGrade(answerId, hostId, isCorrect, points);
     await this.broadcast.publish(session.id, 'SCORE_UPDATE', { teamId: answer.team_id, answerId });
     return updated;
   }
