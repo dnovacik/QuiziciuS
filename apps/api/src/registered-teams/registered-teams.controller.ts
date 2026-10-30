@@ -122,6 +122,6 @@ export class TeamAccessController {
 
   @Post('sessions/:sessionId/join')
   joinWithPin(@Param('sessionId') sessionId: string, @Body() dto: PinJoinDto) {
-    return this.teams.joinSessionWithPin(sessionId, dto.name, dto.pin, dto.tableNumber?.trim() || null, dto.attendanceMode ?? 'IN_PERSON');
+    return this.teams.joinSessionWithPin(sessionId, dto.name, dto.pin, dto.tableNumber?.trim() || null, dto.attendanceMode ?? 'REMOTE');
   }
 }
