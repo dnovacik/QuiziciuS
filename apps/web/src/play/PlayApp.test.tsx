@@ -189,7 +189,7 @@ describe('joining', () => {
 
     expect(await screen.findByTestId('player-lobby')).toBeInTheDocument();
     expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', { name: 'Wise Ducks', attendanceMode: 'IN_PERSON' });
-    expect(JSON.parse(localStorage.getItem('quizicius:team:s1') ?? '{}')).toEqual(SEAT);
+    expect(JSON.parse(localStorage.getItem('quizicius:team:s1') ?? '{}')).toEqual({ ...SEAT, attendanceMode: 'IN_PERSON' });
     expect(screen.getByTestId('player-team-name-display')).toHaveTextContent('Wise Ducks');
     expect(screen.getByTestId('player-team-count')).toHaveTextContent('4');
   });
