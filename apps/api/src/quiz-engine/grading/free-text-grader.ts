@@ -35,6 +35,13 @@ const REVIEW_THRESHOLD = 0.5;
 export function gradeFreeText(response: string, acceptedAnswers: string[]): FreeTextGradeResult {
   const normalizedResponse = normalizeAnswer(response);
 
+  // An exact normalized match should never depend on a fuzzy acceptance threshold.
+  for (const accepted of acceptedAnswers) {
+    if (normalizedResponse && normalizedResponse === normalizeAnswer(accepted)) {
+      return { isCorrect: true, needsReview: false, confidence: 1, matchedAnswer: accepted };
+    }
+  }
+
   let best: { answer: string | null; confidence: number } = { answer: null, confidence: 0 };
   for (const accepted of acceptedAnswers) {
     const confidence = similarity(normalizedResponse, normalizeAnswer(accepted));
@@ -43,7 +50,7 @@ export function gradeFreeText(response: string, acceptedAnswers: string[]): Free
     }
   }
 
-  if (best.confidence > AUTO_ACCEPT_THRESHOLD) {
+  if (best.confidence >= AUTO_ACCEPT_THRESHOLD) {
     return { isCorrect: true, needsReview: false, confidence: best.confidence, matchedAnswer: best.answer };
   }
   if (best.confidence >= REVIEW_THRESHOLD) {
