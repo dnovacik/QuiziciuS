@@ -44,7 +44,13 @@ export async function findSessionByCode(code: string): Promise<string> {
  * Joins a quiz night; the table number (optional) helps the host find the team in the room.
  * With the team PIN, the phone joins as the registered team of that name (e.g. without the captain).
  */
-export async function joinSession(sessionId: string, teamName: string, tableNumber = '', teamPin = '', attendanceMode: AttendanceMode = 'IN_PERSON'): Promise<TeamSeat> {
+export async function joinSession(
+  sessionId: string,
+  teamName: string,
+  tableNumber = '',
+  teamPin = '',
+  attendanceMode: AttendanceMode = 'IN_PERSON',
+): Promise<TeamSeat> {
   const body = {
     name: teamName.trim(),
     ...(tableNumber.trim() ? { tableNumber: tableNumber.trim() } : {}),
