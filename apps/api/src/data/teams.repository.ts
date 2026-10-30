@@ -21,7 +21,13 @@ export interface TeamRecord {
 export abstract class TeamsRepository {
   abstract findById(teamId: string): Promise<TeamRecord | null>;
   abstract findBySessionAndName(sessionId: string, name: string): Promise<TeamRecord | null>;
-  abstract upsertJoin(sessionId: string, name: string, registeredTeamId?: string | null, tableNumber?: string | null, attendanceMode?: 'IN_PERSON' | 'REMOTE'): Promise<TeamRecord>;
+  abstract upsertJoin(
+    sessionId: string,
+    name: string,
+    registeredTeamId?: string | null,
+    tableNumber?: string | null,
+    attendanceMode?: 'IN_PERSON' | 'REMOTE',
+  ): Promise<TeamRecord>;
   abstract findBySessionAndRegisteredTeam(sessionId: string, registeredTeamId: string): Promise<TeamRecord | null>;
   abstract setDeviceTokenHash(teamId: string, tokenHash: string): Promise<TeamRecord>;
   abstract markReady(teamId: string, questionId: string, fullscreen: boolean): Promise<TeamRecord>;
@@ -87,7 +93,13 @@ export class SupabaseTeamsRepository extends TeamsRepository {
     tableNumber: string | null = null,
     attendanceMode: 'IN_PERSON' | 'REMOTE' = 'IN_PERSON',
   ): Promise<TeamRecord> {
-    const row: Record<string, unknown> = { session_id: sessionId, name, is_active: true, joined_at: new Date().toISOString(), attendance_mode: attendanceMode };
+    const row: Record<string, unknown> = {
+      session_id: sessionId,
+      name,
+      is_active: true,
+      joined_at: new Date().toISOString(),
+      attendance_mode: attendanceMode,
+    };
     if (registeredTeamId) row.registered_team_id = registeredTeamId;
     // A rejoin without a table keeps the one given before.
     if (tableNumber) row.table_number = tableNumber;
