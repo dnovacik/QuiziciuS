@@ -254,6 +254,10 @@ export class InMemoryAnswersRepository extends AnswersRepository {
     return [...this.rows.values()].filter((a) => a.session_id === sessionId);
   }
 
+  async overrideGrade(id: string, _hostId: string, isCorrect: boolean, points: number): Promise<AnswerRecord> {
+    return this.updateGrade(id, { is_correct: isCorrect, score_awarded: points, needs_review: false, graded_by: 'HOST' });
+  }
+
   async updateGrade(id: string, patch: AnswerGradePatch): Promise<AnswerRecord> {
     const existing = this.rows.get(id);
     if (!existing) throw new Error('answer not found');
