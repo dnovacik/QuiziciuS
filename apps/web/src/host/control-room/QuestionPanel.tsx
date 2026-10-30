@@ -293,7 +293,9 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
               <div key={answer.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-container-high p-2">
                 <span className="font-bold">{state.teams.find((team) => team.id === answer.teamId)?.name ?? '—'}</span>
                 <span className="min-w-0 flex-1 break-words">{responseLabel(focus, answer)}</span>
-                <span className="text-label-sm">{answer.isCorrect === null ? 'Pending' : answer.isCorrect ? '✓' : '✗'} · {answer.scoreAwarded} / {focus.points}</span>
+                <span className="text-label-sm">
+                  {answer.isCorrect === null ? 'Pending' : answer.isCorrect ? '✓' : '✗'} · {answer.scoreAwarded} / {focus.points}
+                </span>
                 <button
                   type="button"
                   className={btn.secondary}
