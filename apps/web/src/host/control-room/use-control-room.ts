@@ -245,6 +245,7 @@ export function useControlRoom(token: string, sessionId: string) {
   );
 
   return {
+    hostToken: token,
     mediaUrl,
     mediaStatus,
     mediaControl,
