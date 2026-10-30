@@ -55,4 +55,5 @@ export class PinJoinDto {
   @IsString() @Length(1, 80) name!: string;
   @Matches(/^[0-9]{6}$/) pin!: string;
   @IsOptional() @IsString() @MaxLength(10) tableNumber?: string;
+  @IsOptional() @IsIn(['IN_PERSON', 'REMOTE']) attendanceMode?: 'IN_PERSON' | 'REMOTE';
 }
