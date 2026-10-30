@@ -35,6 +35,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
   session.state = {
     id: 's1',
     joinCode: 'A7F3',
+    scoresVisible: true,
     status,
     currentQuestion: null,
     questionEndsAt: null,
