@@ -152,6 +152,8 @@ export const hostApi = {
   listAnswers: (token: string, sessionId: string, questionId?: string) =>
     apiGet<AnswerSummaryDto[]>(`/host/sessions/${sessionId}/answers${questionId ? `?questionId=${questionId}` : ''}`, token),
   listDisputes: (token: string, sessionId: string) => apiGet<AnswerSummaryDto[]>(`/sessions/${sessionId}/disputes`, token),
+  overrideAnswerGrade: (token: string, answerId: string, isCorrect: boolean, points: number) =>
+    apiPatch(`/answers/${answerId}/grade`, { isCorrect, points }, token),
   resolveDispute: (token: string, answerId: string, decision: 'APPROVE' | 'REJECT') =>
     apiPost(`/answers/${answerId}/resolve-dispute`, { decision }, token),
   listInfractions: (token: string, sessionId: string) => apiGet<Infraction[]>(`/sessions/${sessionId}/infractions`, token),
