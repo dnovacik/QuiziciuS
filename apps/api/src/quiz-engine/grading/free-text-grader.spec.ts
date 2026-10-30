@@ -33,6 +33,16 @@ describe('gradeFreeText', () => {
     expect(result).toMatchObject({ isCorrect: false, needsReview: false });
   });
 
+  it('accepts the fourth or fifth alternative', () => {
+    expect(gradeFreeText('Prešporok', ['Bratislava', 'Pressburg', 'Pozsony', 'Prešporok', 'Presporok']))
+      .toMatchObject({ isCorrect: true, needsReview: false, matchedAnswer: 'Prešporok' });
+  });
+
+  it('accepts a fuzzy score exactly on the acceptance threshold', () => {
+    // "abcdx" versus "abcde" is 0.8 similar.
+    expect(gradeFreeText('abcdx', ['abcde']).isCorrect).toBe(true);
+  });
+
   it('picks the best match across multiple accepted answers', () => {
     const result = gradeFreeText('JFK', ['John F. Kennedy', 'JFK']);
     expect(result).toMatchObject({ isCorrect: true, matchedAnswer: 'JFK' });
