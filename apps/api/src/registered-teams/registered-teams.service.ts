@@ -163,7 +163,13 @@ export class RegisteredTeamsService {
    * A teammate's phone joins a quiz night as the registered team with the team PIN, e.g. when the
    * captain is not there. Wrong PINs are counted per team, so the 6 digits cannot be guessed.
    */
-  async joinSessionWithPin(sessionId: string, name: string, pin: string, tableNumber: string | null): Promise<JoinResult> {
+  async joinSessionWithPin(
+    sessionId: string,
+    name: string,
+    pin: string,
+    tableNumber: string | null,
+    attendanceMode: 'IN_PERSON' | 'REMOTE' = 'IN_PERSON',
+  ): Promise<JoinResult> {
     const team = await this.teams.findByName(name);
     if (!team) throw new NotFoundException({ code: 'TEAM_NOT_REGISTERED', message: 'No registered team has this name' });
     const now = Date.now();
@@ -176,7 +182,7 @@ export class RegisteredTeamsService {
       throw new ForbiddenException({ code: 'WRONG_PIN', message: 'Wrong team PIN' });
     }
     this.pinAttempts.delete(team.id);
-    return this.sessionTeams.join(sessionId, team.name, team.id, null, tableNumber);
+    return this.sessionTeams.join(sessionId, team.name, team.id, null, tableNumber, attendanceMode);
   }
 
   private async byInvite(token: string): Promise<RegisteredTeamRecord> {
