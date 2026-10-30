@@ -19,7 +19,7 @@ import type { AnswerSummaryDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
 import { isUntimed, optionLetter, rankTeams, secondsLeft, useNow, withUnit } from '../../lib/quiz';
 import type { Question } from '../api';
-import { hostApi } from '../api';
+import { InlineGrading } from './InlineGrading';
 import { btn } from '../ui';
 import { MediaControls } from './MediaControls';
 import type { ControlRoom } from './use-control-room';
@@ -287,44 +287,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
         )}
 
         {status === 'QUESTION_REVEAL' && focus && (
-          <section className="space-y-2 rounded-xl bg-surface-container p-space-md" data-testid="room-inline-grading">
-            <h3 className="text-headline-sm">{t('host.room.answersTitle')}</h3>
-            {answers.map((answer) => (
-              <div key={answer.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-container-high p-2">
-                <span className="font-bold">{state.teams.find((team) => team.id === answer.teamId)?.name ?? '—'}</span>
-                <span className="min-w-0 flex-1 break-words">{responseLabel(focus, answer)}</span>
-                <span className="text-label-sm">
-                  {answer.isCorrect === null ? 'Pending' : answer.isCorrect ? '✓' : '✗'} · {answer.scoreAwarded} / {focus.points}
-                </span>
-                <button
-                  type="button"
-                  className={btn.secondary}
-                  onClick={() =>
-                    void hostApi.overrideAnswerGrade(room.hostToken, answer.id, true, focus.points).then(() => {
-                      room.refreshAnswers();
-                      room.refetch();
-                    })
-                  }
-                  data-testid={`inline-correct-${answer.id}`}
-                >
-                  <Check className="h-4 w-4" /> {t('host.room.correct')}
-                </button>
-                <button
-                  type="button"
-                  className={btn.secondary}
-                  onClick={() =>
-                    void hostApi.overrideAnswerGrade(room.hostToken, answer.id, false, 0).then(() => {
-                      room.refreshAnswers();
-                      room.refetch();
-                    })
-                  }
-                  data-testid={`inline-wrong-${answer.id}`}
-                >
-                  {t('host.room.wrong')}
-                </button>
-              </div>
-            ))}
-          </section>
+          <InlineGrading room={room} question={focus} answers={answers} />
         )}
         {status === 'LOCK_IN_ROUND' && <ReadyTeams teams={state.teams} />}
         {status === 'QUESTION_REVEAL' && <BreakSetup room={room} />}
