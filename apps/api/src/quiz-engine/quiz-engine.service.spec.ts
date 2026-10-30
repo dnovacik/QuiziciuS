@@ -117,9 +117,13 @@ describe('score visibility', () => {
   it('hides unpublished scores from public session state but not the host', async () => {
     const { service, answers, teams } = buildHarness({ session: { status: 'QUESTION_REVEAL', scores_visible: false } });
     jest.mocked(teams.listBySession).mockResolvedValue([{ id: 't1', name: 'Team 1', is_active: true } as TeamRecord]);
-    jest.mocked(answers.listBySession).mockResolvedValue([{
-      team_id: 't1', question_id: 'q1', score_awarded: 4,
-    } as AnswerRecord]);
+    jest.mocked(answers.listBySession).mockResolvedValue([
+      {
+        team_id: 't1',
+        question_id: 'q1',
+        score_awarded: 4,
+      } as AnswerRecord,
+    ]);
     expect((await service.getState('s1')).teams[0].score).toBe(0);
     expect((await service.getState('s1', true)).teams[0].score).toBe(4);
   });
