@@ -8,6 +8,7 @@ export interface TeamRecord {
   device_token_hash: string | null;
   joined_at: string;
   is_active: boolean;
+  attendance_mode?: 'IN_PERSON' | 'REMOTE';
   /** Set when the team joined as a registered team (through its captain). */
   registered_team_id: string | null;
   /** The question the team last tapped "we're ready" for; ready only while that question is locked in. */
@@ -20,7 +21,13 @@ export interface TeamRecord {
 export abstract class TeamsRepository {
   abstract findById(teamId: string): Promise<TeamRecord | null>;
   abstract findBySessionAndName(sessionId: string, name: string): Promise<TeamRecord | null>;
-  abstract upsertJoin(sessionId: string, name: string, registeredTeamId?: string | null, tableNumber?: string | null): Promise<TeamRecord>;
+  abstract upsertJoin(
+    sessionId: string,
+    name: string,
+    registeredTeamId?: string | null,
+    tableNumber?: string | null,
+    attendanceMode?: 'IN_PERSON' | 'REMOTE',
+  ): Promise<TeamRecord>;
   abstract findBySessionAndRegisteredTeam(sessionId: string, registeredTeamId: string): Promise<TeamRecord | null>;
   abstract setDeviceTokenHash(teamId: string, tokenHash: string): Promise<TeamRecord>;
   abstract markReady(teamId: string, questionId: string, fullscreen: boolean): Promise<TeamRecord>;
@@ -84,8 +91,15 @@ export class SupabaseTeamsRepository extends TeamsRepository {
     name: string,
     registeredTeamId: string | null = null,
     tableNumber: string | null = null,
+    attendanceMode: 'IN_PERSON' | 'REMOTE' = 'REMOTE',
   ): Promise<TeamRecord> {
-    const row: Record<string, unknown> = { session_id: sessionId, name, is_active: true, joined_at: new Date().toISOString() };
+    const row: Record<string, unknown> = {
+      session_id: sessionId,
+      name,
+      is_active: true,
+      joined_at: new Date().toISOString(),
+      attendance_mode: attendanceMode,
+    };
     if (registeredTeamId) row.registered_team_id = registeredTeamId;
     // A rejoin without a table keeps the one given before.
     if (tableNumber) row.table_number = tableNumber;

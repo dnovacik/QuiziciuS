@@ -52,6 +52,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
   session.state = {
     id: 's1',
     joinCode: 'A7F3',
+    scoresVisible: true,
     status,
     currentQuestion: null,
     questionEndsAt: null,
@@ -187,8 +188,8 @@ describe('joining', () => {
     fireEvent.submit(screen.getByTestId('player-join-form'));
 
     expect(await screen.findByTestId('player-lobby')).toBeInTheDocument();
-    expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', { name: 'Wise Ducks' });
-    expect(JSON.parse(localStorage.getItem('quizicius:team:s1') ?? '{}')).toEqual(SEAT);
+    expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', { name: 'Wise Ducks', attendanceMode: 'IN_PERSON' });
+    expect(JSON.parse(localStorage.getItem('quizicius:team:s1') ?? '{}')).toEqual({ ...SEAT, attendanceMode: 'IN_PERSON' });
     expect(screen.getByTestId('player-team-name-display')).toHaveTextContent('Wise Ducks');
     expect(screen.getByTestId('player-team-count')).toHaveTextContent('4');
   });
@@ -202,7 +203,13 @@ describe('joining', () => {
     fireEvent.change(screen.getByTestId('player-table'), { target: { value: ' 7 ' } });
     fireEvent.submit(screen.getByTestId('player-join-form'));
 
-    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', { name: 'Wise Ducks', tableNumber: '7' }));
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', {
+        name: 'Wise Ducks',
+        attendanceMode: 'IN_PERSON',
+        tableNumber: '7',
+      }),
+    );
   });
 
   it('joins as a registered team with the team PIN, offered when the name is taken', async () => {
@@ -218,7 +225,13 @@ describe('joining', () => {
     fireEvent.change(await screen.findByTestId('player-team-pin'), { target: { value: '48-29 15' } });
     fireEvent.submit(screen.getByTestId('player-join-form'));
 
-    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/team-access/sessions/s1/join', { name: 'Wise Ducks', pin: '482915' }));
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/team-access/sessions/s1/join', {
+        name: 'Wise Ducks',
+        attendanceMode: 'IN_PERSON',
+        pin: '482915',
+      }),
+    );
   });
 
   it('scans the projector QR code with the camera and opens that quiz night', async () => {
@@ -409,6 +422,14 @@ describe('answering', () => {
     expect(standing).toHaveTextContent('#2');
     expect(standing).toHaveTextContent('Wise Ducks');
     expect(standing).toHaveTextContent('3 b');
+  });
+
+  it('keeps the answer form but hides unpublished standings', () => {
+    activeQuestion();
+    session.state = { ...session.state!, scoresVisible: false };
+    renderPlay();
+    expect(screen.getByTestId('player-answer-form')).toBeInTheDocument();
+    expect(screen.queryByTestId('player-standing')).not.toBeInTheDocument();
   });
 
   it('asks for fullscreen and tells the host the team is ready', async () => {

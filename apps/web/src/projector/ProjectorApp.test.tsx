@@ -35,6 +35,7 @@ function setState(status: QuizState, overrides: Partial<QuizSessionStateDto> = {
   session.state = {
     id: 's1',
     joinCode: 'A7F3',
+    scoresVisible: true,
     status,
     currentQuestion: null,
     questionEndsAt: null,
@@ -223,6 +224,13 @@ describe('ProjectorApp', () => {
     expect(screen.getByTestId('projector-podium-1')).toHaveTextContent('Pub Mozarts');
     expect(screen.getByTestId('projector-podium-2')).toHaveTextContent('Wise Ducks');
     expect(screen.getAllByTestId('projector-rank-row')).toHaveLength(1);
+  });
+
+  it('does not show unpublished standings during a break', () => {
+    setState('PAUSE_BREAK', { scoresVisible: false });
+    renderProjector();
+    expect(screen.getByTestId('projector-pause')).toBeInTheDocument();
+    expect(screen.queryByTestId('projector-podium-1')).not.toBeInTheDocument();
   });
 
   it('crowns the champion when the quiz is finished', () => {

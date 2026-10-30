@@ -40,7 +40,7 @@ export class QuizEngineService {
     return this.sessions.create(quizId, hostId, generateJoinCode(), pubId, leagueId);
   }
 
-  async getState(sessionId: string): Promise<QuizSessionStateDto> {
+  async getState(sessionId: string, includePrivateScores = false): Promise<QuizSessionStateDto> {
     const session = await this.requireSession(sessionId);
     const [question, teams, answers, infractions, scoreAdjustments] = await Promise.all([
       session.current_question_id ? this.questions.findById(session.current_question_id) : Promise.resolve(null),
@@ -77,6 +77,7 @@ export class QuizEngineService {
     return {
       id: session.id,
       joinCode: session.join_code,
+      scoresVisible: session.scores_visible ?? false,
       status: session.status,
       currentQuestion: question
         ? {
@@ -102,15 +103,23 @@ export class QuizEngineService {
       teams: teams.map((team) => ({
         id: team.id,
         name: team.name,
+        attendanceMode: team.attendance_mode ?? 'REMOTE',
         isActive: team.is_active,
         registeredTeamId: team.registered_team_id ?? null,
         tableNumber: team.table_number ?? null,
         ready: readyFor !== null && team.ready_question_id === readyFor,
         readyFullscreen: readyFor !== null && team.ready_question_id === readyFor && team.ready_fullscreen,
-        score: scoreByTeam.get(team.id) ?? 0,
+        score: includePrivateScores || session.scores_visible || session.status === 'FINISHED' ? (scoreByTeam.get(team.id) ?? 0) : 0,
         infractionCount: infractionCountByTeam.get(team.id) ?? 0,
       })),
     };
+  }
+
+  async setScoreVisibility(sessionId: string, hostId: string, visible: boolean): Promise<SessionRecord> {
+    await this.requireOwnedSession(sessionId, hostId);
+    const updated = await this.sessions.updateStatus(sessionId, { scores_visible: visible });
+    await this.publishState(updated);
+    return updated;
   }
 
   async transitionState(sessionId: string, hostId: string, newState: QuizState, options: TransitionOptions = {}): Promise<SessionRecord> {

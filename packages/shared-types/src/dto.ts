@@ -23,6 +23,7 @@ export interface QuestionPublicDto {
 }
 
 export interface TeamSummaryDto {
+  attendanceMode?: 'IN_PERSON' | 'REMOTE';
   id: string;
   name: string;
   isActive: boolean;
@@ -39,6 +40,7 @@ export interface TeamSummaryDto {
 }
 
 export interface QuizSessionStateDto {
+  scoresVisible?: boolean;
   id: string;
   joinCode: string;
   status: QuizState;

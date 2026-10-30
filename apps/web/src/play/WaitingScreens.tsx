@@ -217,7 +217,7 @@ export function PauseScreen({ state, teamId }: { state: QuizSessionStateDto; tea
           {state.breakMessage ?? t('play.pause.subtitle')}
         </p>
       </StatusCard>
-      {own && <StandingPill team={own} leader={ranked[0]} />}
+      {state.scoresVisible && own && <StandingPill team={own} leader={ranked[0]} />}
     </PlayerShell>
   );
 }

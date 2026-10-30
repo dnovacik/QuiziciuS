@@ -143,29 +143,33 @@ export function RevealScreen({
                 {answer ? [answer.letter, answer.display].filter(Boolean).join(' — ') : t('play.reveal.noAnswer')}
               </span>
             </div>
-            <div className="flex flex-col justify-between rounded-lg bg-surface-container-lowest p-space-sm">
-              <span className="text-label-sm uppercase text-on-surface-variant">{t('play.reveal.totalScore')}</span>
-              <span className="mt-0.5 text-headline-md font-extrabold text-primary" data-testid="player-total-score">
-                {own.score}
-              </span>
-              <span className="text-label-sm text-on-surface-variant/70">
-                {t('play.reveal.position')} #{own.rank}
-              </span>
-            </div>
+            {state.scoresVisible && (
+              <div className="flex flex-col justify-between rounded-lg bg-surface-container-lowest p-space-sm">
+                <span className="text-label-sm uppercase text-on-surface-variant">{t('play.reveal.totalScore')}</span>
+                <span className="mt-0.5 text-headline-md font-extrabold text-primary" data-testid="player-total-score">
+                  {own.score}
+                </span>
+                <span className="text-label-sm text-on-surface-variant/70">
+                  {t('play.reveal.position')} #{own.rank}
+                </span>
+              </div>
+            )}
           </div>
         </section>
       )}
 
-      <section className="rounded-xl bg-surface-container p-space-md">
-        <span className="mb-2.5 block text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">
-          {t('play.reveal.top3')}
-        </span>
-        <ol className="space-y-1.5">
-          {ranked.slice(0, 3).map((team) => (
-            <StandingRow key={team.id} team={team} isOwn={team.id === teamId} />
-          ))}
-        </ol>
-      </section>
+      {state.scoresVisible && (
+        <section className="rounded-xl bg-surface-container p-space-md">
+          <span className="mb-2.5 block text-label-sm font-bold uppercase tracking-wider text-on-surface-variant">
+            {t('play.reveal.top3')}
+          </span>
+          <ol className="space-y-1.5">
+            {ranked.slice(0, 3).map((team) => (
+              <StandingRow key={team.id} team={team} isOwn={team.id === teamId} />
+            ))}
+          </ol>
+        </section>
+      )}
 
       {graded && graded.isCorrect === false && (!graded.needsReview || graded.disputed) && (
         <DisputeCard key={graded.id} sessionId={state.id} token={token} answer={graded} />

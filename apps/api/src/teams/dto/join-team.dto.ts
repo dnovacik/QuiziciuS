@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class JoinTeamDto {
   @IsString()
@@ -10,4 +10,8 @@ export class JoinTeamDto {
   @IsString()
   @MaxLength(10)
   tableNumber?: string;
+
+  @IsOptional()
+  @IsIn(['IN_PERSON', 'REMOTE'])
+  attendanceMode?: 'IN_PERSON' | 'REMOTE';
 }

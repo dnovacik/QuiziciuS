@@ -6,7 +6,10 @@ import { subscribeToSession } from './supabase-client';
 /** A safety net for updates that never arrived (a dropped realtime message, a flaky pub Wi-Fi). */
 const RECHECK_MS = 15_000;
 
-export function useSessionState(sessionId: string | undefined): {
+export function useSessionState(
+  sessionId: string | undefined,
+  hostToken?: string,
+): {
   state: QuizSessionStateDto | null;
   error: string | null;
   refetch: () => void;
@@ -19,7 +22,7 @@ export function useSessionState(sessionId: string | undefined): {
   const refetch = useCallback(() => {
     if (!sessionId) return;
     const request = ++latest.current;
-    apiGet<QuizSessionStateDto>(`/sessions/${sessionId}/state`)
+    apiGet<QuizSessionStateDto>(hostToken ? `/host/sessions/${sessionId}/state` : `/sessions/${sessionId}/state`, hostToken)
       .then((next) => {
         if (request !== latest.current) return;
         setState(next);
@@ -28,7 +31,7 @@ export function useSessionState(sessionId: string | undefined): {
       .catch((err) => {
         if (request === latest.current) setError(err instanceof Error ? err.message : 'Failed to load session');
       });
-  }, [sessionId]);
+  }, [sessionId, hostToken]);
 
   useEffect(() => {
     refetch();

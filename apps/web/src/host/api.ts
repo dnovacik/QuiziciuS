@@ -149,6 +149,8 @@ export const hostApi = {
   archiveSession: (token: string, sessionId: string, archived: boolean) =>
     apiPost<HostSession>(`/sessions/${sessionId}/archive`, { archived }, token),
   closeAnswers: (token: string, sessionId: string) => apiPost(`/sessions/${sessionId}/close-answers`, {}, token),
+  setScoreVisibility: (token: string, sessionId: string, visible: boolean) =>
+    apiPatch(`/host/sessions/${sessionId}/score-visibility`, { visible }, token),
   listAnswers: (token: string, sessionId: string, questionId?: string) =>
     apiGet<AnswerSummaryDto[]>(`/host/sessions/${sessionId}/answers${questionId ? `?questionId=${questionId}` : ''}`, token),
   listDisputes: (token: string, sessionId: string) => apiGet<AnswerSummaryDto[]>(`/sessions/${sessionId}/disputes`, token),

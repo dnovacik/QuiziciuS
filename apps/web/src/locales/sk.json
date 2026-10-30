@@ -1,4 +1,9 @@
 {
+  "play.join.attendanceTitle": "Kde hráte?",
+  "play.join.inPerson": "V podniku (otázky na projektore)",
+  "play.join.remote": "Na diaľku (otázky na tomto zariadení)",
+  "play.question.projectorPrompt": "Otázku si pozrite na projektore v podniku. Odpoveď odošlite nižšie.",
+  "host.room.publishScores": "Zverejniť skóre tímov hráčom",
   "common.close": "Zatvoriť",
   "scanner.title": "Naskenuj QR kód",
   "scanner.hint": "Namier kameru na QR kód na projektore alebo obrazovke moderátora.",

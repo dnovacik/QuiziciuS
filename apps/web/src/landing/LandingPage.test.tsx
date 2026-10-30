@@ -130,11 +130,12 @@ describe('LandingPage team entrance', () => {
 
     await screen.findByText('play area');
     expect(apiGet).toHaveBeenCalledWith('/sessions/by-code/A7F3');
-    expect(apiPost).toHaveBeenCalledWith('/sessions/session-1/teams/join', { name: 'Quiz Wolves' });
+    expect(apiPost).toHaveBeenCalledWith('/sessions/session-1/teams/join', { name: 'Quiz Wolves', attendanceMode: 'REMOTE' });
     expect(JSON.parse(localStorage.getItem('quizicius:team:session-1') ?? '{}')).toEqual({
       sessionId: 'session-1',
       teamId: 'team-1',
       token: 'team-token',
+      attendanceMode: 'REMOTE',
     });
   });
 

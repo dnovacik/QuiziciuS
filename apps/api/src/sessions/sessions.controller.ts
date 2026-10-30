@@ -13,6 +13,7 @@ import { ControlTimerDto } from './dto/control-timer.dto';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { OverrideAnswerGradeDto } from './dto/override-answer-grade.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
+import { ScoreVisibilityDto } from './dto/score-visibility.dto';
 import { TransitionSessionDto } from './dto/transition-session.dto';
 
 @Controller()
@@ -79,6 +80,21 @@ export class SessionsController {
     const pub = session.pub_id ? await this.pubs.requirePub(session.pub_id).catch(() => null) : null;
     const league = session.league_id ? await this.leagues.publicInfo(session.league_id) : null;
     return { title: quiz.title, quizId: quiz.id, pub: pub && { id: pub.id, name: pub.name, city: pub.city }, league };
+  }
+
+  @Get('host/sessions/:sessionId/state')
+  @RequireRole('HOST')
+  async getHostState(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload) {
+    const session = await this.sessions.findById(sessionId);
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.host_id !== host.id) throw new ForbiddenException('Not your session');
+    return this.quizEngine.getState(sessionId, true);
+  }
+
+  @Patch('host/sessions/:sessionId/score-visibility')
+  @RequireRole('HOST')
+  setScoreVisibility(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: ScoreVisibilityDto) {
+    return this.quizEngine.setScoreVisibility(sessionId, host.id, dto.visible);
   }
 
   @Get('sessions/:sessionId/state')

@@ -4,7 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../lib/api-client';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
-import { findSessionByCode, joinSession, normalizeJoinCode, parseJoinTarget, recentTeamNames, type TeamSeat } from '../lib/team-seat';
+import {
+  findSessionByCode,
+  joinSession,
+  normalizeJoinCode,
+  parseJoinTarget,
+  recentTeamNames,
+  type TeamSeat,
+  type AttendanceMode,
+} from '../lib/team-seat';
 import { useSessionDisplay } from '../lib/use-quiz-title';
 import { useSessionState } from '../lib/use-session-state';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
@@ -36,6 +44,7 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
     return true;
   }
   const [teamName, setTeamName] = useState('');
+  const [attendanceMode, setAttendanceMode] = useState<AttendanceMode>('IN_PERSON');
   const [tableNumber, setTableNumber] = useState('');
   const [teamPin, setTeamPin] = useState('');
   const [askPin, setAskPin] = useState(false);
@@ -79,7 +88,7 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
     setError(null);
     try {
       const resolvedSessionId = sessionId ?? (await findSessionByCode(code));
-      onJoined(await joinSession(resolvedSessionId, teamName, tableNumber, askPin ? teamPin : ''));
+      onJoined(await joinSession(resolvedSessionId, teamName, tableNumber, askPin ? teamPin : '', attendanceMode));
     } catch (err) {
       const code = err instanceof ApiError ? err.body.code : undefined;
       // A registered team plays under this name: its members join with the team PIN.
@@ -265,6 +274,27 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
                 )}
               </div>
 
+              <fieldset className="flex flex-col gap-2 rounded-xl bg-surface-container-high p-3">
+                <legend className="text-label-md font-bold">{t('play.join.attendanceTitle')}</legend>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="attendance"
+                    checked={attendanceMode === 'IN_PERSON'}
+                    onChange={() => setAttendanceMode('IN_PERSON')}
+                  />
+                  {t('play.join.inPerson')}
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="attendance"
+                    checked={attendanceMode === 'REMOTE'}
+                    onChange={() => setAttendanceMode('REMOTE')}
+                  />
+                  {t('play.join.remote')}
+                </label>
+              </fieldset>
               <label className="flex flex-col gap-space-xs">
                 <span className="flex items-center gap-1 text-label-md uppercase tracking-wider text-on-surface-variant">
                   <Table2 className="h-4 w-4 text-outline" />
