@@ -168,7 +168,7 @@ export class RegisteredTeamsService {
     name: string,
     pin: string,
     tableNumber: string | null,
-    attendanceMode: 'IN_PERSON' | 'REMOTE' = 'IN_PERSON',
+    attendanceMode: 'IN_PERSON' | 'REMOTE' = 'REMOTE',
   ): Promise<JoinResult> {
     const team = await this.teams.findByName(name);
     if (!team) throw new NotFoundException({ code: 'TEAM_NOT_REGISTERED', message: 'No registered team has this name' });
