@@ -120,7 +120,7 @@ export function QuestionScreen({
         <AnswerForm question={question} seat={seat} sessionId={state.id} onSubmitted={onSubmitted} />
       )}
 
-      {own && <StandingPill team={own} leader={ranked[0]} />}
+      {showStandings && own && <StandingPill team={own} leader={ranked[0]} />}
     </PlayerShell>
   );
 }
