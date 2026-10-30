@@ -53,7 +53,14 @@ function joinSession(sessionId: string) {
         for (const listener of [...listeners]) if (listener.events.includes(event)) listener.onEvent(event, payload);
       });
     }
-    channel.subscribe();
+    // A reconnect can miss broadcasts: recover from the authoritative HTTP snapshot.
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        for (const listener of [...listeners]) {
+          if (listener.events.includes('STATE_CHANGE')) listener.onEvent('STATE_CHANGE', {});
+        }
+      }
+    });
     entry = { channel, listeners };
     channels.set(sessionId, entry);
   }
