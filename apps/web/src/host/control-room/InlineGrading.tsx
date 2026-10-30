@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AnswerSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
 import { hostApi, type Question } from '../api';
@@ -12,6 +12,10 @@ function GradeRow({ room, question, answer }: { room: ControlRoom; question: Que
   const [correct, setCorrect] = useState(answer.isCorrect === true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    setPoints(String(answer.scoreAwarded));
+    setCorrect(answer.isCorrect === true);
+  }, [answer.scoreAwarded, answer.isCorrect]);
   const numeric = Number(points);
   const valid = Number.isInteger(numeric) && numeric >= 0 && numeric <= question.points && (correct || numeric === 0);
 
@@ -35,14 +39,21 @@ function GradeRow({ room, question, answer }: { room: ControlRoom; question: Que
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-bold">{room.state?.teams.find((team) => team.id === answer.teamId)?.name ?? '—'}</span>
         <span className="min-w-0 flex-1 break-words">{responseLabel(question, answer)}</span>
-        <span className="text-label-sm">{answer.isCorrect === null ? 'Pending' : answer.isCorrect ? '✓' : '✗'} · {answer.scoreAwarded} / {question.points}</span>
+        <span className="text-label-sm">
+          {answer.isCorrect === null ? 'Pending' : answer.isCorrect ? '✓' : '✗'} · {answer.scoreAwarded} / {question.points}
+        </span>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-2 text-label-sm">
-          <input type="checkbox" checked={correct} onChange={(event) => {
-            setCorrect(event.target.checked);
-            if (!event.target.checked) setPoints('0');
-          }} />
+          <input
+            type="checkbox"
+            checked={correct}
+            onChange={(event) => {
+              setCorrect(event.target.checked);
+              if (!event.target.checked) setPoints('0');
+              else setPoints(String(question.points));
+            }}
+          />
           {t('host.room.correct')}
         </label>
         <label className="flex items-center gap-2 text-label-sm">
@@ -59,11 +70,21 @@ function GradeRow({ room, question, answer }: { room: ControlRoom; question: Que
             data-testid={`inline-points-${answer.id}`}
           />
         </label>
-        <button type="button" className={btn.secondary} disabled={!valid || saving} onClick={() => void save()} data-testid={`inline-save-${answer.id}`}>
+        <button
+          type="button"
+          className={btn.secondary}
+          disabled={!valid || saving}
+          onClick={() => void save()}
+          data-testid={`inline-save-${answer.id}`}
+        >
           {saving ? t('common.working') : t('host.editor.save')}
         </button>
       </div>
-      {error && <p role="alert" className="text-body-sm text-error">{error}</p>}
+      {error && (
+        <p role="alert" className="text-body-sm text-error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
