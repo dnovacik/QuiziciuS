@@ -52,6 +52,16 @@ describe('live session state', () => {
     await waitFor(() => expect(result.current.state?.status).toBe('QUESTION_ACTIVE'));
   });
 
+  it('catches up when the realtime channel subscribes again', async () => {
+    const { result } = renderHook(() => useSessionState('s1'));
+    await waitFor(() => expect(result.current.state?.status).toBe('LOBBY'));
+    vi.mocked(apiGet).mockResolvedValue(state('QUESTION_REVEAL'));
+
+    act(() => realtime.emit!());
+
+    await waitFor(() => expect(result.current.state?.status).toBe('QUESTION_REVEAL'));
+  });
+
   it('catches up when the network comes back', async () => {
     const { result } = renderHook(() => useSessionState('s1'));
     await waitFor(() => expect(result.current.state?.status).toBe('LOBBY'));
