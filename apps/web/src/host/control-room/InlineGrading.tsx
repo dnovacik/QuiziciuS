@@ -94,7 +94,9 @@ export function InlineGrading({ room, question, answers }: { room: ControlRoom; 
   return (
     <section className="space-y-2 rounded-xl bg-surface-container p-space-md" data-testid="room-inline-grading">
       <h3 className="text-headline-sm">{t('host.room.answersTitle')}</h3>
-      {answers.map((answer) => <GradeRow key={answer.id} room={room} question={question} answer={answer} />)}
+      {answers.map((answer) => (
+        <GradeRow key={answer.id} room={room} question={question} answer={answer} />
+      ))}
       {answers.length === 0 && <p className="text-on-surface-variant">{t('host.room.noAnswers')}</p>}
     </section>
   );
