@@ -294,7 +294,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
             disabled={room.busy}
             onChange={(event) => void room.setScoreVisibility(event.target.checked)}
           />
-          Publish team scores to players
+          {t('host.room.publishScores')}
         </label>
         {status === 'LOCK_IN_ROUND' && <ReadyTeams teams={state.teams} />}
         {status === 'QUESTION_REVEAL' && <BreakSetup room={room} />}
