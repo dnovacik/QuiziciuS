@@ -49,7 +49,7 @@ export async function joinSession(
   teamName: string,
   tableNumber = '',
   teamPin = '',
-  attendanceMode: AttendanceMode = 'IN_PERSON',
+  attendanceMode: AttendanceMode = 'REMOTE',
 ): Promise<TeamSeat> {
   const body = {
     name: teamName.trim(),
