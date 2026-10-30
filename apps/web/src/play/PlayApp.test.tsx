@@ -204,7 +204,11 @@ describe('joining', () => {
     fireEvent.submit(screen.getByTestId('player-join-form'));
 
     await waitFor(() =>
-      expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', { name: 'Wise Ducks', attendanceMode: 'IN_PERSON', tableNumber: '7' }),
+      expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', {
+        name: 'Wise Ducks',
+        attendanceMode: 'IN_PERSON',
+        tableNumber: '7',
+      }),
     );
   });
 
@@ -222,7 +226,11 @@ describe('joining', () => {
     fireEvent.submit(screen.getByTestId('player-join-form'));
 
     await waitFor(() =>
-      expect(apiPost).toHaveBeenCalledWith('/team-access/sessions/s1/join', { name: 'Wise Ducks', attendanceMode: 'IN_PERSON', pin: '482915' }),
+      expect(apiPost).toHaveBeenCalledWith('/team-access/sessions/s1/join', {
+        name: 'Wise Ducks',
+        attendanceMode: 'IN_PERSON',
+        pin: '482915',
+      }),
     );
   });
 
