@@ -412,6 +412,14 @@ describe('answering', () => {
     expect(standing).toHaveTextContent('3 b');
   });
 
+  it('keeps the answer form but hides unpublished standings', () => {
+    activeQuestion();
+    session.state = { ...session.state!, scoresVisible: false };
+    renderPlay();
+    expect(screen.getByTestId('player-answer-form')).toBeInTheDocument();
+    expect(screen.queryByTestId('player-standing')).not.toBeInTheDocument();
+  });
+
   it('asks for fullscreen and tells the host the team is ready', async () => {
     const requestFullscreen = vi.fn().mockResolvedValue(undefined);
     document.documentElement.requestFullscreen = requestFullscreen;
