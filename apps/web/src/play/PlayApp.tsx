@@ -8,7 +8,7 @@ import { useSessionState } from '../lib/use-session-state';
 import { JoinScreen } from './JoinScreen';
 import { QuestionScreen } from './QuestionScreen';
 import { ResultsScreen, RevealScreen } from './ResultScreens';
-import { useGradedAnswers, useSubmittedAnswers } from './submitted-answers';
+import { describeResponse, useGradedAnswers, useSubmittedAnswers } from './submitted-answers';
 import { useQuizSecurity } from './use-quiz-security';
 import { LobbyScreen, LockInScreen, PauseScreen } from './WaitingScreens';
 
@@ -34,8 +34,14 @@ function Game({ seat }: { seat: TeamSeat }) {
   const title = display.title;
   const { answers, record } = useSubmittedAnswers(seat.sessionId);
   const { requestFullscreenNow } = useQuizSecurity(state?.status ?? 'LOBBY', seat.token);
-  const resultsPublic = state && ['QUESTION_REVEAL', 'PAUSE_BREAK', 'FINISHED'].includes(state.status);
-  const graded = useGradedAnswers(seat.sessionId, seat.token, resultsPublic ? `${state.status}:${state.currentQuestion?.id}` : null);
+  // The API returns this team's submission even before grading becomes public.
+  // Polling and resync recover answers submitted before the phone went offline.
+  const graded = useGradedAnswers(seat.sessionId, seat.token, state ? `${state.status}:${state.currentQuestion?.id}:${state.answeredCount}` : null);
+  const serverAnswer = state?.currentQuestion ? graded[state.currentQuestion.id] : undefined;
+  const recoveredAnswer =
+    state?.currentQuestion && serverAnswer
+      ? { ...describeResponse(state.currentQuestion, serverAnswer.response), submittedAt: 0 }
+      : undefined;
 
   // Scores of the open question become public once its timer runs out; nothing is broadcast
   // at that moment, so fetch the state once ourselves.
@@ -84,7 +90,7 @@ function Game({ seat }: { seat: TeamSeat }) {
           question={question}
           teamId={seat.teamId}
           token={seat.token}
-          sent={answers[question.id]}
+          sent={recoveredAnswer ?? answers[question.id]}
           graded={graded[question.id]}
         />
       ) : (
@@ -97,7 +103,7 @@ function Game({ seat }: { seat: TeamSeat }) {
           state={state}
           question={question}
           seat={seat}
-          submitted={answers[question.id]}
+          submitted={recoveredAnswer ?? answers[question.id]}
           onSubmitted={(answer) => record(question.id, answer)}
         />
       ) : (
