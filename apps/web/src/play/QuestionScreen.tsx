@@ -101,7 +101,7 @@ export function QuestionScreen({
       <RoomProgress state={state} />
       {seat.attendanceMode === 'IN_PERSON' ? (
         <section className="rounded-xl bg-surface-container-high p-4 text-center text-on-surface" data-testid="player-venue-prompt">
-          Look at the venue projector for the question. Submit your answer below.
+          {t('play.question.projectorPrompt')}
         </section>
       ) : (
         <QuestionCard state={state} question={question} />
