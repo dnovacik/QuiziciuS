@@ -91,7 +91,7 @@ export class SupabaseTeamsRepository extends TeamsRepository {
     name: string,
     registeredTeamId: string | null = null,
     tableNumber: string | null = null,
-    attendanceMode: 'IN_PERSON' | 'REMOTE' = 'IN_PERSON',
+    attendanceMode: 'IN_PERSON' | 'REMOTE' = 'REMOTE',
   ): Promise<TeamRecord> {
     const row: Record<string, unknown> = {
       session_id: sessionId,
