@@ -288,7 +288,12 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
 
         {status === 'QUESTION_REVEAL' && focus && <InlineGrading room={room} question={focus} answers={answers} />}
         <label className="flex items-center gap-2 text-label-md">
-          <input type="checkbox" checked={state.scoresVisible ?? false} disabled={room.busy} onChange={(event) => void room.setScoreVisibility(event.target.checked)} />
+          <input
+            type="checkbox"
+            checked={state.scoresVisible ?? false}
+            disabled={room.busy}
+            onChange={(event) => void room.setScoreVisibility(event.target.checked)}
+          />
           Publish team scores to players
         </label>
         {status === 'LOCK_IN_ROUND' && <ReadyTeams teams={state.teams} />}
