@@ -445,14 +445,14 @@ describe('QuizEngineService.getState', () => {
     });
     (answers.listBySession as jest.Mock).mockResolvedValue([answer('t1', 'q1'), answer('t2', 'q1'), answer('t1', 'q0')]);
 
-    const state = await service.getState('s1');
+    const state = await service.getState('s1', true);
 
     expect(state.answeredCount).toBe(2);
   });
 
   it('has no answered count outside a question', async () => {
     const { service } = buildHarness({ session: { status: 'LOBBY' } });
-    expect((await service.getState('s1')).answeredCount).toBeNull();
+    expect((await service.getState('s1', true)).answeredCount).toBeNull();
   });
 });
 
@@ -521,7 +521,7 @@ describe('QuizEngineService.getState', () => {
     (questions.findById as jest.Mock).mockResolvedValue(MC_QUESTION);
     void sessions;
 
-    const state = await service.getState('s1');
+    const state = await service.getState('s1', true);
 
     expect(state.currentQuestion?.options).toEqual([
       { id: 'a', label: 'Paris' },
@@ -536,7 +536,7 @@ describe('QuizEngineService.getState', () => {
     });
     (questions.findById as jest.Mock).mockResolvedValue(MC_QUESTION);
 
-    const state = await service.getState('s1');
+    const state = await service.getState('s1', true);
 
     expect(state.currentQuestion?.correctOptionId).toBe('a');
   });
@@ -551,7 +551,7 @@ describe('QuizEngineService.getState', () => {
       { team_id: 't1', score_awarded: 1 },
     ]);
 
-    const state = await service.getState('s1');
+    const state = await service.getState('s1', true);
 
     expect(state.teams).toEqual([
       {
@@ -577,7 +577,7 @@ describe('QuizEngineService.getState', () => {
       { ...base, id: 't3', name: 'Last question', ready_question_id: 'q1', ready_fullscreen: true },
     ]);
 
-    const state = await service.getState('s1');
+    const state = await service.getState('s1', true);
 
     expect(state.teams.map(({ id, ready, readyFullscreen }) => ({ id, ready, readyFullscreen }))).toEqual([
       { id: 't1', ready: true, readyFullscreen: true },
@@ -601,7 +601,7 @@ describe('QuizEngineService.getState', () => {
       },
     ]);
 
-    expect((await service.getState('s1')).teams[0].ready).toBe(false);
+    expect((await service.getState('s1', true)).teams[0].ready).toBe(false);
   });
 
   it('leaves the open question out of team scores until its results are public', async () => {
@@ -616,7 +616,7 @@ describe('QuizEngineService.getState', () => {
       { team_id: 't1', question_id: 'q2', score_awarded: 5 },
     ]);
 
-    expect((await service.getState('s1')).teams[0].score).toBe(2);
+    expect((await service.getState('s1', true)).teams[0].score).toBe(2);
   });
 
   it('counts the open question once its timer has run out', async () => {
@@ -631,7 +631,7 @@ describe('QuizEngineService.getState', () => {
       { team_id: 't1', question_id: 'q2', score_awarded: 5 },
     ]);
 
-    expect((await service.getState('s1')).teams[0].score).toBe(7);
+    expect((await service.getState('s1', true)).teams[0].score).toBe(7);
   });
 
   it('throws NotFoundException for an unknown session', async () => {
@@ -651,7 +651,7 @@ describe('QuizEngineService.getState', () => {
       { id: 'i2', session_id: 's1', team_id: 't1', type: 'FULLSCREEN_EXIT', detected_at: 'now', reviewed: false },
     ]);
 
-    const state = await service.getState('s1');
+    const state = await service.getState('s1', true);
 
     expect(state.teams[0].infractionCount).toBe(2);
   });
@@ -665,7 +665,7 @@ describe('QuizEngineService.getState', () => {
       { id: 'a1', session_id: 's1', team_id: 't1', points: 3, reason: null, created_at: 'now' },
     ]);
 
-    const state = await service.getState('s1');
+    const state = await service.getState('s1', true);
 
     expect(state.teams[0].score).toBe(3);
   });
