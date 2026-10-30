@@ -79,7 +79,10 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
     listBySession: jest.fn().mockResolvedValue([] as AnswerRecord[]),
     markDisputed: jest.fn(),
     overrideGrade: jest.fn().mockImplementation(async (id: string, _hostId: string, isCorrect: boolean, points: number) => ({
-      id, is_correct: isCorrect, score_awarded: points, graded_by: 'HOST',
+      id,
+      is_correct: isCorrect,
+      score_awarded: points,
+      graded_by: 'HOST',
     })),
     updateGrade: jest.fn().mockImplementation(async (id: string, patch) => ({
       id,
