@@ -275,7 +275,7 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
               </div>
 
               <fieldset className="flex flex-col gap-2 rounded-xl bg-surface-container-high p-3">
-                <legend className="text-label-md font-bold">Where are you playing?</legend>
+                <legend className="text-label-md font-bold">{t('play.join.attendanceTitle')}</legend>
                 <label className="flex items-center gap-2">
                   <input
                     type="radio"
@@ -283,7 +283,7 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
                     checked={attendanceMode === 'IN_PERSON'}
                     onChange={() => setAttendanceMode('IN_PERSON')}
                   />
-                  In the venue (questions on the projector)
+                  {t('play.join.inPerson')}
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -292,7 +292,7 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
                     checked={attendanceMode === 'REMOTE'}
                     onChange={() => setAttendanceMode('REMOTE')}
                   />
-                  Remotely (questions on this device)
+                  {t('play.join.remote')}
                 </label>
               </fieldset>
               <label className="flex flex-col gap-space-xs">
