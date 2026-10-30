@@ -1,7 +1,10 @@
 import { apiGet, apiPost } from './api-client';
 
 /** A team's place in one quiz session: the bearer token it answers with. */
+export type AttendanceMode = 'IN_PERSON' | 'REMOTE';
+
 export interface TeamSeat {
+  attendanceMode?: AttendanceMode;
   sessionId: string;
   teamId: string;
   token: string;
@@ -41,7 +44,7 @@ export async function findSessionByCode(code: string): Promise<string> {
  * Joins a quiz night; the table number (optional) helps the host find the team in the room.
  * With the team PIN, the phone joins as the registered team of that name (e.g. without the captain).
  */
-export async function joinSession(sessionId: string, teamName: string, tableNumber = '', teamPin = ''): Promise<TeamSeat> {
+export async function joinSession(sessionId: string, teamName: string, tableNumber = '', teamPin = '', attendanceMode: AttendanceMode = 'IN_PERSON'): Promise<TeamSeat> {
   const body = {
     name: teamName.trim(),
     ...(tableNumber.trim() ? { tableNumber: tableNumber.trim() } : {}),
@@ -49,7 +52,7 @@ export async function joinSession(sessionId: string, teamName: string, tableNumb
   const result = teamPin.trim()
     ? await apiPost<{ teamId: string; token: string }>(`/team-access/sessions/${sessionId}/join`, { ...body, pin: teamPin.trim() })
     : await apiPost<{ teamId: string; token: string }>(`/sessions/${sessionId}/teams/join`, body);
-  const seat = { sessionId, teamId: result.teamId, token: result.token };
+  const seat = { sessionId, teamId: result.teamId, token: result.token, attendanceMode };
   saveSeat(seat);
   rememberTeamName(teamName.trim());
   return seat;
