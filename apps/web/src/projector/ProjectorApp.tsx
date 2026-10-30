@@ -187,7 +187,7 @@ function Scene({
       return (
         <div className="flex flex-col gap-space-lg">
           <PauseScene endsAt={state.breakEndsAt} message={state.breakMessage} />
-          <LeaderboardScene teams={state.teams} />
+          {state.scoresVisible && <LeaderboardScene teams={state.teams} />}
         </div>
       );
     case 'FINISHED':
