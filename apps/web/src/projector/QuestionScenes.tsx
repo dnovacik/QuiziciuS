@@ -144,7 +144,10 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
       {revealed && (
         <div className="flex flex-col items-center rounded-xl bg-tertiary-container/30 p-space-xl text-center shadow-[0_0_32px_rgba(78,222,163,0.35)]">
           <span className="text-label-lg font-extrabold uppercase tracking-widest text-tertiary">{t('projector.reveal.answer')}</span>
-          <span className="mt-space-xs text-display-lg text-on-surface xl:text-[56px] xl:leading-[64px]" data-testid="projector-correct-answer">
+          <span
+            className="mt-space-xs text-display-lg text-on-surface xl:text-[56px] xl:leading-[64px]"
+            data-testid="projector-correct-answer"
+          >
             {correctAnswerText(question) ?? '—'}
           </span>
         </div>
