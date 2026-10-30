@@ -4,7 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../lib/api-client';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
-import { findSessionByCode, joinSession, normalizeJoinCode, parseJoinTarget, recentTeamNames, type TeamSeat, type AttendanceMode } from '../lib/team-seat';
+import {
+  findSessionByCode,
+  joinSession,
+  normalizeJoinCode,
+  parseJoinTarget,
+  recentTeamNames,
+  type TeamSeat,
+  type AttendanceMode,
+} from '../lib/team-seat';
 import { useSessionDisplay } from '../lib/use-quiz-title';
 import { useSessionState } from '../lib/use-session-state';
 import { LanguageSwitcher } from '../ui/LanguageSwitcher';
@@ -269,11 +277,21 @@ export function JoinScreen({ sessionId, onJoined }: { sessionId?: string; onJoin
               <fieldset className="flex flex-col gap-2 rounded-xl bg-surface-container-high p-3">
                 <legend className="text-label-md font-bold">Where are you playing?</legend>
                 <label className="flex items-center gap-2">
-                  <input type="radio" name="attendance" checked={attendanceMode === 'IN_PERSON'} onChange={() => setAttendanceMode('IN_PERSON')} />
+                  <input
+                    type="radio"
+                    name="attendance"
+                    checked={attendanceMode === 'IN_PERSON'}
+                    onChange={() => setAttendanceMode('IN_PERSON')}
+                  />
                   In the venue (questions on the projector)
                 </label>
                 <label className="flex items-center gap-2">
-                  <input type="radio" name="attendance" checked={attendanceMode === 'REMOTE'} onChange={() => setAttendanceMode('REMOTE')} />
+                  <input
+                    type="radio"
+                    name="attendance"
+                    checked={attendanceMode === 'REMOTE'}
+                    onChange={() => setAttendanceMode('REMOTE')}
+                  />
                   Remotely (questions on this device)
                 </label>
               </fieldset>
