@@ -136,6 +136,11 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
         </p>
       )}
 
+      {!revealed && question.type === 'NUMERIC_NEAREST' && question.unit && (
+        <p className="text-center text-headline-md font-bold text-secondary" data-testid="projector-unit">
+          {t('projector.question.unit')}: {question.unit}
+        </p>
+      )}
       {revealed && (
         <div className="flex flex-col items-center rounded-xl bg-tertiary-container/30 p-space-xl text-center shadow-[0_0_32px_rgba(78,222,163,0.35)]">
           <span className="text-label-lg font-extrabold uppercase tracking-widest text-tertiary">{t('projector.reveal.answer')}</span>
