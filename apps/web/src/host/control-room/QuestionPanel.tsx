@@ -286,9 +286,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
           </p>
         )}
 
-        {status === 'QUESTION_REVEAL' && focus && (
-          <InlineGrading room={room} question={focus} answers={answers} />
-        )}
+        {status === 'QUESTION_REVEAL' && focus && <InlineGrading room={room} question={focus} answers={answers} />}
         {status === 'LOCK_IN_ROUND' && <ReadyTeams teams={state.teams} />}
         {status === 'QUESTION_REVEAL' && <BreakSetup room={room} />}
 
