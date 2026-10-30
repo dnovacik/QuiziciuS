@@ -191,11 +191,11 @@ describe('projector media', () => {
     await act(async () => undefined);
 
     expect(screen.getByTestId('projector-youtube-placeholder-question')).toBeVisible();
-    expect(screen.getByTestId('projector-youtube-question')).not.toBeVisible();
+    expect(screen.getByTestId('projector-youtube-question')).toHaveClass('invisible');
 
     act(() => youtube.events!.onStateChange(1));
     expect(screen.queryByTestId('projector-youtube-placeholder-question')).not.toBeInTheDocument();
-    expect(screen.getByTestId('projector-youtube-question')).toBeVisible();
+    expect(screen.getByTestId('projector-youtube-question')).not.toHaveClass('invisible');
 
     act(() => youtube.events!.onStateChange(2));
     expect(screen.getByTestId('projector-youtube-placeholder-question')).toBeVisible();
