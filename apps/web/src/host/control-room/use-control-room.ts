@@ -108,14 +108,18 @@ export function useControlRoom(token: string, sessionId: string) {
   }, [currentId, status, markPlayed]);
 
   // Answers to the question on screen; refreshed on every state change and while answering is open.
+  const answerRequest = useRef(0);
   const refreshAnswers = useCallback(() => {
+    const request = ++answerRequest.current;
     if (!currentId) {
       setAnswers([]);
       return;
     }
     hostApi
       .listAnswers(token, sessionId, currentId)
-      .then(setAnswers)
+      .then((rows) => {
+        if (request === answerRequest.current) setAnswers(rows);
+      })
       .catch(() => {
         // Keep the last known answers; the next state change retries.
       });
