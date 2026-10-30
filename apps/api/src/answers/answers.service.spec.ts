@@ -72,6 +72,7 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord>; question?:
     listNeedsReview: jest.fn(),
     listBySession: jest.fn(),
     markDisputed: jest.fn(),
+    overrideGrade: jest.fn(),
     updateGrade: jest.fn().mockImplementation(async (id: string, patch) => buildAnswerRecord({ id, ...patch })),
   };
   const broadcast = { publish: jest.fn().mockResolvedValue(undefined) } as unknown as RealtimeBroadcastService;
