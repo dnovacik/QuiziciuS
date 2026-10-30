@@ -36,7 +36,11 @@ function Game({ seat }: { seat: TeamSeat }) {
   const { requestFullscreenNow } = useQuizSecurity(state?.status ?? 'LOBBY', seat.token);
   // The API returns this team's submission even before grading becomes public.
   // Polling and resync recover answers submitted before the phone went offline.
-  const graded = useGradedAnswers(seat.sessionId, seat.token, state ? `${state.status}:${state.currentQuestion?.id}:${state.answeredCount}` : null);
+  const graded = useGradedAnswers(
+    seat.sessionId,
+    seat.token,
+    state ? `${state.status}:${state.currentQuestion?.id}:${state.answeredCount}` : null,
+  );
   const serverAnswer = state?.currentQuestion ? graded[state.currentQuestion.id] : undefined;
   const recoveredAnswer =
     state?.currentQuestion && serverAnswer
