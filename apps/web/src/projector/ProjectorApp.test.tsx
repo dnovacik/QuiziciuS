@@ -226,6 +226,13 @@ describe('ProjectorApp', () => {
     expect(screen.getAllByTestId('projector-rank-row')).toHaveLength(1);
   });
 
+  it('does not show unpublished standings during a break', () => {
+    setState('PAUSE_BREAK', { scoresVisible: false });
+    renderProjector();
+    expect(screen.getByTestId('projector-pause')).toBeInTheDocument();
+    expect(screen.queryByTestId('projector-podium-1')).not.toBeInTheDocument();
+  });
+
   it('crowns the champion when the quiz is finished', () => {
     setState('FINISHED');
     renderProjector();
