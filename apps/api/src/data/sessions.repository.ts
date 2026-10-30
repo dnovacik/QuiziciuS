@@ -8,6 +8,7 @@ export interface SessionRecord {
   host_id: string;
   join_code: string;
   status: QuizState;
+  scores_visible?: boolean;
   pub_id: string | null;
   /** The league this night counts for, ticked at launch. */
   league_id: string | null;
@@ -30,6 +31,7 @@ export interface SessionRecord {
 export type SessionStatusPatch = Partial<
   Pick<
     SessionRecord,
+    | 'scores_visible'
     | 'status'
     | 'current_question_id'
     | 'question_ends_at'
