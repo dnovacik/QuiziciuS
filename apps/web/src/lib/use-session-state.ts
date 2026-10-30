@@ -6,7 +6,10 @@ import { subscribeToSession } from './supabase-client';
 /** A safety net for updates that never arrived (a dropped realtime message, a flaky pub Wi-Fi). */
 const RECHECK_MS = 15_000;
 
-export function useSessionState(sessionId: string | undefined, hostToken?: string): {
+export function useSessionState(
+  sessionId: string | undefined,
+  hostToken?: string,
+): {
   state: QuizSessionStateDto | null;
   error: string | null;
   refetch: () => void;
