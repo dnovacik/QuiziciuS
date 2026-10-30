@@ -53,6 +53,7 @@ export async function joinSession(
 ): Promise<TeamSeat> {
   const body = {
     name: teamName.trim(),
+    attendanceMode,
     ...(tableNumber.trim() ? { tableNumber: tableNumber.trim() } : {}),
   };
   const result = teamPin.trim()
