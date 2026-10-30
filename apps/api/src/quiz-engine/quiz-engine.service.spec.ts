@@ -170,6 +170,24 @@ describe('QuizEngineService.transitionState', () => {
     expect(broadcast.publish).toHaveBeenCalledWith('s1', 'SCORE_UPDATE', expect.any(Object));
   });
 
+  it('awards full points to every tied nearest numeric answer, even without a timer', async () => {
+    const { service, answers, questions } = buildHarness({
+      session: { status: 'QUESTION_ACTIVE', current_question_id: 'q1', question_ends_at: null },
+    });
+    jest.mocked(questions.findById).mockResolvedValue({ ...NUMERIC_QUESTION, points: 1, time_limit_seconds: 0 });
+    (answers.listByQuestion as jest.Mock).mockResolvedValue([
+      { id: 'a1', team_id: 't1', response: { value: 5.4 } },
+      { id: 'a2', team_id: 't2', response: { value: 5.4 } },
+      { id: 'a3', team_id: 't3', response: { value: 5.4 } },
+    ]);
+
+    await service.transitionState('s1', 'host1', 'QUESTION_REVEAL');
+
+    for (const id of ['a1', 'a2', 'a3']) {
+      expect(answers.updateGrade).toHaveBeenCalledWith(id, expect.objectContaining({ is_correct: true, score_awarded: 1 }));
+    }
+  });
+
   it('requires a questionId when transitioning into LOCK_IN_ROUND', async () => {
     const { service } = buildHarness({ session: { status: 'LOBBY' } });
 
