@@ -1,4 +1,9 @@
 {
+  "play.join.attendanceTitle": "Where are you playing?",
+  "play.join.inPerson": "In the venue (questions on the projector)",
+  "play.join.remote": "Remotely (questions on this device)",
+  "play.question.projectorPrompt": "Look at the venue projector for the question. Submit your answer below.",
+  "host.room.publishScores": "Publish team scores to players",
   "common.close": "Close",
   "scanner.title": "Scan the QR code",
   "scanner.hint": "Point the camera at the QR code on the projector or the host's screen.",
