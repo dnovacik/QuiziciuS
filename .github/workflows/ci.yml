@@ -33,9 +33,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Diagnose formatting
-        run: pnpm format && git diff -- apps/api/src apps/web/src packages/shared-types/src
-
       - name: Check formatting
         run: pnpm format:check
 
