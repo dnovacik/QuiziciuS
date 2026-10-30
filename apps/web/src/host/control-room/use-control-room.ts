@@ -210,7 +210,10 @@ export function useControlRoom(token: string, sessionId: string) {
     [run, token, sessionId],
   );
 
-  const setScoreVisibility = useCallback((visible: boolean) => run(() => hostApi.setScoreVisibility(token, sessionId, visible)), [run, token, sessionId]);
+  const setScoreVisibility = useCallback(
+    (visible: boolean) => run(() => hostApi.setScoreVisibility(token, sessionId, visible)),
+    [run, token, sessionId],
+  );
 
   const closeAnswers = useCallback(() => run(() => hostApi.closeAnswers(token, sessionId)), [run, token, sessionId]);
 
