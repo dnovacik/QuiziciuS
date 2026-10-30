@@ -53,13 +53,14 @@ export function QuestionScreen({
   const untimed = isUntimed(question.timeLimitSeconds);
   const ranked = rankTeams(state.teams);
   const own = ranked.find((team) => team.id === seat.teamId);
+  const showStandings = state.scoresVisible ?? false;
 
   if (submitted) {
     return (
       <PlayerShell joinCode={state.joinCode} phase="locked" testId="player-locked">
         <LockedView state={state} question={question} answer={submitted} remaining={remaining} />
         <RoomProgress state={state} />
-        {own && <StandingPill team={own} leader={ranked[0]} />}
+        {showStandings && own && <StandingPill team={own} leader={ranked[0]} />}
       </PlayerShell>
     );
   }
@@ -98,7 +99,13 @@ export function QuestionScreen({
       </section>
 
       <RoomProgress state={state} />
-      <QuestionCard state={state} question={question} />
+      {seat.attendanceMode === 'IN_PERSON' ? (
+        <section className="rounded-xl bg-surface-container-high p-4 text-center text-on-surface" data-testid="player-venue-prompt">
+          Look at the venue projector for the question. Submit your answer below.
+        </section>
+      ) : (
+        <QuestionCard state={state} question={question} />
+      )}
 
       {remaining === 0 ? (
         <section
