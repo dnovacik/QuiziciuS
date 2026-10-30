@@ -230,6 +230,25 @@ export class QuizEngineService {
     return this.sessions.updateStatus(sessionId, { archived_at: archived ? new Date().toISOString() : null });
   }
 
+  /** Host-controlled answer correction, separate from independent bonus and penalty scores. */
+  async overrideAnswerGrade(answerId: string, hostId: string, isCorrect: boolean, points: number): Promise<AnswerRecord> {
+    const answer = await this.answers.findById(answerId);
+    if (!answer) throw new NotFoundException('Answer not found');
+    const session = await this.requireOwnedSession(answer.session_id, hostId);
+    if (session.status === 'QUESTION_ACTIVE' && session.current_question_id === answer.question_id) {
+      throw new ConflictException('Reveal the question before changing grades');
+    }
+    const question = await this.questions.findById(answer.question_id);
+    if (!question || question.quiz_id !== session.quiz_id) throw new NotFoundException('Question not found');
+    if (!Number.isInteger(points) || points < 0 || points > question.points) {
+      throw new BadRequestException('Points must be between zero and the question maximum');
+    }
+    if (!isCorrect && points !== 0) throw new BadRequestException('Incorrect answers must receive zero points');
+    const updated = await this.answers.overrideGrade(answerId, hostId, isCorrect, points);
+    await this.broadcast.publish(session.id, 'SCORE_UPDATE', { teamId: answer.team_id, answerId });
+    return updated;
+  }
+
   async resolveDispute(answerId: string, hostId: string, decision: 'APPROVE' | 'REJECT'): Promise<AnswerRecord> {
     const answer = await this.answers.findById(answerId);
     if (!answer) throw new NotFoundException('Answer not found');

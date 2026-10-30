@@ -1,5 +1,5 @@
 import { canLaunchNights } from '../accounts/subscription';
-import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { RequireRole } from '../auth/require-role';
 import { QuizzesRepository } from '../data/quizzes.repository';
@@ -11,6 +11,7 @@ import { AddPaperScoreDto } from './dto/add-paper-score.dto';
 import { ArchiveSessionDto } from './dto/archive-session.dto';
 import { ControlTimerDto } from './dto/control-timer.dto';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { OverrideAnswerGradeDto } from './dto/override-answer-grade.dto';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto';
 import { TransitionSessionDto } from './dto/transition-session.dto';
 
@@ -111,6 +112,12 @@ export class SessionsController {
   @RequireRole('HOST')
   archive(@Param('sessionId') sessionId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: ArchiveSessionDto) {
     return this.quizEngine.setArchived(sessionId, host.id, dto.archived);
+  }
+
+  @Patch('answers/:answerId/grade')
+  @RequireRole('HOST')
+  overrideGrade(@Param('answerId') answerId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: OverrideAnswerGradeDto) {
+    return this.quizEngine.overrideAnswerGrade(answerId, host.id, dto.isCorrect, dto.points);
   }
 
   @Post('answers/:answerId/resolve-dispute')

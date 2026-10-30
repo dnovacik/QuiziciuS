@@ -19,6 +19,7 @@ import type { AnswerSummaryDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
 import { isUntimed, optionLetter, rankTeams, secondsLeft, useNow, withUnit } from '../../lib/quiz';
 import type { Question } from '../api';
+import { InlineGrading } from './InlineGrading';
 import { btn } from '../ui';
 import { MediaControls } from './MediaControls';
 import type { ControlRoom } from './use-control-room';
@@ -285,6 +286,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
           </p>
         )}
 
+        {status === 'QUESTION_REVEAL' && focus && <InlineGrading room={room} question={focus} answers={answers} />}
         {status === 'LOCK_IN_ROUND' && <ReadyTeams teams={state.teams} />}
         {status === 'QUESTION_REVEAL' && <BreakSetup room={room} />}
 

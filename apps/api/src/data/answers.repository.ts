@@ -31,6 +31,7 @@ export abstract class AnswersRepository {
   abstract listNeedsReview(sessionId: string): Promise<AnswerRecord[]>;
   abstract listBySession(sessionId: string): Promise<AnswerRecord[]>;
   abstract updateGrade(id: string, patch: AnswerGradePatch): Promise<AnswerRecord>;
+  abstract overrideGrade(id: string, hostId: string, isCorrect: boolean, points: number): Promise<AnswerRecord>;
   /** A team disputes its grade: the answer goes back to the host's review queue. */
   abstract markDisputed(id: string, note: string | null): Promise<AnswerRecord>;
 }
@@ -98,6 +99,17 @@ export class SupabaseAnswersRepository extends AnswersRepository {
       .eq('id', id)
       .select()
       .single();
+    if (error) throw new InternalServerErrorException(error.message);
+    return data as AnswerRecord;
+  }
+
+  async overrideGrade(id: string, hostId: string, isCorrect: boolean, points: number): Promise<AnswerRecord> {
+    const { data, error } = await this.supabase.getClient().rpc('override_answer_grade', {
+      p_answer_id: id,
+      p_host_id: hostId,
+      p_correct: isCorrect,
+      p_points: points,
+    });
     if (error) throw new InternalServerErrorException(error.message);
     return data as AnswerRecord;
   }
