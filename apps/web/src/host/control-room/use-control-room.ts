@@ -62,7 +62,7 @@ function useBreakOptions() {
 /** Everything the live control room needs: session, quiz, questions, answers and transitions. */
 export function useControlRoom(token: string, sessionId: string) {
   const { t } = useI18n();
-  const { state, error: stateError, refetch } = useSessionState(sessionId);
+  const { state, error: stateError, refetch } = useSessionState(sessionId, token);
   const [session, setSession] = useState<HostSession | null>(null);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -210,6 +210,8 @@ export function useControlRoom(token: string, sessionId: string) {
     [run, token, sessionId],
   );
 
+  const setScoreVisibility = useCallback((visible: boolean) => run(() => hostApi.setScoreVisibility(token, sessionId, visible)), [run, token, sessionId]);
+
   const closeAnswers = useCallback(() => run(() => hostApi.closeAnswers(token, sessionId)), [run, token, sessionId]);
 
   const currentQuestion = questions.find((question) => question.id === currentId) ?? null;
@@ -264,6 +266,7 @@ export function useControlRoom(token: string, sessionId: string) {
     nextUnplayed,
     transition,
     closeAnswers,
+    setScoreVisibility,
     controlTimer,
     pendingReviews,
     breakOptions,
