@@ -203,7 +203,9 @@ describe('joining', () => {
     fireEvent.change(screen.getByTestId('player-table'), { target: { value: ' 7 ' } });
     fireEvent.submit(screen.getByTestId('player-join-form'));
 
-    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', { name: 'Wise Ducks', attendanceMode: 'IN_PERSON', tableNumber: '7' }));
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/sessions/s1/teams/join', { name: 'Wise Ducks', attendanceMode: 'IN_PERSON', tableNumber: '7' }),
+    );
   });
 
   it('joins as a registered team with the team PIN, offered when the name is taken', async () => {
@@ -219,7 +221,9 @@ describe('joining', () => {
     fireEvent.change(await screen.findByTestId('player-team-pin'), { target: { value: '48-29 15' } });
     fireEvent.submit(screen.getByTestId('player-join-form'));
 
-    await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/team-access/sessions/s1/join', { name: 'Wise Ducks', attendanceMode: 'IN_PERSON', pin: '482915' }));
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/team-access/sessions/s1/join', { name: 'Wise Ducks', attendanceMode: 'IN_PERSON', pin: '482915' }),
+    );
   });
 
   it('scans the projector QR code with the camera and opens that quiz night', async () => {
