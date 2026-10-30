@@ -77,6 +77,6 @@ export function listedVariants(answer: string): string[] | null {
 /** Empty alternatives are dropped before saving. */
 export function cleanForSave(draft: QuestionDraft): QuestionDraft {
   return draft.type === 'FREE_TEXT'
-    ? { ...draft, accepted_answers: (draft.accepted_answers ?? []).filter((answer) => answer.trim()) }
+    ? { ...draft, accepted_answers: (draft.accepted_answers ?? []).flatMap((answer) => listedVariants(answer) ?? (answer.trim() ? [answer.trim()] : [])) }
     : draft;
 }
