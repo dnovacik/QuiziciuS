@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { AnswerRecord, AnswersRepository } from '../data/answers.repository';
 import { InfractionsRepository } from '../data/infractions.repository';
 import { QuestionRecord, QuestionsRepository } from '../data/questions.repository';
@@ -78,6 +78,9 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
     listNeedsReview: jest.fn(),
     listBySession: jest.fn().mockResolvedValue([] as AnswerRecord[]),
     markDisputed: jest.fn(),
+    overrideGrade: jest.fn().mockImplementation(async (id: string, _hostId: string, isCorrect: boolean, points: number) => ({
+      id, is_correct: isCorrect, score_awarded: points, graded_by: 'HOST',
+    })),
     updateGrade: jest.fn().mockImplementation(async (id: string, patch) => ({
       id,
       session_id: 's1',
@@ -106,6 +109,45 @@ function buildHarness(overrides?: { session?: Partial<SessionRecord> }) {
   const service = new QuizEngineService(sessions, questions, teams, answers, infractions, scoreAdjustments, broadcast);
   return { service, sessions, questions, teams, answers, infractions, scoreAdjustments, broadcast, session };
 }
+
+describe('host grade overrides', () => {
+  const original = {
+    id: 'a1',
+    session_id: 's1',
+    question_id: 'q1',
+    team_id: 't1',
+    response: {},
+    score_awarded: 0,
+  } as AnswerRecord;
+
+  it('awards partial points and emits a score update', async () => {
+    const { service, answers, broadcast } = buildHarness({ session: { status: 'QUESTION_REVEAL' } });
+    jest.mocked(answers.findById).mockResolvedValue(original);
+    await service.overrideAnswerGrade('a1', 'host1', true, 2);
+    expect(answers.overrideGrade).toHaveBeenCalledWith('a1', 'host1', true, 2);
+    expect(broadcast.publish).toHaveBeenCalledWith('s1', 'SCORE_UPDATE', expect.objectContaining({ answerId: 'a1' }));
+  });
+
+  it('rejects corrections from another host', async () => {
+    const { service, answers } = buildHarness({ session: { status: 'QUESTION_REVEAL' } });
+    jest.mocked(answers.findById).mockResolvedValue(original);
+    await expect(service.overrideAnswerGrade('a1', 'another-host', true, 2)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('rejects invalid award totals', async () => {
+    const { service, answers } = buildHarness({ session: { status: 'QUESTION_REVEAL' } });
+    jest.mocked(answers.findById).mockResolvedValue(original);
+    await expect(service.overrideAnswerGrade('a1', 'host1', true, 5)).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.overrideAnswerGrade('a1', 'host1', false, 1)).rejects.toBeInstanceOf(BadRequestException);
+    expect(answers.overrideGrade).not.toHaveBeenCalled();
+  });
+
+  it('refuses edits before the active question is revealed', async () => {
+    const { service, answers } = buildHarness({ session: { status: 'QUESTION_ACTIVE', current_question_id: 'q1' } });
+    jest.mocked(answers.findById).mockResolvedValue(original);
+    await expect(service.overrideAnswerGrade('a1', 'host1', true, 2)).rejects.toBeInstanceOf(ConflictException);
+  });
+});
 
 describe('QuizEngineService.transitionState', () => {
   it('rejects an illegal transition without persisting or broadcasting', async () => {
