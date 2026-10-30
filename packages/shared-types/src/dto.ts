@@ -39,6 +39,7 @@ export interface TeamSummaryDto {
 }
 
 export interface QuizSessionStateDto {
+  scoresVisible?: boolean;
   id: string;
   joinCode: string;
   status: QuizState;
