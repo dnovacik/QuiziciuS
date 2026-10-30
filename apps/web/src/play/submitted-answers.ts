@@ -48,7 +48,8 @@ export function useSubmittedAnswers(sessionId: string) {
 
 /**
  * The team's graded answers from the server. Grades of the open question are withheld by the API
- * until its timer has run out or the host reveals it, so this is only worth asking for afterwards.
+ * until its timer has run out or the host reveals it. The response itself is still safe to
+ * retrieve during answering, allowing an interrupted phone to recover its saved submission.
  */
 export function useGradedAnswers(sessionId: string, token: string, refreshKey: string | null) {
   const [graded, setGraded] = useState<Record<string, AnswerSummaryDto>>({});
