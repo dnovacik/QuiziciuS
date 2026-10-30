@@ -103,7 +103,7 @@ export class QuizEngineService {
       teams: teams.map((team) => ({
         id: team.id,
         name: team.name,
-        attendanceMode: team.attendance_mode ?? 'IN_PERSON',
+        attendanceMode: team.attendance_mode ?? 'REMOTE',
         isActive: team.is_active,
         registeredTeamId: team.registered_team_id ?? null,
         tableNumber: team.table_number ?? null,
