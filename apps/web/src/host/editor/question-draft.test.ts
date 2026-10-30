@@ -22,7 +22,11 @@ describe('blankQuestion', () => {
 
 describe('cleanForSave', () => {
   it('expands several variants and discards blank alternatives', () => {
-    const draft = { ...blankQuestion(0), type: 'FREE_TEXT' as const, accepted_answers: ['Bratislava, Pressburg', 'Pozsony', '  ', 'Prešporok; Presporok'] };
+    const draft = {
+      ...blankQuestion(0),
+      type: 'FREE_TEXT' as const,
+      accepted_answers: ['Bratislava, Pressburg', 'Pozsony', '  ', 'Prešporok; Presporok'],
+    };
     expect(cleanForSave(draft).accepted_answers).toEqual(['Bratislava', 'Pressburg', 'Pozsony', 'Prešporok', 'Presporok']);
   });
 });
