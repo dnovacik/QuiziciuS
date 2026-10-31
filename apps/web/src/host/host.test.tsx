@@ -977,6 +977,71 @@ describe('control room', () => {
     expect(apiPost).toHaveBeenCalledWith('/answers/d1/resolve-dispute', { decision: 'APPROVE' }, 'jwt');
   });
 
+  it("corrects a team's grade right in the control room after the reveal", async () => {
+    db.answers = [
+      {
+        id: 'a1',
+        sessionId: 's1',
+        questionId: 'q1',
+        teamId: 't2',
+        response: { optionId: 'a' },
+        isCorrect: false,
+        confidence: null,
+        needsReview: false,
+        gradedBy: 'AUTO',
+        scoreAwarded: 0,
+        disputed: false,
+        disputeNote: null,
+      },
+    ];
+    live.state = liveState('QUESTION_REVEAL', 'q1');
+    renderRoom();
+
+    const row = await screen.findByTestId('inline-grade-a1');
+    expect(row).toHaveTextContent('Pub Mozarts');
+    expect(row).toHaveTextContent('✗ · 0 / 10');
+    expect(screen.getByTestId('inline-points-a1')).toBeDisabled();
+
+    fireEvent.click(within(row).getByRole('checkbox'));
+    expect(screen.getByTestId('inline-points-a1')).toHaveValue(10);
+    fireEvent.change(screen.getByTestId('inline-points-a1'), { target: { value: '6' } });
+    const answerLoads = () => vi.mocked(apiGet).mock.calls.filter(([path]) => path.startsWith('/host/sessions/s1/answers')).length;
+    const loadsBefore = answerLoads();
+    await act(async () => fireEvent.click(screen.getByTestId('inline-save-a1')));
+
+    expect(apiPatch).toHaveBeenCalledWith('/answers/a1/grade', { isCorrect: true, points: 6 }, 'jwt');
+    // The host's list and the team scores reload, so the verdict at the top changes with the points.
+    await waitFor(() => expect(answerLoads()).toBeGreaterThan(loadsBefore));
+    expect(live.refetch).toHaveBeenCalled();
+  });
+
+  it('will not save more points than the question is worth, and a wrong answer gets none', async () => {
+    db.answers = [
+      {
+        id: 'a1',
+        sessionId: 's1',
+        questionId: 'q1',
+        teamId: 't2',
+        response: { optionId: 'b' },
+        isCorrect: true,
+        confidence: null,
+        needsReview: false,
+        gradedBy: 'AUTO',
+        scoreAwarded: 10,
+        disputed: false,
+        disputeNote: null,
+      },
+    ];
+    live.state = liveState('QUESTION_REVEAL', 'q1');
+    renderRoom();
+
+    fireEvent.change(await screen.findByTestId('inline-points-a1'), { target: { value: '11' } });
+    expect(screen.getByTestId('inline-save-a1')).toBeDisabled();
+    fireEvent.click(within(screen.getByTestId('inline-grade-a1')).getByRole('checkbox'));
+    expect(screen.getByTestId('inline-points-a1')).toHaveValue(0);
+    expect(screen.getByTestId('inline-save-a1')).toBeEnabled();
+  });
+
   it('archives the finished night and goes back to the sessions list', async () => {
     live.state = liveState('FINISHED', 'q3');
     vi.mocked(apiPost).mockResolvedValue({});
