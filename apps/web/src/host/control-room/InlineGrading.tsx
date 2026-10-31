@@ -78,7 +78,7 @@ function GradeRow({ room, question, answer }: { room: ControlRoom; question: Que
           onClick={() => void save()}
           data-testid={`inline-save-${answer.id}`}
         >
-          {saving ? t('common.working') : t('host.editor.save')}
+          {saving ? t('common.working') : t('host.room.saveGrade')}
         </button>
       </div>
       {error && (

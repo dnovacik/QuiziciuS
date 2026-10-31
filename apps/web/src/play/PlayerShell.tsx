@@ -45,7 +45,7 @@ export function PlayerShell({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-xl flex-1 overflow-x-hidden px-margin pb-28 pt-20">
+      <main className="mx-auto w-full max-w-xl flex-1 overflow-x-clip px-margin pb-28 pt-20">
         <div className="flex flex-col gap-space-md" data-testid={testId}>
           {children}
         </div>

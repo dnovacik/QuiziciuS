@@ -139,7 +139,7 @@ function Location() {
 }
 
 function renderPlay(path = '/play/s1') {
-  return render(
+  const tree = () => (
     <I18nProvider>
       <MemoryRouter initialEntries={[path]}>
         <Location />
@@ -149,8 +149,11 @@ function renderPlay(path = '/play/s1') {
           <Route path="/team" element={<p>team page</p>} />
         </Routes>
       </MemoryRouter>
-    </I18nProvider>,
+    </I18nProvider>
   );
+  const view = render(tree());
+  /** Renders again, e.g. after the session state changed. */
+  return { ...view, refresh: () => view.rerender(tree()) };
 }
 
 function seated() {
@@ -530,6 +533,21 @@ describe('reveal and results', () => {
     await waitFor(() => expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'correct'));
     expect(screen.queryByTestId('player-awarded')).not.toBeInTheDocument();
     expect(screen.queryByTestId('player-total-score')).not.toBeInTheDocument();
+  });
+
+  it('shows the points earned as soon as the host publishes the scores', async () => {
+    localStorage.setItem('quizicius:answers:s1', JSON.stringify({ q1: { display: 'Forrest Gump', letter: 'B', submittedAt: Date.now() } }));
+    // While scores are hidden the API withholds the points.
+    session.mine = [graded({ scoreAwarded: 0 })];
+    setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'b' }), scoresVisible: false });
+    const view = renderPlay();
+    await waitFor(() => expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'correct'));
+
+    session.mine = [graded({ scoreAwarded: 2 })];
+    setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'b' }), scoresVisible: true });
+    view.refresh();
+
+    await waitFor(() => expect(screen.getByTestId('player-awarded')).toHaveTextContent('+2'));
   });
 
   it("updates the verdict when the host corrects the team's grade", async () => {
