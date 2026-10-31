@@ -218,6 +218,22 @@ function ChosenMedia({
             </span>
           </div>
         )}
+        {value.kind === 'youtube' && (
+          <label className="flex items-center gap-2 text-label-sm text-on-surface">
+            <input
+              type="checkbox"
+              checked={value.audioOnly === true}
+              onChange={(event) => {
+                const next = { ...value };
+                if (event.target.checked) next.audioOnly = true;
+                else delete next.audioOnly;
+                onChange(next);
+              }}
+              data-testid={`${id}-audio-only`}
+            />
+            {t('host.editor.audioOnly')}
+          </label>
+        )}
         <button
           type="button"
           className="self-start text-label-sm text-error hover:underline"

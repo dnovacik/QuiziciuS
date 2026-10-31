@@ -92,6 +92,7 @@ describe('AnswersService.submit', () => {
       questionId: 'q1',
       teamId: 't1',
       response: { optionId: 'a' },
+      graceMs: 2000,
     });
     expect(answers.updateGrade).toHaveBeenCalledWith(
       'ans1',
@@ -173,7 +174,7 @@ describe('AnswersService.listForTeam', () => {
     });
 
   it('hides the grade of the open question but keeps earlier results', async () => {
-    const { service, answers } = buildHarness();
+    const { service, answers } = buildHarness({ session: { scores_visible: true } });
     (answers.listBySession as jest.Mock).mockResolvedValue([graded('q0'), graded('q1'), graded('q1', 't2')]);
 
     const result = await service.listForTeam('s1', 't1');
@@ -185,7 +186,9 @@ describe('AnswersService.listForTeam', () => {
   });
 
   it('includes the current grade once the timer and grace period have run out', async () => {
-    const { service, answers } = buildHarness({ session: { question_ends_at: new Date(Date.now() - 5_000).toISOString() } });
+    const { service, answers } = buildHarness({
+      session: { question_ends_at: new Date(Date.now() - 5_000).toISOString(), scores_visible: true },
+    });
     (answers.listBySession as jest.Mock).mockResolvedValue([graded('q1')]);
 
     const [answer] = await service.listForTeam('s1', 't1');
@@ -194,7 +197,28 @@ describe('AnswersService.listForTeam', () => {
   });
 
   it('includes the current grade after the host reveals the answer', async () => {
-    const { service, answers } = buildHarness({ session: { status: 'QUESTION_REVEAL' } });
+    const { service, answers } = buildHarness({ session: { status: 'QUESTION_REVEAL', scores_visible: true } });
+    (answers.listBySession as jest.Mock).mockResolvedValue([graded('q1')]);
+
+    const [answer] = await service.listForTeam('s1', 't1');
+
+    expect(answer).toMatchObject({ isCorrect: true, scoreAwarded: 3 });
+  });
+
+  it('shows whether the answer was right but not its points while the host keeps scores hidden', async () => {
+    const { service, answers } = buildHarness({ session: { status: 'QUESTION_REVEAL', scores_visible: false } });
+    (answers.listBySession as jest.Mock).mockResolvedValue([graded('q0'), graded('q1')]);
+
+    const result = await service.listForTeam('s1', 't1');
+
+    expect(result).toEqual([
+      expect.objectContaining({ questionId: 'q0', isCorrect: true, scoreAwarded: 0 }),
+      expect.objectContaining({ questionId: 'q1', isCorrect: true, scoreAwarded: 0 }),
+    ]);
+  });
+
+  it('shows the points once the night is finished', async () => {
+    const { service, answers } = buildHarness({ session: { status: 'FINISHED', scores_visible: false } });
     (answers.listBySession as jest.Mock).mockResolvedValue([graded('q1')]);
 
     const [answer] = await service.listForTeam('s1', 't1');

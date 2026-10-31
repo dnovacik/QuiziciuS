@@ -1,4 +1,5 @@
 import { canLaunchNights } from '../accounts/subscription';
+import { toAnswerSummary } from '../answers/answer-summary';
 import { Body, Controller, ForbiddenException, Get, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentHost, CurrentHostPayload } from '../auth/current-host.decorator';
 import { RequireRole } from '../auth/require-role';
@@ -132,8 +133,8 @@ export class SessionsController {
 
   @Patch('answers/:answerId/grade')
   @RequireRole('HOST')
-  overrideGrade(@Param('answerId') answerId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: OverrideAnswerGradeDto) {
-    return this.quizEngine.overrideAnswerGrade(answerId, host.id, dto.isCorrect, dto.points);
+  async overrideGrade(@Param('answerId') answerId: string, @CurrentHost() host: CurrentHostPayload, @Body() dto: OverrideAnswerGradeDto) {
+    return toAnswerSummary(await this.quizEngine.overrideAnswerGrade(answerId, host.id, dto.isCorrect, dto.points));
   }
 
   @Post('answers/:answerId/resolve-dispute')

@@ -181,8 +181,16 @@ function Scene({
     case 'LOCK_IN_ROUND':
       return <LockInScene question={question} teams={state.teams} />;
     case 'QUESTION_ACTIVE':
-    case 'QUESTION_REVEAL':
       return question ? <QuestionScene state={state} question={question} /> : <LockInScene question={null} />;
+    case 'QUESTION_REVEAL':
+      if (!question) return <LockInScene question={null} />;
+      // Standings join the answer only when the host publishes them for this question.
+      return (
+        <div className="flex flex-col gap-space-lg">
+          <QuestionScene state={state} question={question} />
+          {state.scoresVisible && <LeaderboardScene teams={state.teams} />}
+        </div>
+      );
     case 'PAUSE_BREAK':
       return (
         <div className="flex flex-col gap-space-lg">

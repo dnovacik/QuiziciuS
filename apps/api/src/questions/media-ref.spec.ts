@@ -53,6 +53,14 @@ describe('normalizeMediaRef', () => {
     expect(norm({ kind: 'video', source: 'link', url: 'https://youtu.be/dQw4w9WgXcQ' })).toMatchObject({ kind: 'youtube' });
   });
 
+  it('keeps sound-only for YouTube clips and drops it elsewhere', () => {
+    expect(norm({ kind: 'youtube', source: 'link', url: 'https://youtu.be/dQw4w9WgXcQ', audioOnly: true })).toMatchObject({
+      kind: 'youtube',
+      audioOnly: true,
+    });
+    expect(norm({ kind: 'audio', source: 'link', url: 'https://cdn.example/a.mp3', audioOnly: true })).not.toHaveProperty('audioOnly');
+  });
+
   it('keeps the selected part and refuses impossible ones', () => {
     expect(norm({ kind: 'audio', source: 'link', url: 'https://cdn.example/a.mp3', startSeconds: 80, durationSeconds: 15 })).toEqual({
       kind: 'audio',

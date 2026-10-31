@@ -18,6 +18,7 @@ import {
 import type { AnswerSummaryDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
 import { isUntimed, optionLetter, rankTeams, secondsLeft, useNow, withUnit } from '../../lib/quiz';
+import { roundAt } from '../../lib/rounds';
 import type { Question } from '../api';
 import { InlineGrading } from './InlineGrading';
 import { btn } from '../ui';
@@ -76,8 +77,17 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
             const live = showingCurrent && question.id === room.currentQuestion?.id;
             const done = room.played.includes(question.id) && !live;
             const next = !live && question.id === room.selectedId;
+            const round = roundAt(room.quiz?.rounds, index);
             return (
               <li key={question.id}>
+                {round?.first && (
+                  <p
+                    className="px-space-xs pb-1 pt-space-xs text-label-sm uppercase tracking-wider text-secondary"
+                    data-testid={`room-round-${round.index}`}
+                  >
+                    {t('host.rounds.round')} {round.index + 1}: {round.round.title}
+                  </p>
+                )}
                 <button
                   type="button"
                   disabled={!canPick || live}
@@ -287,16 +297,28 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
         )}
 
         {status === 'QUESTION_REVEAL' && focus && <InlineGrading room={room} question={focus} answers={answers} />}
-        <label className="flex items-center gap-2 text-label-md">
-          <input
-            type="checkbox"
-            checked={state.scoresVisible ?? false}
-            disabled={room.busy}
-            onChange={(event) => void room.setScoreVisibility(event.target.checked)}
-          />
-          {t('host.room.publishScores')}
-        </label>
+        {(status === 'QUESTION_REVEAL' || status === 'PAUSE_BREAK') && (
+          // Published per revealed question: the next question starts with scores hidden again.
+          <label className="flex items-center gap-2 text-label-md" data-testid="room-publish-scores">
+            <input
+              type="checkbox"
+              checked={state.scoresVisible ?? false}
+              disabled={room.busy}
+              onChange={(event) => void room.setScoreVisibility(event.target.checked)}
+            />
+            {t('host.room.publishScores')}
+          </label>
+        )}
         {status === 'LOCK_IN_ROUND' && <ReadyTeams teams={state.teams} />}
+        {status === 'QUESTION_REVEAL' && room.roundBreak && (
+          <p
+            className="flex items-center gap-2 rounded-xl bg-secondary-container/20 p-space-sm text-body-md text-on-surface"
+            data-testid="room-round-end"
+          >
+            <Coffee className="h-5 w-5 shrink-0 text-secondary" />
+            {t('host.room.roundEnd')} „{room.roundBreak.finished.title}“ · {t('host.room.roundNext')} „{room.roundBreak.next.title}“
+          </p>
+        )}
         {status === 'QUESTION_REVEAL' && <BreakSetup room={room} />}
 
         <div className="flex flex-wrap items-center gap-space-sm pt-space-sm" data-testid="room-actions">
@@ -361,13 +383,13 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
               </button>
               <button
                 type="button"
-                className={`${btn.secondary} flex-1 py-3`}
+                className={`${room.roundBreak ? btn.primary : btn.secondary} flex-1 py-3`}
                 disabled={room.busy}
                 onClick={() => void room.transition('PAUSE_BREAK')}
                 data-testid="room-action-pause"
               >
-                <Coffee className="h-5 w-5 text-secondary" />
-                {t('host.room.pause')}
+                <Coffee className={`h-5 w-5 ${room.roundBreak ? '' : 'text-secondary'}`} />
+                {t(room.roundBreak ? 'host.room.roundBreak' : 'host.room.pause')}
               </button>
             </>
           )}
@@ -375,7 +397,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
             (room.selectedId ? (
               <button
                 type="button"
-                className={`${btn.primary} flex-1 py-3`}
+                className={`${room.roundBreak ? btn.secondary : btn.primary} flex-1 py-3`}
                 disabled={room.busy}
                 onClick={() => void room.transition('LOCK_IN_ROUND')}
                 data-testid="room-action-next"
@@ -527,6 +549,8 @@ const BREAK_MINUTES = [0, 5, 10, 15];
 function BreakSetup({ room }: { room: ControlRoom }) {
   const { t } = useI18n();
   const { minutes, message } = room.breakOptions;
+  // A round's own break length joins the usual choices.
+  const choices = BREAK_MINUTES.includes(minutes) ? BREAK_MINUTES : [...BREAK_MINUTES, minutes].sort((a, b) => a - b);
   return (
     <div className="flex flex-col gap-space-xs rounded-xl bg-surface-container p-space-sm" data-testid="room-break-setup">
       <div className="flex flex-wrap items-center gap-space-xs">
@@ -534,7 +558,7 @@ function BreakSetup({ room }: { room: ControlRoom }) {
           <Coffee className="h-4 w-4 text-secondary" />
           {t('host.room.breakLength')}
         </span>
-        {BREAK_MINUTES.map((value) => (
+        {choices.map((value) => (
           <button
             key={value}
             type="button"

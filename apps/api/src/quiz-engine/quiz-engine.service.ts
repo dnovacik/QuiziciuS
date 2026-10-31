@@ -151,6 +151,8 @@ export class QuizEngineService {
         throw new ForbiddenException('Question does not belong to this session quiz');
       }
       patch.current_question_id = options.questionId;
+      // Points and standings are published per revealed question: each new question starts hidden.
+      patch.scores_visible = false;
       if (!session.started_at) {
         patch.started_at = new Date().toISOString();
       }

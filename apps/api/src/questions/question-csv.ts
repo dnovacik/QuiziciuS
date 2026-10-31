@@ -26,6 +26,8 @@ export const CSV_COLUMNS = [
 type Column = (typeof CSV_COLUMNS)[number];
 const REQUIRED: Column[] = ['type', 'prompt', 'answer'];
 
+const YOUTUBE_AUDIO = 'youtube-audio';
+
 export const MAX_OPTIONS = 6;
 export const MAX_PROMPT = 250;
 /** Keeps an upload well under the API's 100 kB request limit. */
@@ -127,9 +129,13 @@ function mediaSlot(
     return null;
   }
   let kind: MediaKind | undefined;
-  if (kindCell) {
+  // "youtube-audio": a YouTube clip played as sound only (the projector never shows the video).
+  const audioOnly = kindCell === YOUTUBE_AUDIO;
+  if (audioOnly) {
+    kind = 'youtube';
+  } else if (kindCell) {
     kind = KINDS.find((k) => k === kindCell);
-    if (!kind) fail(`${prefix}_kind must be one of ${KINDS.join(', ')}`);
+    if (!kind) fail(`${prefix}_kind must be one of ${[...KINDS, YOUTUBE_AUDIO].join(', ')}`);
   } else if (/(^|\.)(youtube\.com|youtube-nocookie\.com|youtu\.be)$/i.test(hostOf(url))) {
     kind = 'youtube';
   } else {
@@ -138,6 +144,7 @@ function mediaSlot(
     if (!kind) fail(`Can't tell what ${prefix}_url is; fill in ${prefix}_kind (${KINDS.join(', ')})`);
   }
   const ref: Record<string, unknown> = { kind, source: 'link', url };
+  if (audioOnly) ref.audioOnly = true;
   if (start) ref.startSeconds = number(start) ?? start;
   if (duration) ref.durationSeconds = number(duration) ?? duration;
   return ref;
@@ -253,7 +260,7 @@ function cell(value: string | number | null | undefined): string {
 function mediaCells(ref: MediaRefDto | null | undefined): (string | number | undefined)[] {
   // Uploads live in the quiz's storage and can't travel in a file.
   if (!ref || ref.source !== 'link') return ['', '', '', ''];
-  return [ref.url, ref.kind, ref.startSeconds, ref.durationSeconds];
+  return [ref.url, ref.audioOnly ? YOUTUBE_AUDIO : ref.kind, ref.startSeconds, ref.durationSeconds];
 }
 
 /** The quiz's questions as CSV (UTF-8 with BOM so Excel keeps diacritics), in quiz order. */

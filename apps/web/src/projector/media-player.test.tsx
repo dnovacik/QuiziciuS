@@ -201,6 +201,23 @@ describe('projector media', () => {
     expect(screen.getByTestId('projector-youtube-placeholder-question')).toBeVisible();
   });
 
+  it('never shows the video of a sound-only YouTube clip, even while it plays', async () => {
+    show({
+      media: {
+        kind: 'youtube',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        startSeconds: 30,
+        durationSeconds: null,
+        audioOnly: true,
+      },
+    });
+    await act(async () => undefined);
+
+    act(() => youtube.events!.onStateChange(1));
+    expect(screen.getByTestId('projector-youtube-placeholder-question')).toBeVisible();
+    expect(screen.getByTestId('projector-youtube-question')).toHaveClass('invisible');
+  });
+
   it('plays YouTube through its player and reports a broken video', async () => {
     show({ media: { kind: 'youtube', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', startSeconds: 30, durationSeconds: null } });
     await act(async () => undefined);

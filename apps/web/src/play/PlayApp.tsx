@@ -14,11 +14,19 @@ import { LobbyScreen, LockInScreen, PauseScreen } from './WaitingScreens';
 
 export default function PlayApp() {
   const { sessionId } = useParams<{ sessionId?: string }>();
+  const navigate = useNavigate();
   const [seat, setSeat] = useState<TeamSeat | null>(() => loadSeat(sessionId));
+
+  function joined(next: TeamSeat) {
+    setSeat(next);
+    // The seat is stored per session: a phone that reloads the tab (mobile browsers discard
+    // backgrounded tabs) finds it again only when the session is in the address.
+    if (sessionId !== next.sessionId) navigate(`/play/${next.sessionId}`, { replace: true });
+  }
 
   return (
     <div data-testid="play-app">
-      {seat ? <Game key={seat.sessionId} seat={seat} /> : <JoinScreen sessionId={sessionId} onJoined={setSeat} />}
+      {seat ? <Game key={seat.sessionId} seat={seat} /> : <JoinScreen sessionId={sessionId} onJoined={joined} />}
     </div>
   );
 }
@@ -35,12 +43,8 @@ function Game({ seat }: { seat: TeamSeat }) {
   const { answers, record } = useSubmittedAnswers(seat.sessionId);
   const { requestFullscreenNow } = useQuizSecurity(state?.status ?? 'LOBBY', seat.token);
   // The API returns this team's submission even before grading becomes public.
-  // Polling and resync recover answers submitted before the phone went offline.
-  const graded = useGradedAnswers(
-    seat.sessionId,
-    seat.token,
-    state ? `${state.status}:${state.currentQuestion?.id}:${state.answeredCount}` : null,
-  );
+  // State changes and score updates recover answers submitted before the phone went offline.
+  const graded = useGradedAnswers(seat.sessionId, seat.token, state ? `${state.status}:${state.currentQuestion?.id}` : null);
   const serverAnswer = state?.currentQuestion ? graded[state.currentQuestion.id] : undefined;
   const recoveredAnswer =
     state?.currentQuestion && serverAnswer

@@ -131,7 +131,12 @@ export function DashboardPage({ token }: { token: string }) {
               </div>
             ) : (
               live.map((session) => (
-                <LiveSessionCard key={session.id} session={session} quiz={library.quizzes.find((quiz) => quiz.id === session.quiz_id)} />
+                <LiveSessionCard
+                  key={session.id}
+                  token={token}
+                  session={session}
+                  quiz={library.quizzes.find((quiz) => quiz.id === session.quiz_id)}
+                />
               ))
             )}
           </div>

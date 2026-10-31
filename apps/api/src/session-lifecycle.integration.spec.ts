@@ -120,6 +120,10 @@ describe('Session lifecycle (integration)', () => {
     expect(openState.body.teams).toEqual([expect.objectContaining({ score: 0 })]);
 
     await request(server).post(`/sessions/${sessionId}/transition`).send({ status: 'QUESTION_REVEAL' }).expect(201);
+    // The verdict is out at the reveal; the points only once the host publishes them.
+    const hiddenRes = await request(server).get(`/sessions/${sessionId}/answers/mine`).set('Authorization', `Bearer ${teamToken}`);
+    expect(hiddenRes.body).toEqual([expect.objectContaining({ questionId, isCorrect: true, scoreAwarded: 0 })]);
+    await request(server).patch(`/host/sessions/${sessionId}/score-visibility`).send({ visible: true }).expect(200);
     const mineRes = await request(server).get(`/sessions/${sessionId}/answers/mine`).set('Authorization', `Bearer ${teamToken}`);
     expect(mineRes.status).toBe(200);
     expect(mineRes.body).toEqual([expect.objectContaining({ questionId, isCorrect: true, scoreAwarded: 5 })]);

@@ -324,16 +324,22 @@ const YouTubeSlot = forwardRef<SlotHandle, { slot: MediaSlot; media: ResolvedMed
     };
   }, [videoId, start, end, act]);
 
+  // The thumbnail and title show while the player is idle or paused, and YouTube overlays the title
+  // during playback too: a sound-only clip (a song to guess) never shows the video at all.
+  const showVideo = isPlaying && !media.audioOnly;
+
   return (
     <div className="relative mx-auto aspect-video max-h-[50vh] w-full max-w-4xl overflow-hidden rounded-xl bg-black shadow-2xl">
-      <div ref={holder} data-testid={`projector-youtube-${slot}`} className={`absolute inset-0 ${isPlaying ? '' : 'invisible'}`} />
-      {!isPlaying && (
+      <div ref={holder} data-testid={`projector-youtube-${slot}`} className={`absolute inset-0 ${showVideo ? '' : 'invisible'}`} />
+      {!showVideo && (
         <div
           className="absolute inset-0 flex flex-col items-center justify-center gap-space-md bg-surface-container text-center"
           data-testid={`projector-youtube-placeholder-${slot}`}
         >
           <Music className="h-14 w-14 text-secondary" />
-          <span className="text-headline-sm font-bold text-on-surface">{t('projector.media.ready')}</span>
+          <span className="text-headline-sm font-bold text-on-surface">
+            {t(isPlaying ? 'projector.media.playing' : 'projector.media.ready')}
+          </span>
         </div>
       )}
     </div>

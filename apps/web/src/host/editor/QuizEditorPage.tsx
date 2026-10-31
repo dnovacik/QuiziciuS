@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
   HelpCircle,
   Lightbulb,
   LayoutGrid,
+  ListOrdered,
   Pencil,
   Plus,
   Save,
@@ -26,6 +27,7 @@ import { ApiError } from '../../lib/api-client';
 import { describeError } from '../../lib/errors';
 import { useI18n } from '../../lib/i18n';
 import { isUntimed } from '../../lib/quiz';
+import { roundAt } from '../../lib/rounds';
 import { Modal } from '../../ui/Modal';
 import {
   hostApi,
@@ -42,6 +44,7 @@ import { PubSelect, useHostPubs } from '../pubs';
 import { btn, Card, ConfirmDialog, ErrorBanner, inputClass, Label, useToast } from '../ui';
 import { PhonePreview } from './PhonePreview';
 import { QuestionForm } from './QuestionForm';
+import { RoundsDialog } from './RoundsDialog';
 import { blankQuestion, cleanForSave, TIMER_CHOICES, validate } from './question-draft';
 
 const TYPE_ICON: Record<QuestionType, typeof LayoutGrid> = { MULTIPLE_CHOICE: LayoutGrid, FREE_TEXT: Type, NUMERIC_NEAREST: Hash };
@@ -82,6 +85,7 @@ export function QuizEditorPage({ token }: { token: string }) {
   const [pendingSwitch, setPendingSwitch] = useState<(() => void) | null>(null);
   const [deleting, setDeleting] = useState<Question | 'current' | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [roundsOpen, setRoundsOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor');
   const [dragId, setDragId] = useState<string | null>(null);
   /** Rows of a CSV file the API refused, shown with the error until the next try. */
@@ -414,6 +418,11 @@ export function QuizEditorPage({ token }: { token: string }) {
               <Download className="h-5 w-5" />
               {t('host.editor.export')}
             </button>
+            <button type="button" className={btn.secondary} onClick={() => setRoundsOpen(true)} data-testid="editor-rounds">
+              <ListOrdered className="h-5 w-5" />
+              {t('host.rounds.title')}
+              {quiz?.rounds?.length ? ` (${quiz.rounds.length})` : ''}
+            </button>
             <button type="button" className={btn.secondary} onClick={() => setSettingsOpen(true)} data-testid="editor-settings">
               <SlidersHorizontal className="h-5 w-5" />
               {t('host.editor.settings')}
@@ -514,64 +523,87 @@ export function QuizEditorPage({ token }: { token: string }) {
                   const active = question.id === editing?.id;
                   const valid = validate(stripIds(question)).length === 0;
                   const Icon = TYPE_ICON[question.type];
+                  const round = roundAt(quiz?.rounds, index);
                   return (
-                    <li
-                      key={question.id}
-                      draggable
-                      onDragStart={() => setDragId(question.id)}
-                      onDragOver={(event: DragEvent) => event.preventDefault()}
-                      onDrop={() => void onDrop(question.id)}
-                      onDragEnd={() => setDragId(null)}
-                      onClick={() => select(question)}
-                      data-testid={`editor-question-${question.id}`}
-                      className={`group relative flex cursor-pointer select-none items-center gap-2.5 rounded-xl p-2.5 transition-all ${
-                        active
-                          ? 'bg-surface-container-high text-on-surface shadow-[0_0_16px_rgba(160,120,255,0.25)]'
-                          : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high/60 hover:text-on-surface'
-                      } ${dragId === question.id ? 'opacity-40' : ''}`}
-                    >
-                      <GripVertical
-                        className="h-4 w-4 cursor-grab text-on-surface-variant/40 group-hover:text-on-surface-variant"
-                        aria-label={t('host.editor.reorder')}
-                      />
-                      <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-label-sm font-bold ${
-                          active ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-highest text-on-surface-variant'
-                        }`}
-                      >
-                        #{index + 1}
-                      </span>
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate text-label-md text-on-surface">{question.prompt || t('host.editor.untitled')}</span>
-                        <span className="mt-0.5 flex items-center gap-2 text-label-sm">
-                          <span className="flex items-center gap-0.5 text-primary">
-                            <Icon className="h-3 w-3" />
-                            {TYPE_BADGE[question.type]}
-                          </span>
-                          <span>•</span>
-                          <span className="text-secondary">
-                            {question.points}
-                            {plural('count.pointsShort', question.points)}
-                          </span>
-                          <span>•</span>
-                          <span>{isUntimed(question.time_limit_seconds) ? '∞' : `${question.time_limit_seconds}s`}</span>
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {valid ? <CheckCircle2 className="h-4 w-4 text-tertiary" /> : <TriangleAlert className="h-4 w-4 text-secondary" />}
-                        <button
-                          type="button"
-                          aria-label={t('host.editor.delete')}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setDeleting(question);
-                          }}
-                          className="p-1 text-on-surface-variant opacity-0 transition-opacity hover:text-error group-hover:opacity-100"
+                    <Fragment key={question.id}>
+                      {round?.first && (
+                        <li
+                          className="flex items-center justify-between px-1 pt-space-xs text-label-sm uppercase tracking-wider text-secondary"
+                          data-testid={`editor-round-${round.index}`}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </li>
+                          <span className="truncate">
+                            {t('host.rounds.round')} {round.index + 1}: {round.round.title}
+                          </span>
+                          {round.round.breakMinutes > 0 && round.index < (quiz?.rounds?.length ?? 0) - 1 && (
+                            <span className="shrink-0 normal-case tracking-normal text-on-surface-variant">
+                              ☕ {round.round.breakMinutes} min
+                            </span>
+                          )}
+                        </li>
+                      )}
+                      <li
+                        draggable
+                        onDragStart={() => setDragId(question.id)}
+                        onDragOver={(event: DragEvent) => event.preventDefault()}
+                        onDrop={() => void onDrop(question.id)}
+                        onDragEnd={() => setDragId(null)}
+                        onClick={() => select(question)}
+                        data-testid={`editor-question-${question.id}`}
+                        className={`group relative flex cursor-pointer select-none items-center gap-2.5 rounded-xl p-2.5 transition-all ${
+                          active
+                            ? 'bg-surface-container-high text-on-surface shadow-[0_0_16px_rgba(160,120,255,0.25)]'
+                            : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high/60 hover:text-on-surface'
+                        } ${dragId === question.id ? 'opacity-40' : ''}`}
+                      >
+                        <GripVertical
+                          className="h-4 w-4 cursor-grab text-on-surface-variant/40 group-hover:text-on-surface-variant"
+                          aria-label={t('host.editor.reorder')}
+                        />
+                        <span
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-label-sm font-bold ${
+                            active
+                              ? 'bg-primary-container text-on-primary-container'
+                              : 'bg-surface-container-highest text-on-surface-variant'
+                          }`}
+                        >
+                          #{index + 1}
+                        </span>
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <span className="truncate text-label-md text-on-surface">{question.prompt || t('host.editor.untitled')}</span>
+                          <span className="mt-0.5 flex items-center gap-2 text-label-sm">
+                            <span className="flex items-center gap-0.5 text-primary">
+                              <Icon className="h-3 w-3" />
+                              {TYPE_BADGE[question.type]}
+                            </span>
+                            <span>•</span>
+                            <span className="text-secondary">
+                              {question.points}
+                              {plural('count.pointsShort', question.points)}
+                            </span>
+                            <span>•</span>
+                            <span>{isUntimed(question.time_limit_seconds) ? '∞' : `${question.time_limit_seconds}s`}</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {valid ? (
+                            <CheckCircle2 className="h-4 w-4 text-tertiary" />
+                          ) : (
+                            <TriangleAlert className="h-4 w-4 text-secondary" />
+                          )}
+                          <button
+                            type="button"
+                            aria-label={t('host.editor.delete')}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setDeleting(question);
+                            }}
+                            className="p-1 text-on-surface-variant opacity-0 transition-opacity hover:text-error group-hover:opacity-100"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </li>
+                    </Fragment>
                   );
                 })}
                 {editing && !editing.id && (
@@ -698,6 +730,19 @@ export function QuizEditorPage({ token }: { token: string }) {
           onConfirm={() => void confirmDelete()}
           onClose={() => setDeleting(null)}
           testId="editor-delete-dialog"
+        />
+      )}
+      {roundsOpen && quiz && (
+        <RoundsDialog
+          token={token}
+          quiz={quiz}
+          questionCount={ordered.length}
+          onClose={() => setRoundsOpen(false)}
+          onSaved={(updated) => {
+            setQuiz(updated);
+            setRoundsOpen(false);
+            toast(t('host.editor.quizSaved'));
+          }}
         />
       )}
       {settingsOpen && quiz && (

@@ -91,15 +91,16 @@ export class SupabaseTeamsRepository extends TeamsRepository {
     name: string,
     registeredTeamId: string | null = null,
     tableNumber: string | null = null,
-    attendanceMode: 'IN_PERSON' | 'REMOTE' = 'REMOTE',
+    attendanceMode?: 'IN_PERSON' | 'REMOTE',
   ): Promise<TeamRecord> {
     const row: Record<string, unknown> = {
       session_id: sessionId,
       name,
       is_active: true,
       joined_at: new Date().toISOString(),
-      attendance_mode: attendanceMode,
     };
+    // A rejoin without a choice keeps the mode chosen before (new teams get the column default).
+    if (attendanceMode) row.attendance_mode = attendanceMode;
     if (registeredTeamId) row.registered_team_id = registeredTeamId;
     // A rejoin without a table keeps the one given before.
     if (tableNumber) row.table_number = tableNumber;

@@ -97,7 +97,7 @@ export function RevealScreen({
           </span>
           <h2 className="text-headline-md font-extrabold tracking-tight text-on-surface">{t(`play.reveal.${verdict}.title`)}</h2>
           <p className="mt-0.5 text-body-sm text-on-surface-variant">{t(`play.reveal.${verdict}.subtitle`)}</p>
-          {verdict === 'correct' && (
+          {verdict === 'correct' && state.scoresVisible && (
             <div className="mt-3 flex w-full items-center justify-between rounded-lg bg-surface-container-lowest/60 p-space-sm">
               <span className={`text-label-md font-extrabold uppercase ${style.text}`}>{t('play.reveal.earned')}</span>
               <span className={`text-headline-sm font-extrabold tracking-tight ${style.text}`} data-testid="player-awarded">

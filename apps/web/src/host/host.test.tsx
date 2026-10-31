@@ -183,7 +183,7 @@ beforeEach(() => {
       if (path.startsWith('/host/sessions/s1/answers')) return db.answers;
       if (path === '/sessions/s1/disputes') return db.disputes;
       if (path === '/sessions/s1/infractions') return [];
-      if (path === '/sessions/s1/state') return live.state;
+      if (path === '/sessions/s1/state' || path === '/host/sessions/s1/state') return live.state;
       if (path === '/sessions/s1/display') return db.display;
       if (path === '/leagues') return db.leagues;
       if (path === '/host/schedule') return db.schedule;
@@ -553,6 +553,46 @@ describe('quiz editor', () => {
     );
   });
 
+  it('sets up rounds over the question order and shows them in the list', async () => {
+    renderEditor();
+    await screen.findByTestId('editor-prompt');
+    fireEvent.click(screen.getByTestId('editor-rounds'));
+    fireEvent.click(screen.getByTestId('round-add'));
+    fireEvent.change(screen.getByTestId('round-title-0'), { target: { value: 'Hudba' } });
+    fireEvent.change(screen.getByTestId('round-count-0'), { target: { value: '2' } });
+    fireEvent.change(screen.getByTestId('round-break-0'), { target: { value: '15' } });
+    fireEvent.click(screen.getByTestId('round-add'));
+    // The new round takes the one question the first round leaves.
+    expect(screen.getByTestId('round-count-1')).toHaveValue(1);
+    fireEvent.change(screen.getByTestId('round-title-1'), { target: { value: 'Film' } });
+    fireEvent.click(screen.getByTestId('rounds-save'));
+
+    await waitFor(() =>
+      expect(apiPatch).toHaveBeenCalledWith(
+        '/quizzes/quiz1',
+        {
+          rounds: [
+            { title: 'Hudba', questionCount: 2, breakMinutes: 15 },
+            { title: 'Film', questionCount: 1, breakMinutes: 10 },
+          ],
+        },
+        'jwt',
+      ),
+    );
+    expect(await screen.findByTestId('editor-round-0')).toHaveTextContent('Hudba');
+    expect(screen.getByTestId('editor-round-1')).toHaveTextContent('Film');
+  });
+
+  it('will not save a round without a name or questions', async () => {
+    renderEditor();
+    await screen.findByTestId('editor-prompt');
+    fireEvent.click(screen.getByTestId('editor-rounds'));
+    fireEvent.click(screen.getByTestId('round-add'));
+    fireEvent.change(screen.getByTestId('round-title-0'), { target: { value: ' ' } });
+
+    expect(screen.getByTestId('rounds-save')).toBeDisabled();
+  });
+
   it("starts new questions with the quiz's default answer time", async () => {
     db.quizzes = [{ ...QUIZ, default_time_limit_seconds: 60 }, EMPTY_QUIZ];
     renderEditor();
@@ -778,6 +818,41 @@ describe('control room', () => {
     fireEvent.click(await screen.findByTestId('room-action-finish'));
     fireEvent.click(within(screen.getByTestId('room-end-dialog')).getByTestId('confirm-dialog-confirm'));
     await waitFor(() => expect(apiPost).toHaveBeenCalledWith('/sessions/s1/transition', { status: 'FINISHED' }, 'jwt'));
+  });
+
+  describe('rounds', () => {
+    const ROUNDS = [
+      { title: 'Hudba', questionCount: 1, breakMinutes: 20 },
+      { title: 'Film', questionCount: 2, breakMinutes: 0 },
+    ];
+
+    it("offers the round's coffee break after its last question", async () => {
+      db.quizzes = [{ ...QUIZ, rounds: ROUNDS }, EMPTY_QUIZ];
+      live.state = liveState('QUESTION_REVEAL', 'q1');
+      renderRoom();
+
+      expect(await screen.findByTestId('room-round-end')).toHaveTextContent('Hudba');
+      expect(screen.getByTestId('room-round-0')).toHaveTextContent('Hudba');
+      expect(screen.getByTestId('room-round-1')).toHaveTextContent('Film');
+      fireEvent.click(screen.getByTestId('room-action-pause'));
+
+      await waitFor(() =>
+        expect(apiPost).toHaveBeenCalledWith(
+          '/sessions/s1/transition',
+          { status: 'PAUSE_BREAK', breakMinutes: 20, breakMessage: 'Prestávka na kávu! Ďalšie kolo: Film' },
+          'jwt',
+        ),
+      );
+    });
+
+    it('offers no round break in the middle of a round', async () => {
+      db.quizzes = [{ ...QUIZ, rounds: ROUNDS }, EMPTY_QUIZ];
+      live.state = liveState('QUESTION_REVEAL', 'q2');
+      renderRoom();
+
+      await screen.findByTestId('room-break-setup');
+      expect(screen.queryByTestId('room-round-end')).not.toBeInTheDocument();
+    });
   });
 
   describe('timer and break', () => {

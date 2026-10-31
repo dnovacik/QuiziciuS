@@ -130,13 +130,26 @@ describe('LandingPage team entrance', () => {
 
     await screen.findByText('play area');
     expect(apiGet).toHaveBeenCalledWith('/sessions/by-code/A7F3');
-    expect(apiPost).toHaveBeenCalledWith('/sessions/session-1/teams/join', { name: 'Quiz Wolves', attendanceMode: 'REMOTE' });
+    expect(apiPost).toHaveBeenCalledWith('/sessions/session-1/teams/join', { name: 'Quiz Wolves', attendanceMode: 'IN_PERSON' });
     expect(JSON.parse(localStorage.getItem('quizicius:team:session-1') ?? '{}')).toEqual({
       sessionId: 'session-1',
       teamId: 'team-1',
       token: 'team-token',
-      attendanceMode: 'REMOTE',
+      attendanceMode: 'IN_PERSON',
     });
+  });
+
+  it('asks whether the team plays in the venue or remotely', async () => {
+    vi.mocked(apiGet).mockResolvedValue({ id: 'session-1' });
+    vi.mocked(apiPost).mockResolvedValue({ teamId: 'team-1', token: 'team-token' });
+    openTeamEntry();
+    type('team-code', 'A7F3');
+    type('team-name', 'Quiz Wolves');
+    fireEvent.click(screen.getByTestId('team-attendance-REMOTE'));
+    fireEvent.submit(screen.getByTestId('team-quick-form'));
+
+    await screen.findByText('play area');
+    expect(apiPost).toHaveBeenCalledWith('/sessions/session-1/teams/join', { name: 'Quiz Wolves', attendanceMode: 'REMOTE' });
   });
 
   it('registers a captain, creates the team and opens the team hub', async () => {
