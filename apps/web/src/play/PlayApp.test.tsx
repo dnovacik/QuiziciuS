@@ -356,6 +356,26 @@ describe('answering', () => {
     expect(screen.getByTestId('player-submit-answer')).toBeDisabled();
   });
 
+  it('shows a team in the venue only the answers, the question being on the projector', () => {
+    activeQuestion();
+    session.state!.teams[0].attendanceMode = 'IN_PERSON';
+    renderPlay();
+    expect(screen.getByTestId('player-venue-prompt')).toBeInTheDocument();
+    expect(screen.queryByTestId('player-prompt')).not.toBeInTheDocument();
+    expect(screen.queryByText('Which film won in 1994?')).not.toBeInTheDocument();
+    expect(screen.getByTestId('player-option-a')).toHaveTextContent('Pulp Fiction');
+    expect(screen.getByTestId('player-option-b')).toHaveTextContent('Forrest Gump');
+  });
+
+  it('shows a remote team the question and the answers', () => {
+    activeQuestion();
+    session.state!.teams[0].attendanceMode = 'REMOTE';
+    renderPlay();
+    expect(screen.getByTestId('player-prompt')).toHaveTextContent('Which film won in 1994?');
+    expect(screen.queryByTestId('player-venue-prompt')).not.toBeInTheDocument();
+    expect(screen.getByTestId('player-option-b')).toHaveTextContent('Forrest Gump');
+  });
+
   it('keeps the question answerable when sending fails', async () => {
     vi.mocked(apiPost).mockRejectedValue(new Error('Network down'));
     activeQuestion();
