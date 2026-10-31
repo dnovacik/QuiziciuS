@@ -16,5 +16,6 @@ export function toAnswerSummary(answer: AnswerRecord, includeGrade = true): Answ
     scoreAwarded: includeGrade ? answer.score_awarded : 0,
     disputed: Boolean(answer.disputed_at),
     disputeNote: answer.dispute_note,
+    submittedAt: answer.submitted_at,
   };
 }

@@ -51,9 +51,14 @@ function Game({ seat }: { seat: TeamSeat }) {
     state ? `${state.status}:${state.currentQuestion?.id}:${state.scoresVisible ? 'scores' : 'hidden'}` : null,
   );
   const serverAnswer = state?.currentQuestion ? graded[state.currentQuestion.id] : undefined;
+  // The server's copy wins (a teammate's phone may have changed the answer), timed by the server's
+  // own clock, the same clock as the question's deadline; 0 = unknown, so no time is shown.
   const recoveredAnswer =
     state?.currentQuestion && serverAnswer
-      ? { ...describeResponse(state.currentQuestion, serverAnswer.response), submittedAt: 0 }
+      ? {
+          ...describeResponse(state.currentQuestion, serverAnswer.response),
+          submittedAt: (serverAnswer.submittedAt && Date.parse(serverAnswer.submittedAt)) || 0,
+        }
       : undefined;
 
   // Scores of the open question become public once its timer runs out; nothing is broadcast

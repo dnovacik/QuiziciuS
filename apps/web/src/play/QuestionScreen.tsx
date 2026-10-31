@@ -420,7 +420,8 @@ function LockedView({
     state.questionEndsAt && !isUntimed(question.timeLimitSeconds)
       ? Date.parse(state.questionEndsAt) - question.timeLimitSeconds * 1000
       : null;
-  const took = startedAt === null ? null : Math.max(0, (answer.submittedAt - startedAt) / 1000);
+  // Without a real submission time (an answer recovered without one) the time is left out, not "0.0 s".
+  const took = startedAt === null || !answer.submittedAt ? null : Math.max(0, (answer.submittedAt - startedAt) / 1000);
 
   return (
     <>
@@ -444,7 +445,9 @@ function LockedView({
           <div className="flex items-center justify-between gap-1">
             <h2 className="text-headline-sm font-bold leading-tight tracking-tight text-tertiary">{t('play.locked.title')}</h2>
             {took !== null && (
-              <span className="rounded-full bg-on-tertiary/40 px-2 py-0.5 text-label-sm text-tertiary">{took.toFixed(1)} s</span>
+              <span className="rounded-full bg-on-tertiary/40 px-2 py-0.5 text-label-sm text-tertiary" data-testid="player-answer-time">
+                {took.toFixed(1)} s
+              </span>
             )}
           </div>
           <p className="mt-0.5 text-body-md text-on-surface">{t('play.locked.subtitle')}</p>

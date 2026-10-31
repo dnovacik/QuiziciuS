@@ -767,6 +767,39 @@ describe('control room', () => {
     );
   });
 
+  it('marks answers only as sent while live, and with their grade once revealed', async () => {
+    const answer = (teamId: string, isCorrect: boolean): AnswerSummaryDto => ({
+      id: `x-${teamId}`,
+      sessionId: 's1',
+      questionId: 'q1',
+      teamId,
+      response: { optionId: isCorrect ? 'b' : 'a' },
+      isCorrect,
+      confidence: null,
+      needsReview: false,
+      gradedBy: 'AUTO',
+      scoreAwarded: isCorrect ? 10 : 0,
+      disputed: false,
+      disputeNote: null,
+    });
+    db.answers = [answer('t1', true), answer('t2', false)];
+    live.state = liveState('QUESTION_ACTIVE', 'q1');
+    const view = renderRoom();
+    await waitFor(() => expect(screen.getByTestId('room-submitted-t1')).toHaveAttribute('data-verdict', 'sent'));
+    expect(screen.getByTestId('room-submitted-t2')).toHaveAttribute('data-verdict', 'sent');
+
+    live.state = liveState('QUESTION_REVEAL', 'q1');
+    view.refresh();
+    await waitFor(() => expect(screen.getByTestId('room-submitted-t1')).toHaveAttribute('data-verdict', 'correct'));
+    expect(screen.getByTestId('room-submitted-t2')).toHaveAttribute('data-verdict', 'wrong');
+
+    // A host's correction shows here as well: saving it reloads the answers.
+    db.answers = [answer('t1', true), { ...answer('t2', true), gradedBy: 'HOST' }];
+    fireEvent.click(within(screen.getByTestId('inline-grade-x-t2')).getByRole('checkbox'));
+    await act(async () => fireEvent.click(screen.getByTestId('inline-save-x-t2')));
+    await waitFor(() => expect(screen.getByTestId('room-submitted-t2')).toHaveAttribute('data-verdict', 'correct'));
+  });
+
   it('counts answers per option while the question is live', async () => {
     live.state = liveState('QUESTION_ACTIVE', 'q1');
     db.answers = [
