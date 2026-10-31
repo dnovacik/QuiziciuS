@@ -76,7 +76,7 @@ export class TeamsService {
     registeredTeamId: string | null = null,
     captainId: string | null = null,
     rawTableNumber: string | null = null,
-    attendanceMode: 'IN_PERSON' | 'REMOTE' = 'REMOTE',
+    attendanceMode?: 'IN_PERSON' | 'REMOTE',
   ): Promise<JoinResult> {
     const session = await this.sessions.findById(sessionId);
     if (!session) throw new NotFoundException('Session not found');

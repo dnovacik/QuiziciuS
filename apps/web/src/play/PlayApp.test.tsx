@@ -1,10 +1,11 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import type { AnswerSummaryDto, QuestionPublicDto, QuizSessionStateDto, QuizState } from '@quizicius/shared-types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, apiGet, apiPost } from '../lib/api-client';
 import { downloadCertificate } from '../lib/certificate';
 import { I18nProvider } from '../lib/i18n';
+import { subscribeToSession } from '../lib/supabase-client';
 import { clearQuestionMediaCache } from '../lib/use-current-question-media';
 import PlayApp from './PlayApp';
 
@@ -133,10 +134,15 @@ function graded(overrides: Partial<AnswerSummaryDto> = {}): AnswerSummaryDto {
   };
 }
 
+function Location() {
+  return <span data-testid="location">{useLocation().pathname}</span>;
+}
+
 function renderPlay(path = '/play/s1') {
   return render(
     <I18nProvider>
       <MemoryRouter initialEntries={[path]}>
+        <Location />
         <Routes>
           <Route path="/play/:sessionId?" element={<PlayApp />} />
           <Route path="/" element={<p>home page</p>} />
@@ -192,6 +198,8 @@ describe('joining', () => {
     expect(JSON.parse(localStorage.getItem('quizicius:team:s1') ?? '{}')).toEqual({ ...SEAT, attendanceMode: 'IN_PERSON' });
     expect(screen.getByTestId('player-team-name-display')).toHaveTextContent('Wise Ducks');
     expect(screen.getByTestId('player-team-count')).toHaveTextContent('4');
+    // The session goes into the address, so a phone that reloads the tab finds its seat again.
+    expect(screen.getByTestId('location')).toHaveTextContent('/play/s1');
   });
 
   it('sends the table number when the team gives one', async () => {
@@ -511,6 +519,34 @@ describe('reveal and results', () => {
     expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'correct');
     expect(screen.getByTestId('player-correct-answer')).toHaveTextContent('Forrest Gump');
     expect(apiGet).toHaveBeenCalledWith('/sessions/s1/answers/mine', 'team-token');
+  });
+
+  it('shows the verdict but not the points while the host keeps scores hidden', async () => {
+    localStorage.setItem('quizicius:answers:s1', JSON.stringify({ q1: { display: 'Forrest Gump', letter: 'B', submittedAt: Date.now() } }));
+    session.mine = [graded()];
+    setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'b' }), scoresVisible: false });
+    renderPlay();
+
+    await waitFor(() => expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'correct'));
+    expect(screen.queryByTestId('player-awarded')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('player-total-score')).not.toBeInTheDocument();
+  });
+
+  it("updates the verdict when the host corrects the team's grade", async () => {
+    localStorage.setItem('quizicius:answers:s1', JSON.stringify({ q1: { display: 'Forrest Gump', letter: 'B', submittedAt: Date.now() } }));
+    session.mine = [graded({ isCorrect: false, scoreAwarded: 0 })];
+    setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'a' }) });
+    renderPlay();
+    await waitFor(() => expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'wrong'));
+
+    session.mine = [graded({ isCorrect: true, scoreAwarded: 2, gradedBy: 'HOST' })];
+    const scoreListeners = vi
+      .mocked(subscribeToSession)
+      .mock.calls.filter(([, , events]) => events?.includes('SCORE_UPDATE') && !events.includes('STATE_CHANGE'));
+    act(() => scoreListeners.forEach(([, onEvent]) => onEvent('SCORE_UPDATE', {})));
+
+    await waitFor(() => expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'correct'));
+    expect(screen.getByTestId('player-awarded')).toHaveTextContent('+2');
   });
 
   it('shows a numeric answer graded at reveal as correct', async () => {

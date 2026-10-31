@@ -53,7 +53,12 @@ export function SessionsPage({ token }: { token: string }) {
       ) : (
         <div className="grid grid-cols-1 gap-space-md xl:grid-cols-2">
           {live.map((session) => (
-            <LiveSessionCard key={session.id} session={session} quiz={library.quizzes.find((quiz) => quiz.id === session.quiz_id)} />
+            <LiveSessionCard
+              key={session.id}
+              token={token}
+              session={session}
+              quiz={library.quizzes.find((quiz) => quiz.id === session.quiz_id)}
+            />
           ))}
         </div>
       )}

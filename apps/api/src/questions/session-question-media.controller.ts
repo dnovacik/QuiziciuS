@@ -79,7 +79,13 @@ export class SessionQuestionMediaController {
   private async resolve(ref: MediaRefDto | null | undefined): Promise<ResolvedMediaDto | null> {
     const url = ref?.source === 'upload' && ref.path ? await this.signedUrl(ref.path) : ref?.url;
     if (!ref || !url) return null;
-    return { kind: ref.kind, url, startSeconds: ref.startSeconds ?? null, durationSeconds: ref.durationSeconds ?? null };
+    return {
+      kind: ref.kind,
+      url,
+      startSeconds: ref.startSeconds ?? null,
+      durationSeconds: ref.durationSeconds ?? null,
+      ...(ref.audioOnly ? { audioOnly: true } : {}),
+    };
   }
 
   private async signedUrl(path: string): Promise<string> {

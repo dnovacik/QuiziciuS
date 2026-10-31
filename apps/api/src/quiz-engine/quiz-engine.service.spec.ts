@@ -133,6 +133,12 @@ describe('score visibility', () => {
     await service.setScoreVisibility('s1', 'host1', true);
     expect(sessions.updateStatus).toHaveBeenCalledWith('s1', { scores_visible: true });
   });
+
+  it('hides scores again when the next question starts', async () => {
+    const { service, sessions } = buildHarness({ session: { status: 'QUESTION_REVEAL', scores_visible: true } });
+    await service.transitionState('s1', 'host1', 'LOCK_IN_ROUND', { questionId: 'q1' });
+    expect(sessions.updateStatus).toHaveBeenCalledWith('s1', expect.objectContaining({ scores_visible: false }));
+  });
 });
 
 describe('host grade overrides', () => {

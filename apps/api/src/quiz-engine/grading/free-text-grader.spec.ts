@@ -50,4 +50,14 @@ describe('gradeFreeText', () => {
     const result = gradeFreeText('JFK', ['John F. Kennedy', 'JFK']);
     expect(result).toMatchObject({ isCorrect: true, matchedAnswer: 'JFK' });
   });
+
+  it('accepts any part of an alternative list stored in one entry (older questions, CSV imports)', () => {
+    const accepted = ['Bratislava, Pressburg; Pozsony, Prešporok'];
+    expect(gradeFreeText('Prešporok', accepted)).toMatchObject({ isCorrect: true, matchedAnswer: 'Prešporok' });
+    expect(gradeFreeText('Pozsony', accepted)).toMatchObject({ isCorrect: true, matchedAnswer: 'Pozsony' });
+  });
+
+  it('still accepts the whole entry when it contains a comma', () => {
+    expect(gradeFreeText('Paris, France', ['Paris, France'])).toMatchObject({ isCorrect: true, matchedAnswer: 'Paris, France' });
+  });
 });

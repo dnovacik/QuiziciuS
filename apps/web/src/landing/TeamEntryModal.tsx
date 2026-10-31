@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, KeyRound, LogIn, Lock, Mail, Table2, UserPlus, Users, Zap } from 'lucide-react';
+import { ArrowRight, Beer, KeyRound, LogIn, Lock, Mail, Smartphone, Table2, UserPlus, Users, Zap } from 'lucide-react';
 import { ApiError, apiPost } from '../lib/api-client';
 import { describeError } from '../lib/errors';
 import { useI18n } from '../lib/i18n';
 import { supabase } from '../lib/supabase-client';
-import { findSessionByCode, joinSession, normalizeJoinCode } from '../lib/team-seat';
+import { findSessionByCode, joinSession, normalizeJoinCode, type AttendanceMode } from '../lib/team-seat';
 import { FieldLabel, FormNotice, IconInput, IconSelect, SegmentedControl, primaryButtonClass } from '../ui/form';
 import { GOOGLE_AUTH, GoogleButton } from '../ui/GoogleButton';
 import { Modal } from '../ui/Modal';
@@ -23,6 +23,7 @@ export function TeamEntryModal({ onClose, onSwitchToHost }: { onClose: () => voi
   const [code, setCode] = useState('');
   const [teamName, setTeamName] = useState('');
   const [tableNumber, setTableNumber] = useState('');
+  const [attendanceMode, setAttendanceMode] = useState<AttendanceMode>('IN_PERSON');
   const [teamPin, setTeamPin] = useState('');
   const [askPin, setAskPin] = useState(false);
   const [email, setEmail] = useState('');
@@ -55,7 +56,7 @@ export function TeamEntryModal({ onClose, onSwitchToHost }: { onClose: () => voi
     event.preventDefault();
     void run(async () => {
       const sessionId = await findSessionByCode(code);
-      await joinSession(sessionId, teamName, tableNumber, askPin ? teamPin : '');
+      await joinSession(sessionId, teamName, tableNumber, askPin ? teamPin : '', attendanceMode);
       navigate(`/play/${sessionId}`);
     });
   }
@@ -154,6 +155,17 @@ export function TeamEntryModal({ onClose, onSwitchToHost }: { onClose: () => voi
               placeholder={t('teamEntry.quick.namePlaceholder')}
               maxLength={80}
               required
+            />
+          </FieldLabel>
+          <FieldLabel label={t('play.join.attendanceTitle')} hint={t(`teamEntry.quick.attendanceHint.${attendanceMode}`)}>
+            <SegmentedControl
+              options={[
+                { value: 'IN_PERSON', label: t('teamEntry.quick.inPerson'), icon: Beer },
+                { value: 'REMOTE', label: t('teamEntry.quick.remote'), icon: Smartphone },
+              ]}
+              value={attendanceMode}
+              onChange={setAttendanceMode}
+              testIdPrefix="team-attendance"
             />
           </FieldLabel>
           <FieldLabel label={`${t('teamEntry.quick.table')} (${t('common.optional')})`}>

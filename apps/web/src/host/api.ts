@@ -1,4 +1,4 @@
-import type { AnswerSummaryDto, MediaAction, MediaRefDto, MediaSlot, QuestionType, QuizState } from '@quizicius/shared-types';
+import type { AnswerSummaryDto, MediaAction, MediaRefDto, MediaSlot, QuestionType, QuizRoundDto, QuizState } from '@quizicius/shared-types';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../lib/api-client';
 import { uploadMimeType } from '../lib/media-ref';
 import { supabase } from '../lib/supabase-client';
@@ -16,6 +16,8 @@ export interface Quiz {
   pub_id: string | null;
   /** Answer time new questions start with; 0 = no timer. */
   default_time_limit_seconds: number;
+  /** Rounds over the question order, each followed by an optional coffee break. */
+  rounds?: QuizRoundDto[];
   created_at: string;
 }
 
@@ -100,7 +102,7 @@ export const hostApi = {
   updateQuiz: (
     token: string,
     quizId: string,
-    patch: { title?: string; categoryId?: string | null; pubId?: string | null; defaultTimeLimitSeconds?: number },
+    patch: { title?: string; categoryId?: string | null; pubId?: string | null; defaultTimeLimitSeconds?: number; rounds?: QuizRoundDto[] },
   ) => apiPatch<Quiz>(`/quizzes/${quizId}`, patch, token),
   deleteQuiz: (token: string, quizId: string) => apiDelete<void>(`/quizzes/${quizId}`, token),
 

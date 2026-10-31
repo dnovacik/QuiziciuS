@@ -39,7 +39,7 @@ export function StatusPill({ status }: { status: QuizState }) {
 }
 
 /** Live session card from the Stitch dashboard ("Živé relácie v reálnom čase"). */
-export function LiveSessionCard({ session, quiz }: { session: HostSession; quiz: Quiz | undefined }) {
+export function LiveSessionCard({ token, session, quiz }: { token: string; session: HostSession; quiz: Quiz | undefined }) {
   const { t, plural } = useI18n();
   const navigate = useNavigate();
   const copy = useCopy();
@@ -48,10 +48,11 @@ export function LiveSessionCard({ session, quiz }: { session: HostSession; quiz:
   const { pub } = useSessionDisplay(session.pub_id ? session.id : undefined);
 
   useEffect(() => {
-    apiGet<QuizSessionStateDto>(`/sessions/${session.id}/state`)
+    // The host's own view: team scores even while they are hidden from players.
+    apiGet<QuizSessionStateDto>(`/host/sessions/${session.id}/state`, token)
       .then(setState)
       .catch(() => setState(null));
-  }, [session.id]);
+  }, [session.id, token]);
 
   const teams = state?.teams ?? [];
   const leader = rankTeams(teams)[0];

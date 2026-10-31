@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { AnswerSummaryDto, QuestionPublicDto } from '@quizicius/shared-types';
 import { apiGet } from '../lib/api-client';
 import { optionLetter, withUnit } from '../lib/quiz';
+import { subscribeToSession } from '../lib/supabase-client';
 
 /** What this device sent for a question, kept so the locked screen can show it back. */
 export interface SubmittedAnswer {
@@ -53,6 +54,10 @@ export function useSubmittedAnswers(sessionId: string) {
  */
 export function useGradedAnswers(sessionId: string, token: string, refreshKey: string | null) {
   const [graded, setGraded] = useState<Record<string, AnswerSummaryDto>>({});
+  // A submission, a reveal or a host's correction changes grades without a state change.
+  const [scoreVersion, setScoreVersion] = useState(0);
+
+  useEffect(() => subscribeToSession(sessionId, () => setScoreVersion((version) => version + 1), ['SCORE_UPDATE']), [sessionId]);
 
   useEffect(() => {
     if (refreshKey === null) return;
@@ -67,7 +72,7 @@ export function useGradedAnswers(sessionId: string, token: string, refreshKey: s
     return () => {
       active = false;
     };
-  }, [sessionId, token, refreshKey]);
+  }, [sessionId, token, refreshKey, scoreVersion]);
 
   return graded;
 }

@@ -68,5 +68,6 @@ export function normalizeMediaRef(input: unknown, hostId: string, quizId: string
     if (startSeconds !== undefined) ref.startSeconds = startSeconds;
     if (durationSeconds !== undefined) ref.durationSeconds = durationSeconds;
   }
+  if (kind === 'youtube' && raw.audioOnly === true) ref.audioOnly = true;
   return ref;
 }

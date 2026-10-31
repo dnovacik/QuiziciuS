@@ -160,11 +160,12 @@ describe('ProjectorApp', () => {
     expect(screen.getByTestId('projector-ready-t1')).toHaveAttribute('data-ready', 'true');
   });
 
-  it('shows the active question with options and a countdown', () => {
+  it('shows the active question without answer choices and with a countdown', () => {
     setState('QUESTION_ACTIVE', { currentQuestion: QUESTION, questionEndsAt: new Date(Date.now() + 20_000).toISOString() });
     renderProjector();
     expect(screen.getByTestId('projector-prompt')).toHaveTextContent('Which film won in 1994?');
-    expect(within(screen.getByTestId('projector-options')).getByText('Forrest Gump')).toBeInTheDocument();
+    expect(screen.queryByTestId('projector-options')).not.toBeInTheDocument();
+    expect(screen.queryByText('Forrest Gump')).not.toBeInTheDocument();
     expect(screen.getByTestId('projector-timer')).toHaveAccessibleName(/^(19|20) /);
   });
 
@@ -205,7 +206,8 @@ describe('ProjectorApp', () => {
   it('highlights the correct option on reveal', () => {
     setState('QUESTION_REVEAL', { currentQuestion: { ...QUESTION, correctOptionId: 'b' } });
     renderProjector();
-    expect(screen.getByTestId('projector-correct-option')).toHaveTextContent('Forrest Gump');
+    expect(screen.getByTestId('projector-correct-answer')).toHaveTextContent('Forrest Gump');
+    expect(screen.queryByTestId('projector-options')).not.toBeInTheDocument();
     expect(screen.queryByTestId('projector-timer')).not.toBeInTheDocument();
   });
 

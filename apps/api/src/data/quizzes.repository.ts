@@ -1,4 +1,5 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { QuizRoundDto } from '@quizicius/shared-types';
 import { SupabaseService } from '../supabase/supabase.service';
 
 export interface QuizRecord {
@@ -10,6 +11,8 @@ export interface QuizRecord {
   /** Answer time new questions start with; 0 = no timer. */
   default_time_limit_seconds: number;
   title: string;
+  /** Rounds over the question order; empty = one run of questions without rounds. */
+  rounds?: QuizRoundDto[];
   created_at: string;
 }
 
@@ -21,7 +24,7 @@ export abstract class QuizzesRepository {
   abstract remove(id: string): Promise<void>;
 }
 
-export type QuizPatch = Partial<Pick<QuizRecord, 'title' | 'category_id' | 'pub_id' | 'default_time_limit_seconds'>>;
+export type QuizPatch = Partial<Pick<QuizRecord, 'title' | 'category_id' | 'pub_id' | 'default_time_limit_seconds' | 'rounds'>>;
 
 @Injectable()
 export class SupabaseQuizzesRepository extends QuizzesRepository {

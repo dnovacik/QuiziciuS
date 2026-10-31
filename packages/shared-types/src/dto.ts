@@ -218,6 +218,8 @@ export interface MediaRefDto {
   url?: string;
   startSeconds?: number;
   durationSeconds?: number;
+  /** YouTube only: play the sound and never show the video (a song to guess, not its title). */
+  audioOnly?: boolean;
 }
 
 /** Media ready to show during a night: uploads already have a (signed) URL. */
@@ -226,4 +228,15 @@ export interface ResolvedMediaDto {
   url: string;
   startSeconds: number | null;
   durationSeconds: number | null;
+  audioOnly?: boolean;
+}
+
+/**
+ * A round of a quiz: the next `questionCount` questions in quiz order. After its last question the
+ * host is offered a coffee break of `breakMinutes` (0 = no break), unless it is the final round.
+ */
+export interface QuizRoundDto {
+  title: string;
+  questionCount: number;
+  breakMinutes: number;
 }

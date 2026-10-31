@@ -1,4 +1,10 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { GradedBy } from '@quizicius/shared-types';
 import { SupabaseService } from '../supabase/supabase.service';
 
@@ -24,8 +30,18 @@ export type AnswerGradePatch = Partial<
   Pick<AnswerRecord, 'is_correct' | 'confidence' | 'needs_review' | 'graded_by' | 'graded_at' | 'score_awarded'>
 >;
 
+export interface SubmissionInput {
+  sessionId: string;
+  questionId: string;
+  teamId: string;
+  response: unknown;
+  /** How long after the question's deadline a submission still counts. */
+  graceMs: number;
+}
+
 export abstract class AnswersRepository {
-  abstract upsertSubmission(input: { sessionId: string; questionId: string; teamId: string; response: unknown }): Promise<AnswerRecord>;
+  /** Saves the team's answer, only while the question is open: checked and written atomically against a reveal. */
+  abstract upsertSubmission(input: SubmissionInput): Promise<AnswerRecord>;
   abstract findById(id: string): Promise<AnswerRecord | null>;
   abstract listByQuestion(sessionId: string, questionId: string): Promise<AnswerRecord[]>;
   abstract listNeedsReview(sessionId: string): Promise<AnswerRecord[]>;
@@ -42,23 +58,20 @@ export class SupabaseAnswersRepository extends AnswersRepository {
     super();
   }
 
-  async upsertSubmission(input: { sessionId: string; questionId: string; teamId: string; response: unknown }): Promise<AnswerRecord> {
-    const { data, error } = await this.supabase
-      .getClient()
-      .from('answers')
-      .upsert(
-        {
-          session_id: input.sessionId,
-          question_id: input.questionId,
-          team_id: input.teamId,
-          response: input.response,
-          submitted_at: new Date().toISOString(),
-        },
-        { onConflict: 'session_id,question_id,team_id' },
-      )
-      .select()
-      .single();
-    if (error) throw new InternalServerErrorException(error.message);
+  async upsertSubmission(input: SubmissionInput): Promise<AnswerRecord> {
+    const { data, error } = await this.supabase.getClient().rpc('submit_answer', {
+      p_session_id: input.sessionId,
+      p_question_id: input.questionId,
+      p_team_id: input.teamId,
+      p_response: input.response,
+      p_grace_ms: input.graceMs,
+    });
+    if (error) {
+      if (error.message.includes('QUESTION_NOT_ACTIVE')) throw new BadRequestException('This question is not currently active');
+      if (error.message.includes('SUBMISSION_CLOSED')) throw new UnprocessableEntityException('Submission window has closed');
+      if (error.message.includes('SESSION_NOT_FOUND')) throw new NotFoundException('Session not found');
+      throw new InternalServerErrorException(error.message);
+    }
     return data as AnswerRecord;
   }
 

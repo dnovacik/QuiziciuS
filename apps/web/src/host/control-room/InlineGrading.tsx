@@ -40,7 +40,8 @@ function GradeRow({ room, question, answer }: { room: ControlRoom; question: Que
         <span className="font-bold">{room.state?.teams.find((team) => team.id === answer.teamId)?.name ?? '—'}</span>
         <span className="min-w-0 flex-1 break-words">{responseLabel(question, answer)}</span>
         <span className="text-label-sm">
-          {answer.isCorrect === null ? 'Pending' : answer.isCorrect ? '✓' : '✗'} · {answer.scoreAwarded} / {question.points}
+          {answer.isCorrect === null ? t('host.room.gradePending') : answer.isCorrect ? '✓' : '✗'} · {answer.scoreAwarded} /{' '}
+          {question.points}
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-2">

@@ -48,6 +48,8 @@ export class QuizzesController {
     if (dto.pubId) await this.pubs.requirePub(dto.pubId);
     if (dto.pubId !== undefined) patch.pub_id = dto.pubId;
     if (dto.defaultTimeLimitSeconds !== undefined) patch.default_time_limit_seconds = dto.defaultTimeLimitSeconds;
+    if (dto.rounds !== undefined)
+      patch.rounds = dto.rounds.map(({ title, questionCount, breakMinutes }) => ({ title: title.trim(), questionCount, breakMinutes }));
     return this.quizzes.update(quizId, patch);
   }
 

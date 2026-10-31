@@ -1,7 +1,7 @@
-import { BadgeCheck, Check, Flag, Hash, Infinity as InfinityIcon, Lock, Pause, PencilLine, Pointer, Trophy, Users } from 'lucide-react';
+import { BadgeCheck, Check, Flag, Infinity as InfinityIcon, Lock, Pause, Pointer, Trophy, Users } from 'lucide-react';
 import type { QuestionPublicDto, QuizSessionStateDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../lib/i18n';
-import { correctAnswerText, isUntimed, optionLetter, secondsLeft, useNow } from '../lib/quiz';
+import { correctAnswerText, isUntimed, secondsLeft, useNow } from '../lib/quiz';
 import { useCurrentQuestionMedia } from '../lib/use-current-question-media';
 import { ProjectorMedia } from './MediaPlayer';
 
@@ -136,50 +136,12 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
         </p>
       )}
 
-      {question.type === 'MULTIPLE_CHOICE' ? (
-        <div className="grid grid-cols-1 gap-space-md md:grid-cols-2" data-testid="projector-options">
-          {question.options?.map((option, index) =>
-            revealed && option.id === question.correctOptionId ? (
-              <div
-                key={option.id}
-                data-testid="projector-correct-option"
-                className="relative flex items-center justify-between gap-space-lg overflow-hidden rounded-xl bg-tertiary-container/30 p-space-lg shadow-[0_0_32px_rgba(78,222,163,0.35)] backdrop-blur-xl"
-              >
-                <div className="flex min-w-0 items-center gap-space-lg">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-tertiary text-headline-lg font-extrabold text-on-tertiary">
-                    {optionLetter(index)}
-                  </div>
-                  <div>
-                    <span className="block text-label-sm font-extrabold uppercase tracking-wider text-tertiary">
-                      {t('projector.reveal.winning')}
-                    </span>
-                    <span className="text-headline-md font-extrabold text-on-surface">{option.label}</span>
-                  </div>
-                </div>
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-tertiary text-on-tertiary">
-                  <Check className="h-6 w-6" strokeWidth={3} />
-                </div>
-              </div>
-            ) : (
-              <div
-                key={option.id}
-                className={`flex items-center gap-space-lg rounded-xl p-space-lg ${
-                  revealed ? 'bg-surface-container-low/40 opacity-30' : 'bg-surface-container/80 shadow-lg backdrop-blur-xl'
-                }`}
-              >
-                <div
-                  className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-headline-lg font-extrabold ${
-                    revealed ? 'bg-surface-container text-outline' : 'bg-surface-container-highest text-primary'
-                  }`}
-                >
-                  {optionLetter(index)}
-                </div>
-                <span className={`text-headline-md font-semibold ${revealed ? 'text-outline' : 'text-on-surface'}`}>{option.label}</span>
-              </div>
-            ),
-          )}
-        </div>
-      ) : revealed ? (
+      {!revealed && question.type === 'NUMERIC_NEAREST' && question.unit && (
+        <p className="text-center text-headline-md font-bold text-secondary" data-testid="projector-unit">
+          {t('projector.question.unit')}: {question.unit}
+        </p>
+      )}
+      {revealed && (
         <div className="flex flex-col items-center rounded-xl bg-tertiary-container/30 p-space-xl text-center shadow-[0_0_32px_rgba(78,222,163,0.35)]">
           <span className="text-label-lg font-extrabold uppercase tracking-widest text-tertiary">{t('projector.reveal.answer')}</span>
           <span
@@ -188,25 +150,6 @@ export function QuestionScene({ state, question }: { state: QuizSessionStateDto;
           >
             {correctAnswerText(question) ?? '—'}
           </span>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center rounded-xl bg-surface-container/90 p-space-xl text-center">
-          {question.type === 'FREE_TEXT' ? (
-            <PencilLine className="mb-space-sm h-12 w-12 text-primary" />
-          ) : (
-            <Hash className="mb-space-sm h-12 w-12 text-secondary" />
-          )}
-          <h3 className="text-headline-lg font-bold uppercase text-on-surface">
-            {t(`projector.question.${question.type === 'FREE_TEXT' ? 'text' : 'numeric'}Title`)}
-          </h3>
-          <p className="mt-space-xs max-w-xl text-body-lg text-on-surface-variant">
-            {t(`projector.question.${question.type === 'FREE_TEXT' ? 'text' : 'numeric'}Hint`)}
-          </p>
-          {question.type === 'NUMERIC_NEAREST' && question.unit && (
-            <p className="mt-space-sm text-headline-md font-bold text-secondary" data-testid="projector-unit">
-              {t('projector.question.unit')}: {question.unit}
-            </p>
-          )}
         </div>
       )}
     </section>

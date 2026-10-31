@@ -32,8 +32,23 @@ function similarity(a: string, b: string): number {
 const AUTO_ACCEPT_THRESHOLD = 0.8;
 const REVIEW_THRESHOLD = 0.5;
 
-export function gradeFreeText(response: string, acceptedAnswers: string[]): FreeTextGradeResult {
+/**
+ * Every answer the host accepts: each entry as written, plus the parts of an entry written as a
+ * list ("Bratislava, Pressburg; Pozsony"). Questions saved before the editor split such lists, and
+ * CSV imports, still hold them in one entry.
+ */
+export function acceptedVariants(acceptedAnswers: string[]): string[] {
+  const variants = new Set<string>();
+  for (const accepted of acceptedAnswers) {
+    if (accepted.trim()) variants.add(accepted.trim());
+    for (const part of accepted.split(/[,;]/)) if (part.trim()) variants.add(part.trim());
+  }
+  return [...variants];
+}
+
+export function gradeFreeText(response: string, rawAcceptedAnswers: string[]): FreeTextGradeResult {
   const normalizedResponse = normalizeAnswer(response);
+  const acceptedAnswers = acceptedVariants(rawAcceptedAnswers);
 
   // An exact normalized match should never depend on a fuzzy acceptance threshold.
   for (const accepted of acceptedAnswers) {

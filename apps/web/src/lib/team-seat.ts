@@ -49,11 +49,12 @@ export async function joinSession(
   teamName: string,
   tableNumber = '',
   teamPin = '',
-  attendanceMode: AttendanceMode = 'REMOTE',
+  attendanceMode?: AttendanceMode,
 ): Promise<TeamSeat> {
+  // Without a choice (the homepage quick join) a rejoining team keeps its earlier mode.
   const body = {
     name: teamName.trim(),
-    attendanceMode,
+    ...(attendanceMode ? { attendanceMode } : {}),
     ...(tableNumber.trim() ? { tableNumber: tableNumber.trim() } : {}),
   };
   const result = teamPin.trim()

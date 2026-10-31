@@ -43,7 +43,9 @@ export class AnswersService {
     const question = await this.questions.findById(questionId);
     if (!question) throw new NotFoundException('Question not found');
 
-    const saved = await this.answers.upsertSubmission({ sessionId, questionId, teamId, response });
+    // The checks above give clear errors; the repository repeats them atomically with the write,
+    // so a reveal racing this request cannot leave an answer behind it.
+    const saved = await this.answers.upsertSubmission({ sessionId, questionId, teamId, response, graceMs: LATE_SUBMISSION_GRACE_MS });
     const graded = await this.gradeImmediately(question, saved);
 
     await this.broadcast.publish(sessionId, 'SCORE_UPDATE', { teamId });
@@ -74,14 +76,21 @@ export class AnswersService {
     return toAnswerSummary(updated);
   }
 
-  /** The team's own answers in this session; grading is included only where results are public. */
+  /**
+   * The team's own answers in this session; grading is included only where results are public, and
+   * the points only while the host publishes scores (always once the night is over).
+   */
   async listForTeam(sessionId: string, teamId: string): Promise<AnswerSummaryDto[]> {
     const session = await this.sessions.findById(sessionId);
     if (!session) throw new NotFoundException('Session not found');
+    const scoresPublic = Boolean(session.scores_visible) || session.status === 'FINISHED';
     const answers = await this.answers.listBySession(sessionId);
     return answers
       .filter((answer) => answer.team_id === teamId)
-      .map((answer) => toAnswerSummary(answer, isAnswerResultVisible(answer, session)));
+      .map((answer) => {
+        const summary = toAnswerSummary(answer, isAnswerResultVisible(answer, session));
+        return scoresPublic ? summary : { ...summary, scoreAwarded: 0 };
+      });
   }
 
   private async gradeImmediately(question: QuestionRecord, answer: AnswerRecord): Promise<AnswerRecord> {

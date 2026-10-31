@@ -4,6 +4,7 @@ import { ApiError } from '../../lib/api-client';
 import { describeError } from '../../lib/errors';
 import { useI18n } from '../../lib/i18n';
 import { subscribeToMediaStatus } from '../../lib/media-channel';
+import { roundBreakAfter } from '../../lib/rounds';
 import { useSessionState } from '../../lib/use-session-state';
 import { hostApi, type BreakOptions, type HostSession, type Question, type Quiz } from '../api';
 
@@ -45,9 +46,10 @@ function useBreakOptions() {
       return { minutes: 0, message: '' };
     }
   });
-  const update = useCallback((patch: Partial<BreakOptions>) => {
+  const update = useCallback((patch: Partial<BreakOptions>, remember = true) => {
     setOptions((current) => {
       const next = { ...current, ...patch };
+      if (!remember) return next;
       try {
         localStorage.setItem(BREAK_KEY, JSON.stringify(next));
       } catch {
@@ -168,6 +170,33 @@ export function useControlRoom(token: string, sessionId: string) {
     }
   }, [status, currentId, questions, nextUnplayed, selectedId]);
 
+  // The coffee break after a round: offered once its last question is revealed.
+  const roundBreak = useMemo(
+    () =>
+      status === 'QUESTION_REVEAL'
+        ? roundBreakAfter(
+            quiz?.rounds,
+            questions.findIndex((question) => question.id === currentId),
+            questions.length,
+          )
+        : null,
+    [status, quiz, questions, currentId],
+  );
+  const presetFor = useRef<string | null>(null);
+  const hostBreak = useRef<BreakOptions | null>(null);
+  useEffect(() => {
+    if (!roundBreak || !currentId || presetFor.current === currentId) return;
+    presetFor.current = currentId;
+    // Set up, not remembered: the host's own setup comes back once the next question starts.
+    hostBreak.current = breakOptions;
+    setBreakOptions({ minutes: roundBreak.minutes, message: `${t('host.room.roundBreakMessage')} ${roundBreak.next.title}` }, false);
+  }, [roundBreak, currentId, breakOptions, setBreakOptions, t]);
+  useEffect(() => {
+    if (status !== 'LOCK_IN_ROUND' || !hostBreak.current) return;
+    setBreakOptions(hostBreak.current, false);
+    hostBreak.current = null;
+  }, [status, setBreakOptions]);
+
   /** Runs one host action at a time; true when it went through, false when busy or refused. */
   const run = useCallback(
     async (action: () => Promise<unknown>): Promise<boolean> => {
@@ -267,6 +296,7 @@ export function useControlRoom(token: string, sessionId: string) {
     selectedId,
     setSelectedId,
     nextUnplayed,
+    roundBreak,
     transition,
     closeAnswers,
     setScoreVisibility,

@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { AccountRole } from '@quizicius/shared-types';
-import { AnswerGradePatch, AnswerRecord, AnswersRepository } from '../data/answers.repository';
+import { AnswerGradePatch, AnswerRecord, AnswersRepository, SubmissionInput } from '../data/answers.repository';
 import { InfractionRecord, InfractionsRepository } from '../data/infractions.repository';
 import { QuestionRecord, QuestionsRepository } from '../data/questions.repository';
 import { QuizPatch, QuizRecord, QuizzesRepository } from '../data/quizzes.repository';
@@ -209,7 +209,8 @@ export class InMemoryTeamsRepository extends TeamsRepository {
 export class InMemoryAnswersRepository extends AnswersRepository {
   private rows = new Map<string, AnswerRecord>();
 
-  async upsertSubmission(input: { sessionId: string; questionId: string; teamId: string; response: unknown }): Promise<AnswerRecord> {
+  /** The open-question check lives in the database function; here the service's own check covers it. */
+  async upsertSubmission(input: SubmissionInput): Promise<AnswerRecord> {
     const existing = [...this.rows.values()].find(
       (a) => a.session_id === input.sessionId && a.question_id === input.questionId && a.team_id === input.teamId,
     );

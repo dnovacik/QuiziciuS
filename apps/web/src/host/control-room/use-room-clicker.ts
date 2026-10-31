@@ -27,6 +27,7 @@ export function nextStepLabel(room: ControlRoom): TranslationKey | null {
   if (status === 'LOBBY') return room.questions.length ? 'host.room.start' : null;
   if (status === 'LOCK_IN_ROUND') return 'host.room.showQuestion';
   if (status === 'QUESTION_ACTIVE') return answersClosed(room) ? 'host.room.reveal' : 'host.room.stopAnswers';
+  if (status === 'QUESTION_REVEAL' && room.roundBreak) return 'host.room.roundBreak';
   if (status === 'QUESTION_REVEAL' || status === 'PAUSE_BREAK') return room.selectedId ? 'host.room.next' : null;
   return null;
 }
@@ -50,6 +51,8 @@ export async function runRoomCommand(room: ControlRoom, command: ClickerCommand)
       // Two presses: the first stops answering, only the second reveals.
       return outcome(answersClosed(room) ? await room.transition('QUESTION_REVEAL') : await room.closeAnswers());
     }
+    // The end of a round: the coffee break comes before the next round's first question.
+    if (status === 'QUESTION_REVEAL' && room.roundBreak) return outcome(await room.transition('PAUSE_BREAK'));
     if (status === 'QUESTION_REVEAL' || status === 'PAUSE_BREAK') {
       return room.selectedId ? outcome(await room.transition('LOCK_IN_ROUND')) : 'finish';
     }

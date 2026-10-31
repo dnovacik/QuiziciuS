@@ -186,6 +186,38 @@ describe('projector media', () => {
     expect(screen.getByTestId('projector-media-question')).not.toBeVisible();
   });
 
+  it('hides YouTube title previews until playback starts', async () => {
+    show({ media: { kind: 'youtube', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', startSeconds: 30, durationSeconds: null } });
+    await act(async () => undefined);
+
+    expect(screen.getByTestId('projector-youtube-placeholder-question')).toBeVisible();
+    expect(screen.getByTestId('projector-youtube-question')).toHaveClass('invisible');
+
+    act(() => youtube.events!.onStateChange(1));
+    expect(screen.queryByTestId('projector-youtube-placeholder-question')).not.toBeInTheDocument();
+    expect(screen.getByTestId('projector-youtube-question')).not.toHaveClass('invisible');
+
+    act(() => youtube.events!.onStateChange(2));
+    expect(screen.getByTestId('projector-youtube-placeholder-question')).toBeVisible();
+  });
+
+  it('never shows the video of a sound-only YouTube clip, even while it plays', async () => {
+    show({
+      media: {
+        kind: 'youtube',
+        url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        startSeconds: 30,
+        durationSeconds: null,
+        audioOnly: true,
+      },
+    });
+    await act(async () => undefined);
+
+    act(() => youtube.events!.onStateChange(1));
+    expect(screen.getByTestId('projector-youtube-placeholder-question')).toBeVisible();
+    expect(screen.getByTestId('projector-youtube-question')).toHaveClass('invisible');
+  });
+
   it('plays YouTube through its player and reports a broken video', async () => {
     show({ media: { kind: 'youtube', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', startSeconds: 30, durationSeconds: null } });
     await act(async () => undefined);

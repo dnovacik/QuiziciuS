@@ -74,6 +74,27 @@ describe('parseQuestionsCsv', () => {
     ]);
   });
 
+  it('reads a sound-only YouTube clip and writes it back the same way', () => {
+    const result = parseQuestionsCsv(
+      ['type,prompt,answer,media_url,media_kind', 'FREE_TEXT,Kto spieva?,ABBA,https://youtu.be/dQw4w9WgXcQ,youtube-audio'].join('\n'),
+    );
+
+    expect(result.ok && result.questions[0].media).toEqual({
+      kind: 'youtube',
+      source: 'link',
+      url: 'https://youtu.be/dQw4w9WgXcQ',
+      audioOnly: true,
+    });
+    const record = {
+      ...(result.ok && result.questions[0]),
+      id: 'x',
+      quiz_id: 'q',
+      order_index: 0,
+      time_limit_seconds: 30,
+    } as QuestionRecord;
+    expect(questionsToCsv([record])).toContain(',https://youtu.be/dQw4w9WgXcQ,youtube-audio,');
+  });
+
   it('reports every problem with its row and keeps nothing', () => {
     const result = parseQuestionsCsv(
       [
