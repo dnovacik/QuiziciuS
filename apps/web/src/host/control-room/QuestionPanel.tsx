@@ -14,6 +14,7 @@ import {
   MonitorX,
   Pause,
   Play,
+  XCircle,
 } from 'lucide-react';
 import type { AnswerSummaryDto, TeamSummaryDto } from '@quizicius/shared-types';
 import { useI18n } from '../../lib/i18n';
@@ -57,6 +58,7 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
   const canPick = status === 'LOBBY' || status === 'QUESTION_REVEAL' || status === 'PAUSE_BREAK';
   const answers = showingCurrent ? room.answers : [];
   const answeredTeams = new Set(answers.map((answer) => answer.teamId));
+  const answersRevealed = status !== 'LOCK_IN_ROUND' && status !== 'QUESTION_ACTIVE';
   const ranked = rankTeams(state.teams);
   const mediaUrl = useMediaUrl(room, focus);
 
@@ -437,20 +439,45 @@ export function QuestionPanel({ room, onReview, onEnd }: { room: ControlRoom; on
         <ul className="flex max-h-[380px] flex-col gap-1.5 overflow-y-auto pr-1">
           {state.teams.map((team) => {
             const answer = answers.find((row) => row.teamId === team.id);
+            // While answering, a tick only says "sent"; once revealed the row shows the grade, so a
+            // host's correction is visible here too.
+            const verdict = !answer
+              ? null
+              : !answersRevealed || answer.isCorrect === null
+                ? 'sent'
+                : answer.isCorrect
+                  ? 'correct'
+                  : 'wrong';
             return (
               <li
                 key={team.id}
+                data-testid={`room-submitted-${team.id}`}
+                data-verdict={verdict ?? 'none'}
                 className={`flex items-center justify-between rounded-lg p-space-xs px-space-sm ${answer ? 'bg-surface-container' : 'bg-secondary/10'}`}
               >
                 <div className="flex items-center gap-space-xs truncate">
-                  {answer ? (
+                  {verdict === 'wrong' ? (
+                    <XCircle className="h-4 w-4 text-error" />
+                  ) : verdict === 'correct' ? (
                     <CheckCircle2 className="h-4 w-4 text-tertiary" />
+                  ) : verdict === 'sent' ? (
+                    <CheckCircle2 className="h-4 w-4 text-on-surface-variant" />
                   ) : (
                     <span className="h-2 w-2 animate-pulse rounded-full bg-secondary" />
                   )}
                   <span className={`truncate text-label-sm ${answer ? 'text-on-surface' : 'text-secondary'}`}>{team.name}</span>
                 </div>
-                <span className={`shrink-0 text-label-sm ${answer ? 'text-tertiary' : 'text-on-surface-variant'}`}>
+                <span
+                  className={`shrink-0 text-label-sm ${
+                    verdict === 'wrong'
+                      ? 'text-error'
+                      : verdict === 'correct'
+                        ? 'text-tertiary'
+                        : answer
+                          ? 'text-on-surface'
+                          : 'text-on-surface-variant'
+                  }`}
+                >
                   {answer
                     ? responseLabel(room.currentQuestion, answer).slice(0, 18)
                     : showingCurrent && status !== 'LOCK_IN_ROUND'

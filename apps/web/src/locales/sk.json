@@ -1015,6 +1015,7 @@
   "errors.QUIZ_NOT_YOURS": "Tento kvíz nie je tvoj.",
   "errors.NIGHT_NOT_FOUND": "Tento naplánovaný večer už neexistuje.",
   "host.room.gradePending": "Čaká",
+  "host.room.saveGrade": "Uložiť hodnotenie",
   "host.room.roundBreak": "Prestávka na kávu",
   "host.room.roundBreakMessage": "Prestávka na kávu! Ďalšie kolo:",
   "host.room.roundEnd": "Koniec kola",

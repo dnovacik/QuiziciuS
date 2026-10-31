@@ -139,7 +139,7 @@ function Location() {
 }
 
 function renderPlay(path = '/play/s1') {
-  return render(
+  const tree = () => (
     <I18nProvider>
       <MemoryRouter initialEntries={[path]}>
         <Location />
@@ -149,8 +149,11 @@ function renderPlay(path = '/play/s1') {
           <Route path="/team" element={<p>team page</p>} />
         </Routes>
       </MemoryRouter>
-    </I18nProvider>,
+    </I18nProvider>
   );
+  const view = render(tree());
+  /** Renders again, e.g. after the session state changed. */
+  return { ...view, refresh: () => view.rerender(tree()) };
 }
 
 function seated() {
@@ -392,6 +395,26 @@ describe('answering', () => {
     expect(apiPost).toHaveBeenLastCalledWith('/sessions/s1/answers', { questionId: 'q9', response: { value: 6 } }, 'team-token');
   });
 
+  it("shows how long the team took by the server's clock, not 0.0 s", async () => {
+    // 30 s question ending in 20 s: it started 10 s ago; the server took the answer 7 s in.
+    const endsAt = Date.now() + 20_000;
+    session.mine = [graded({ isCorrect: null, scoreAwarded: 0, submittedAt: new Date(endsAt - 30_000 + 7_000).toISOString() })];
+    setState('QUESTION_ACTIVE', { currentQuestion: question(), questionEndsAt: new Date(endsAt).toISOString() });
+    renderPlay();
+
+    await screen.findByTestId('player-locked');
+    expect(screen.getByTestId('player-answer-time')).toHaveTextContent('7.0 s');
+  });
+
+  it('leaves the time out when the server does not say when the answer came', async () => {
+    session.mine = [graded({ isCorrect: null, scoreAwarded: 0 })];
+    activeQuestion();
+    renderPlay();
+
+    await screen.findByTestId('player-locked');
+    expect(screen.queryByTestId('player-answer-time')).not.toBeInTheDocument();
+  });
+
   it('shows how many teams answered, and that the host paused the timer', () => {
     setState('QUESTION_ACTIVE', {
       currentQuestion: question(),
@@ -530,6 +553,21 @@ describe('reveal and results', () => {
     await waitFor(() => expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'correct'));
     expect(screen.queryByTestId('player-awarded')).not.toBeInTheDocument();
     expect(screen.queryByTestId('player-total-score')).not.toBeInTheDocument();
+  });
+
+  it('shows the points earned as soon as the host publishes the scores', async () => {
+    localStorage.setItem('quizicius:answers:s1', JSON.stringify({ q1: { display: 'Forrest Gump', letter: 'B', submittedAt: Date.now() } }));
+    // While scores are hidden the API withholds the points.
+    session.mine = [graded({ scoreAwarded: 0 })];
+    setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'b' }), scoresVisible: false });
+    const view = renderPlay();
+    await waitFor(() => expect(screen.getByTestId('player-verdict')).toHaveAttribute('data-verdict', 'correct'));
+
+    session.mine = [graded({ scoreAwarded: 2 })];
+    setState('QUESTION_REVEAL', { currentQuestion: question({ correctOptionId: 'b' }), scoresVisible: true });
+    view.refresh();
+
+    await waitFor(() => expect(screen.getByTestId('player-awarded')).toHaveTextContent('+2'));
   });
 
   it("updates the verdict when the host corrects the team's grade", async () => {

@@ -1015,6 +1015,7 @@
   "errors.QUIZ_NOT_YOURS": "This quiz is not yours.",
   "errors.NIGHT_NOT_FOUND": "This planned night no longer exists.",
   "host.room.gradePending": "Pending",
+  "host.room.saveGrade": "Save grade",
   "host.room.roundBreak": "Coffee break",
   "host.room.roundBreakMessage": "Coffee break! Next round:",
   "host.room.roundEnd": "End of round",

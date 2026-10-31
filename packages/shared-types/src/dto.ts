@@ -72,6 +72,8 @@ export interface AnswerSummaryDto {
   /** The team disputed this grade (it can only once); the note is its reason for the host. */
   disputed: boolean;
   disputeNote: string | null;
+  /** When the server accepted the answer (ISO); the phone shows how long the team took. */
+  submittedAt?: string;
 }
 
 /** The signed-in account as the web app sees it (GET /me). */
