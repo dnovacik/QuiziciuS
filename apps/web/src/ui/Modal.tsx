@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useI18n } from '../lib/i18n';
 
@@ -7,6 +8,9 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select
 /**
  * Accessible dialog: closes on Escape and backdrop click, keeps Tab focus inside,
  * and gives focus back to whatever opened it.
+ *
+ * Rendered into <body>: opened from inside a card with a backdrop blur, transform or filter, a
+ * `fixed` overlay would otherwise be laid out within that card and clipped by it.
  */
 export function Modal({
   labelledBy,
@@ -59,7 +63,7 @@ export function Modal({
     };
   }, []);
 
-  return (
+  return createPortal(
     <div
       className={`fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-md ${tone === 'glass' ? 'bg-black/80' : 'bg-surface-container-lowest/80'}`}
       onMouseDown={(event) => {
@@ -86,6 +90,7 @@ export function Modal({
         </button>
         {children}
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
